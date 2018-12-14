@@ -3,9 +3,10 @@ use std::ffi::c_void;
 use winapi::shared::ntdef::LPCWSTR;
 
 #[repr(C)]
+#[derive(Debug)]
 pub struct DxcDefine {
-    name: LPCWSTR,
-    value: LPCWSTR,
+    pub name: LPCWSTR,
+    pub value: LPCWSTR,
 }
 
 iid!(pub IID_IDxcBlob = 0x8BA5FB08, 0x5195, 0x40e2, 0xAC, 0x58, 0x0D, 0x98, 0x9C, 0x3A, 0x01, 0x02);

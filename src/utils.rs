@@ -11,7 +11,13 @@ fn to_wide(msg: &str) -> Vec<u16> {
     wide
 }
 
-pub fn compiler(
+/// Helper function to directly compile a HLSL shader to an intermediate language,
+/// this function expects `dxcompiler.dll` to be available in the current
+/// executable environment.
+///
+/// Specify -spirv as one of the `args` to compile to SPIR-V
+pub fn compile_hlsl(
+    source_name: &str,
     shader_text: &str,
     entry_point: &str,
     target_profile: &str,
@@ -55,7 +61,7 @@ pub fn compiler(
 
         let _res_hr = compiler.compile(
             blob.as_ptr(),
-            to_wide("shader").as_ptr(),
+            to_wide(source_name).as_ptr(),
             to_wide(entry_point).as_ptr(),
             to_wide(target_profile).as_ptr(),
             args.as_ptr(),
