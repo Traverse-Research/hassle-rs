@@ -1,0 +1,10 @@
+[package]
+name = "hassle-rs"
+version = "0.1.0"
+authors = ["Jasper-Bekkers <bekkers@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+libloading = "0.5.0"
+com-rs = "0.2.0"
+winapi = "0.3.6"
