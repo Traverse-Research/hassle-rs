@@ -1,4 +1,4 @@
-hassle
+hassle-rs
 ========
 This crate provides an FFI layer and idiomatic rust wrappers for the new [DirectXShaderCompiler](https://github.com/Microsoft/DirectXShaderCompiler) library.
 
@@ -8,7 +8,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hassle-rs = "0.1.3"
+hassle-rs = "0.1.4"
 ```
 
 and add this to your crate root:
