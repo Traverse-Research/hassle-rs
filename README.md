@@ -15,7 +15,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hassle-rs = "0.1.5"
+hassle-rs = "0.1.6"
 ```
 
 and add this to your crate root:
