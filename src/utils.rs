@@ -25,6 +25,7 @@ pub fn compile_hlsl(
     defines: &Vec<(&str, Option<&str>)>,
 ) -> Result<Vec<u32>, String> {
     use libloading::*;
+
     let dxc_lib = Library::new("dxcompiler.dll").expect("Failed to load dxcompiler.dll");
     const CP_UTF8: u32 = 65001; // UTF-8 translation
 
