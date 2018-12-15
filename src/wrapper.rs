@@ -1,5 +1,5 @@
 use crate::ffi::*;
-use crate::utils::to_wide;
+use crate::utils::{from_wide, to_wide};
 use com_rs::ComPtr;
 use libloading::{Library, Symbol};
 use std::convert::Into;
@@ -177,7 +177,7 @@ impl DxcCompiler {
         target_profile: &str,
         args: &Vec<&str>,
         defines: &Vec<(&str, Option<&str>)>,
-    ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
+    ) -> Result<(DxcOperationResult, String, DxcBlob), (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
         Self::prep_args(&args, &mut wide_args, &mut dxc_args);
@@ -208,7 +208,11 @@ impl DxcCompiler {
         };
 
         if result_hr == 0 {
-            Ok(DxcOperationResult::new(result))
+            Ok((
+                DxcOperationResult::new(result),
+                from_wide(debug_filename),
+                DxcBlob::new(debug_blob),
+            ))
         } else {
             Err((DxcOperationResult::new(result), result_hr))
         }
