@@ -8,7 +8,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hassle-rs = "0.1"
+hassle-rs = "0.1.3"
 ```
 
 and add this to your crate root:
