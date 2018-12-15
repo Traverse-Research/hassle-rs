@@ -151,11 +151,11 @@ com_interface! {
     }
 }
 
-const DXC_VALIDATOR_FLAGS_DEFAULT: u32 = 0;
-const DXC_VALIDATOR_FLAGS_IN_PLACE_EDIT: u32 = 1; // Validator is allowed to update shader blob in-place.
-const DXC_VALIDATOR_FLAGS_ROOT_SIGNATURE_ONLY: u32 = 2;
-const DXC_VALIDATOR_FLAGS_MODULE_ONLY: u32 = 4;
-const DXC_VALIDATOR_FLAGS_VALID_MASK: u32 = 0x7;
+pub const DXC_VALIDATOR_FLAGS_DEFAULT: u32 = 0;
+pub const DXC_VALIDATOR_FLAGS_IN_PLACE_EDIT: u32 = 1; // Validator is allowed to update shader blob in-place.
+pub const DXC_VALIDATOR_FLAGS_ROOT_SIGNATURE_ONLY: u32 = 2;
+pub const DXC_VALIDATOR_FLAGS_MODULE_ONLY: u32 = 4;
+pub const DXC_VALIDATOR_FLAGS_VALID_MASK: u32 = 0x7;
 
 iid!(pub IID_IDxcValidator = 0xA6E82BD2, 0x1FD7, 0x4826, 0x98, 0x11, 0x28, 0x57, 0xE7, 0x97, 0xF4, 0x9A);
 com_interface! {
@@ -236,9 +236,9 @@ com_interface! {
     }
 }
 
-const DXC_VERSION_INFO_FLAGS_NONE: u32 = 0;
-const DXC_VERSION_INFO_FLAGS_DEBUG: u32 = 1; // Matches VS_FF_DEBUG
-const DXC_VERSION_INFO_FLAGS_INTERNAL: u32 = 2; // Internal Validator (non-signing)
+pub const DXC_VERSION_INFO_FLAGS_NONE: u32 = 0;
+pub const DXC_VERSION_INFO_FLAGS_DEBUG: u32 = 1; // Matches VS_FF_DEBUG
+pub const DXC_VERSION_INFO_FLAGS_INTERNAL: u32 = 2; // Internal Validator (non-signing)
 
 iid!(pub IID_IDxcVersionInfo = 0xb04f5b50, 0x2059, 0x4f12, 0xa8, 0xff, 0xa1, 0xe0, 0xcd, 0xe1, 0xcc, 0x7e);
 com_interface! {

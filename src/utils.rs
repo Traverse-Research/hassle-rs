@@ -29,7 +29,6 @@ pub fn compile_hlsl(
     let dxc_lib = Library::new("dxcompiler.dll").expect("Failed to load dxcompiler.dll");
     const CP_UTF8: u32 = 65001; // UTF-8 translation
 
-    // typedef HRESULT (__stdcall *DxcCreateInstanceProc)(_In_ REFCLSID rclsid, _In_ REFIID riid, _Out_ LPVOID* ppv);
     let dxc_create_instance: Symbol<DxcCreateInstanceProc> =
         unsafe { dxc_lib.get(b"DxcCreateInstance\0").unwrap() };
 
