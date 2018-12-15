@@ -31,6 +31,8 @@
 //! ```
 pub mod ffi;
 pub mod utils;
+pub mod wrapper;
 
 pub use crate::ffi::*;
 pub use crate::utils::*;
+pub use crate::wrapper::*;
