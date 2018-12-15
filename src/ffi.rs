@@ -3,6 +3,16 @@ use std::ffi::c_void;
 use winapi::shared::ntdef::{LPCWSTR, LPWSTR};
 use winapi::shared::winerror::HRESULT;
 
+pub type DxcCreateInstanceProc =
+    extern "system" fn(rclsid: &IID, riid: &IID, ppv: *mut *mut c_void) -> HRESULT;
+
+pub type DxcCreateInstanceProc2 = extern "system" fn(
+    malloc: *const c_void,
+    rclsid: &IID,
+    riid: &IID,
+    ppv: *mut *mut c_void,
+) -> HRESULT;
+
 iid!(pub IID_IDxcBlob = 0x8BA5FB08, 0x5195, 0x40e2, 0xAC, 0x58, 0x0D, 0x98, 0x9C, 0x3A, 0x01, 0x02);
 com_interface! {
     interface IDxcBlob: IUnknown{

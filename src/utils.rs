@@ -1,5 +1,5 @@
 use crate::ffi::*;
-use com_rs::{ComPtr, IID};
+use com_rs::ComPtr;
 use std::ffi::c_void;
 
 fn to_wide(msg: &str) -> Vec<u16> {
@@ -30,9 +30,8 @@ pub fn compile_hlsl(
     const CP_UTF8: u32 = 65001; // UTF-8 translation
 
     // typedef HRESULT (__stdcall *DxcCreateInstanceProc)(_In_ REFCLSID rclsid, _In_ REFIID riid, _Out_ LPVOID* ppv);
-    let dxc_create_instance: Symbol<
-        extern "system" fn(rclsid: &IID, riid: &IID, ppv: *mut *mut c_void) -> u32,
-    > = unsafe { dxc_lib.get(b"DxcCreateInstance\0").unwrap() };
+    let dxc_create_instance: Symbol<DxcCreateInstanceProc> =
+        unsafe { dxc_lib.get(b"DxcCreateInstance\0").unwrap() };
 
     let mut library: ComPtr<IDxcLibrary> = ComPtr::new();
     let _hr_lib = dxc_create_instance(&CLSID_DxcLibrary, &IID_IDxcLibrary, library.as_mut_ptr());
