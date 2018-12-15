@@ -11,6 +11,13 @@ homepage = "https://github.com/Jasper-Bekkers/hassle-rs"
 repository = "https://github.com/Jasper-Bekkers/hassle-rs"
 keywords = ["rendering", "shader", "pipeline", "hlsl", "dxc"]
 categories = ["rendering", "rendering::graphics-api"]
+include = [
+    "src/*.rs",
+    "Cargo.toml",
+]
+
+[badges]
+maintenance = { status = "actively-developed" }
 
 [dependencies]
 libloading = "0.5.0"
