@@ -90,12 +90,43 @@ impl DxcOperationResult {
 }
 
 pub struct DxcCompiler {
-    inner: ComPtr<IDxcCompiler>,
+    inner: ComPtr<IDxcCompiler2>,
 }
 
 impl DxcCompiler {
-    fn new(inner: ComPtr<IDxcCompiler>) -> Self {
+    fn new(inner: ComPtr<IDxcCompiler2>) -> Self {
         Self { inner }
+    }
+
+    fn prep_defines(
+        defines: &Vec<(&str, Option<&str>)>,
+        wide_defines: &mut Vec<(Vec<u16>, Vec<u16>)>,
+        dxc_defines: &mut Vec<DxcDefine>,
+    ) {
+        for (name, value) in defines {
+            if value.is_none() {
+                wide_defines.push((to_wide(name), to_wide("1")));
+            } else {
+                wide_defines.push((to_wide(name), to_wide(value.unwrap())));
+            }
+        }
+
+        for (ref name, ref value) in wide_defines {
+            dxc_defines.push(DxcDefine {
+                name: name.as_ptr(),
+                value: value.as_ptr(),
+            });
+        }
+    }
+
+    fn prep_args(args: &Vec<&str>, wide_args: &mut Vec<Vec<u16>>, dxc_args: &mut Vec<LPCWSTR>) {
+        for a in args {
+            wide_args.push(to_wide(a));
+        }
+
+        for ref a in wide_args {
+            dxc_args.push(a.as_ptr());
+        }
     }
 
     pub fn compile(
@@ -108,32 +139,12 @@ impl DxcCompiler {
         defines: &Vec<(&str, Option<&str>)>,
     ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
-        for a in args {
-            wide_args.push(to_wide(a));
-        }
-
         let mut dxc_args = vec![];
-        for ref a in &wide_args {
-            dxc_args.push(a.as_ptr());
-        }
+        Self::prep_args(&args, &mut wide_args, &mut dxc_args);
 
-        // move names to `wide` vector so they stay in scope
         let mut wide_defines = vec![];
-        for (name, value) in defines {
-            if value.is_none() {
-                wide_defines.push((to_wide(name), to_wide("1")));
-            } else {
-                wide_defines.push((to_wide(name), to_wide(value.unwrap())));
-            }
-        }
-
         let mut dxc_defines = vec![];
-        for (ref name, ref value) in &wide_defines {
-            dxc_defines.push(DxcDefine {
-                name: name.as_ptr(),
-                value: value.as_ptr(),
-            });
-        }
+        Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
 
         let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
         let result_hr = unsafe {
@@ -156,6 +167,98 @@ impl DxcCompiler {
         } else {
             Err((DxcOperationResult::new(result), result_hr))
         }
+    }
+
+    pub fn compile_with_debug(
+        &self,
+        blob: &DxcBlobEncoding,
+        source_name: &str,
+        entry_point: &str,
+        target_profile: &str,
+        args: &Vec<&str>,
+        defines: &Vec<(&str, Option<&str>)>,
+    ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
+        let mut wide_args = vec![];
+        let mut dxc_args = vec![];
+        Self::prep_args(&args, &mut wide_args, &mut dxc_args);
+
+        let mut wide_defines = vec![];
+        let mut dxc_defines = vec![];
+        Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
+
+        let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
+        let mut debug_blob: ComPtr<IDxcBlob> = ComPtr::new();
+        let mut debug_filename: LPWSTR = std::ptr::null_mut();
+
+        let result_hr = unsafe {
+            self.inner.compile_with_debug(
+                blob.inner.as_ptr(),
+                to_wide(source_name).as_ptr(),
+                to_wide(entry_point).as_ptr(),
+                to_wide(target_profile).as_ptr(),
+                dxc_args.as_ptr(),
+                dxc_args.len() as u32,
+                dxc_defines.as_ptr(),
+                dxc_defines.len() as u32,
+                std::ptr::null(),
+                result.as_mut_ptr(),
+                &mut debug_filename,
+                debug_blob.as_mut_ptr(),
+            )
+        };
+
+        if result_hr == 0 {
+            Ok(DxcOperationResult::new(result))
+        } else {
+            Err((DxcOperationResult::new(result), result_hr))
+        }
+    }
+
+    pub fn preprocess(
+        &self,
+        blob: &DxcBlobEncoding,
+        source_name: &str,
+        args: &Vec<&str>,
+        defines: &Vec<(&str, Option<&str>)>,
+    ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
+        let mut wide_args = vec![];
+        let mut dxc_args = vec![];
+        Self::prep_args(&args, &mut wide_args, &mut dxc_args);
+
+        let mut wide_defines = vec![];
+        let mut dxc_defines = vec![];
+        Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
+
+        let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
+        let result_hr = unsafe {
+            self.inner.preprocess(
+                blob.inner.as_ptr(),
+                to_wide(source_name).as_ptr(),
+                dxc_args.as_ptr(),
+                dxc_args.len() as u32,
+                dxc_defines.as_ptr(),
+                dxc_defines.len() as u32,
+                std::ptr::null(),
+                result.as_mut_ptr(),
+            )
+        };
+
+        if result_hr == 0 {
+            Ok(DxcOperationResult::new(result))
+        } else {
+            Err((DxcOperationResult::new(result), result_hr))
+        }
+    }
+
+    pub fn disassemble(&self, blob: &DxcBlob) -> Result<DxcBlobEncoding, HRESULT> {
+        let mut result_blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
+        return_hr!(
+            unsafe {
+                self.inner
+                    .disassemble(blob.inner.as_ptr(), result_blob.as_mut_ptr())
+            },
+            DxcBlobEncoding::new(result_blob)
+        );
     }
 }
 
@@ -223,11 +326,11 @@ impl Dxc {
     }
 
     pub fn create_compiler(&self) -> Result<DxcCompiler, HRESULT> {
-        let mut compiler: ComPtr<IDxcCompiler> = ComPtr::new();
+        let mut compiler: ComPtr<IDxcCompiler2> = ComPtr::new();
         return_hr!(
             self.get_dxc_create_instance()(
                 &CLSDI_DxcCompiler,
-                &IID_IDxcCompiler,
+                &IID_IDxcCompiler2,
                 compiler.as_mut_ptr(),
             ),
             DxcCompiler::new(compiler)
