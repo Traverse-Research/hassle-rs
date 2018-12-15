@@ -26,7 +26,6 @@ Licensed under MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses
 ## Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this crate by you, as defined in the Apache-2.0 license, shall
-be dual licensed as above, without any additional terms or conditions.
+for inclusion in this crate by you, shall be licensed as above, without any additional terms or conditions.
 
 Contributions are always welcome; please look at the [issue tracker](https://github.com/Jasper-Bekkers/hassle-rs/issues) to see what known improvements are documented.
