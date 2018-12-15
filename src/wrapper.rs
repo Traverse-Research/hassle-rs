@@ -4,6 +4,7 @@ use com_rs::ComPtr;
 use libloading::{Library, Symbol};
 use std::convert::Into;
 use std::ffi::c_void;
+use winapi::shared::ntdef::{LPCWSTR, LPWSTR};
 use winapi::shared::winerror::HRESULT;
 
 macro_rules! return_hr {
@@ -187,7 +188,7 @@ impl DxcLibrary {
         );
     }
 
-    pub fn get_blob_as_string(&self, blob: DxcBlobEncoding) -> String {
+    pub fn get_blob_as_string(&self, blob: &DxcBlobEncoding) -> String {
         let mut blob_utf8: ComPtr<IDxcBlobEncoding> = ComPtr::new();
 
         unsafe {

@@ -127,7 +127,7 @@ com_interface! {
             def_count: u32,
             include_handler: *const c_void,
             result: *mut *mut IDxcOperationResult,
-            debug_blob_name: LPWSTR,
+            debug_blob_name: *mut LPWSTR,
             debug_blob: *mut *mut IDxcBlob) -> HRESULT;
     }
 }

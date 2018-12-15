@@ -1,7 +1,5 @@
-use crate::ffi::*;
 use crate::wrapper::*;
-use com_rs::ComPtr;
-use std::ffi::c_void;
+use winapi::shared::ntdef::LPWSTR;
 
 pub(crate) fn to_wide(msg: &str) -> Vec<u16> {
     use std::ffi::OsStr;
@@ -10,6 +8,17 @@ pub(crate) fn to_wide(msg: &str) -> Vec<u16> {
 
     let wide: Vec<u16> = OsStr::new(msg).encode_wide().chain(once(0)).collect();
     wide
+}
+
+pub(crate) fn from_wide(wide: LPWSTR) -> String {
+    use std::ffi::OsString;
+    use std::os::windows::ffi::OsStringExt;
+
+    let len = unsafe { (0..).take_while(|&i| *wide.offset(i) != 0).count() };
+
+    OsString::from_wide(unsafe { std::slice::from_raw_parts(wide, len) })
+        .into_string()
+        .unwrap()
 }
 
 /// Helper function to directly compile a HLSL shader to an intermediate language,
@@ -46,11 +55,12 @@ pub fn compile_hlsl(
     match result {
         Err(result) => {
             let error_blob = result.0.get_error_buffer().unwrap();
-            Err(library.get_blob_as_string(error_blob))
+            Err(library.get_blob_as_string(&error_blob))
         }
         Ok(result) => {
-            let result_blob = result.get_result();
-            Ok(result_blob.unwrap().to_vec())
+            let result_blob = result.get_result().unwrap();
+
+            Ok(result_blob.to_vec())
         }
     }
 }
