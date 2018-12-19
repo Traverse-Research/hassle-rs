@@ -212,7 +212,12 @@ impl DxcCompiler {
             )
         };
 
-        if result_hr == 0 {
+        let mut compile_error = 0u32;
+        unsafe {
+            result.get_status(&mut compile_error);
+        }
+
+        if result_hr == 0 && compile_error == 0 {
             Ok((
                 DxcOperationResult::new(result),
                 from_wide(debug_filename),
@@ -252,7 +257,12 @@ impl DxcCompiler {
             )
         };
 
-        if result_hr == 0 {
+        let mut compile_error = 0u32;
+        unsafe {
+            result.get_status(&mut compile_error);
+        }
+
+        if result_hr == 0 && compile_error == 0 {
             Ok(DxcOperationResult::new(result))
         } else {
             Err((DxcOperationResult::new(result), result_hr))
