@@ -31,8 +31,8 @@ pub fn compile_hlsl(
     shader_text: &str,
     entry_point: &str,
     target_profile: &str,
-    args: &Vec<&str>,
-    defines: &Vec<(&str, Option<&str>)>,
+    args: &[&str],
+    defines: &[(&str, Option<&str>)],
 ) -> Result<Vec<u32>, String> {
     let dxc = Dxc::new();
 

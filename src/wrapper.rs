@@ -99,7 +99,7 @@ impl DxcCompiler {
     }
 
     fn prep_defines(
-        defines: &Vec<(&str, Option<&str>)>,
+        defines: &[(&str, Option<&str>)],
         wide_defines: &mut Vec<(Vec<u16>, Vec<u16>)>,
         dxc_defines: &mut Vec<DxcDefine>,
     ) {
@@ -119,7 +119,7 @@ impl DxcCompiler {
         }
     }
 
-    fn prep_args(args: &Vec<&str>, wide_args: &mut Vec<Vec<u16>>, dxc_args: &mut Vec<LPCWSTR>) {
+    fn prep_args(args: &[&str], wide_args: &mut Vec<Vec<u16>>, dxc_args: &mut Vec<LPCWSTR>) {
         for a in args {
             wide_args.push(to_wide(a));
         }
@@ -135,8 +135,8 @@ impl DxcCompiler {
         source_name: &str,
         entry_point: &str,
         target_profile: &str,
-        args: &Vec<&str>,
-        defines: &Vec<(&str, Option<&str>)>,
+        args: &[&str],
+        defines: &[(&str, Option<&str>)],
     ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
@@ -180,8 +180,8 @@ impl DxcCompiler {
         source_name: &str,
         entry_point: &str,
         target_profile: &str,
-        args: &Vec<&str>,
-        defines: &Vec<(&str, Option<&str>)>,
+        args: &[&str],
+        defines: &[(&str, Option<&str>)],
     ) -> Result<(DxcOperationResult, String, DxcBlob), (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
@@ -232,8 +232,8 @@ impl DxcCompiler {
         &self,
         blob: &DxcBlobEncoding,
         source_name: &str,
-        args: &Vec<&str>,
-        defines: &Vec<(&str, Option<&str>)>,
+        args: &[&str],
+        defines: &[(&str, Option<&str>)],
     ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
