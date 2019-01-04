@@ -18,6 +18,7 @@ macro_rules! return_hr {
     };
 }
 
+#[derive(Debug)]
 pub struct DxcBlob {
     inner: ComPtr<IDxcBlob>,
 }
@@ -42,6 +43,7 @@ impl DxcBlob {
     }
 }
 
+#[derive(Debug)]
 pub struct DxcBlobEncoding {
     inner: ComPtr<IDxcBlobEncoding>,
 }
@@ -58,6 +60,7 @@ impl Into<DxcBlob> for DxcBlobEncoding {
     }
 }
 
+#[derive(Debug)]
 pub struct DxcOperationResult {
     inner: ComPtr<IDxcOperationResult>,
 }
@@ -89,6 +92,7 @@ impl DxcOperationResult {
     }
 }
 
+#[derive(Debug)]
 pub struct DxcCompiler {
     inner: ComPtr<IDxcCompiler2>,
 }
@@ -281,6 +285,7 @@ impl DxcCompiler {
     }
 }
 
+#[derive(Debug)]
 pub struct DxcLibrary {
     inner: ComPtr<IDxcLibrary>,
 }
@@ -329,6 +334,7 @@ impl DxcLibrary {
     }
 }
 
+#[derive(Debug)]
 pub struct Dxc {
     dxc_lib: Library,
 }
