@@ -21,7 +21,7 @@ hassle-rs = "0.1.7"
 and add this to your crate root:
 
 ```rust
-extern crate hassle;
+extern crate hassle_rs;
 ```
 
 Then acquire `dxcompiler.dll` directly from [AppVeyor](https://ci.appveyor.com/project/antiagainst/directxshadercompiler/branch/master/artifacts) or compile it from source according to the instructions in the [DirectXShaderCompiler](https://github.com/Microsoft/DirectXShaderCompiler) GitHub repository and make sure it's in the executable enviroment.
