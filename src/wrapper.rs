@@ -354,7 +354,7 @@ impl Dxc {
         let mut compiler: ComPtr<IDxcCompiler2> = ComPtr::new();
         return_hr!(
             self.get_dxc_create_instance()(
-                &CLSDI_DxcCompiler,
+                &CLSID_DxcCompiler,
                 &IID_IDxcCompiler2,
                 compiler.as_mut_ptr(),
             ),
