@@ -295,6 +295,21 @@ impl DxcLibrary {
         Self { inner }
     }
 
+    pub fn create_blob_with_encoding(&self, data: &[u8]) -> Result<DxcBlobEncoding, HRESULT> {
+        let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
+        return_hr!(
+            unsafe {
+                self.inner.create_blob_with_encoding_from_pinned(
+                    data.as_ptr() as *const c_void,
+                    data.len() as u32,
+                    0, // Binary; no code page
+                    blob.as_mut_ptr(),
+                )
+            },
+            DxcBlobEncoding::new(blob)
+        );
+    }
+
     pub fn create_blob_with_encoding_from_str(
         &self,
         text: &str,
@@ -409,9 +424,18 @@ impl DxcValidator {
         Ok((1, 3))
     }
 
-    pub fn validate(&mut self, blob_encoding: DxcBlobEncoding) -> Result<(bool, String), HRESULT> {
+    pub fn validate_slice(&mut self, data: &[u8]) -> Result<(Vec<u8>, String), HRESULT> {
+        let blob_encoding = self.library.create_blob_with_encoding(data)?;
         let blob: DxcBlob = blob_encoding.into();
+        let (blob, errors) = self.validate(blob)?;
+        if errors.is_empty() {
+            Ok((blob.to_vec(), String::new()))
+        } else {
+            Ok((Vec::new(), errors))
+        }
+    }
 
+    pub fn validate(&mut self, blob: DxcBlob) -> Result<(DxcBlob, String), HRESULT> {
         let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
         let result_hr = unsafe {
             self.inner.validate(
@@ -432,16 +456,16 @@ impl DxcValidator {
             return Err(result_hr);
         }
 
-        let (validated, errors) = if validate_status == 0 {
-            (true, String::new())
+        let (blob, errors) = if validate_status == 0 {
+            (blob, String::new())
         } else {
             // The dxil container failed validation
             let result = DxcOperationResult::new(result);
             let print_blob = result.get_error_buffer()?;
-            (false, self.library.get_blob_as_string(&print_blob))
+            (blob, self.library.get_blob_as_string(&print_blob))
         };
 
-        Ok((validated, errors))
+        Ok((blob, errors))
     }
 }
 
