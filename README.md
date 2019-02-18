@@ -26,6 +26,9 @@ extern crate hassle_rs;
 
 Then acquire `dxcompiler.dll` directly from [AppVeyor](https://ci.appveyor.com/project/antiagainst/directxshadercompiler/branch/master/artifacts) or compile it from source according to the instructions in the [DirectXShaderCompiler](https://github.com/Microsoft/DirectXShaderCompiler) GitHub repository and make sure it's in the executable enviroment.
 
+DxcValidator also requires `dxil.dll` which can be grabbed from any recent Windows 10 SDK flight.
+More info: https://www.wihlidal.com/blog/pipeline/2018-09-16-dxil-signing-post-compile/
+
 ## License
 
 Licensed under MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses/MIT)
