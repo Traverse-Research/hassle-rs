@@ -374,3 +374,104 @@ impl Dxc {
         );
     }
 }
+
+#[derive(Debug)]
+pub struct DxcValidator {
+    inner: ComPtr<IDxcValidator>,
+    dxc: Dxc,
+    library: DxcLibrary,
+}
+
+pub type DxcValidatorVersion = (u32, u32);
+
+// https://www.wihlidal.com/blog/pipeline/2018-09-16-dxil-signing-post-compile/
+impl DxcValidator {
+    fn new(inner: ComPtr<IDxcValidator>, dxc: Dxc, library: DxcLibrary) -> Self {
+        Self {
+            inner,
+            dxc,
+            library,
+        }
+    }
+
+    pub fn version(&self) -> Result<DxcValidatorVersion, HRESULT> {
+        // TODO:
+        /*iid!(pub IID_IDxcVersionInfo = 0xb04f5b50, 0x2059, 0x4f12, 0xa8, 0xff, 0xa1, 0xe0, 0xcd, 0xe1, 0xcc, 0x7e);
+        com_interface! {
+            interface IDxcVersionInfo: IUnknown{
+                iid: IID_IDxcVersionInfo,
+                vtable: IDxcVersionInfoVtbl,
+
+                fn get_version(major: *mut u32, minor: *mut u32) -> HRESULT;
+                fn get_flags(flags: *mut u32) -> HRESULT;
+            }
+        }*/
+        Ok((1, 3))
+    }
+
+    pub fn validate(&mut self, blob_encoding: DxcBlobEncoding) -> Result<(bool, String), HRESULT> {
+        let blob: DxcBlob = blob_encoding.into();
+
+        let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
+        let result_hr = unsafe {
+            self.inner.validate(
+                blob.inner.as_ptr(),
+                DXC_VALIDATOR_FLAGS_IN_PLACE_EDIT,
+                result.as_mut_ptr(),
+            )
+        };
+        if result_hr != 0 {
+            //Failed to validate dxil container
+            return Err(result_hr);
+        }
+
+        let mut validate_status = 0u32;
+        let result_hr = unsafe { result.get_status(&mut validate_status) };
+        if result_hr != 0 {
+            // Failed to get dxil validate status
+            return Err(result_hr);
+        }
+
+        let (validated, errors) = if validate_status == 0 {
+            (true, String::new())
+        } else {
+            // The dxil container failed validation
+            let result = DxcOperationResult::new(result);
+            let print_blob = result.get_error_buffer()?;
+            (false, self.library.get_blob_as_string(&print_blob))
+        };
+
+        Ok((validated, errors))
+    }
+}
+
+#[derive(Debug)]
+pub struct Dxil {
+    dxil_lib: Library,
+}
+
+impl Dxil {
+    pub fn new() -> Self {
+        let dxil_lib = Library::new("dxil.dll").expect("Failed to load dxil.dll");
+        Self { dxil_lib }
+    }
+
+    fn get_dxc_create_instance(&self) -> Symbol<DxcCreateInstanceProc> {
+        unsafe { self.dxil_lib.get(b"DxcCreateInstance\0").unwrap() }
+    }
+
+    pub fn create_validator(&self) -> Result<DxcValidator, HRESULT> {
+        // Currently need DxcLibrary for blob manipulation
+        let dxc = Dxc::new();
+        let library = dxc.create_library()?;
+        let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
+        return_hr!(
+            self.get_dxc_create_instance()(
+                &CLSID_DxcValidator,
+                &IID_IDxcValidator,
+                validator.as_mut_ptr(),
+            ),
+            DxcValidator::new(validator, dxc, library)
+        );
+    }
+}
