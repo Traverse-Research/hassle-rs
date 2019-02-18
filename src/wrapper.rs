@@ -397,6 +397,13 @@ pub struct DxcValidator {
     library: DxcLibrary,
 }
 
+impl Drop for DxcValidator {
+    fn drop(&mut self) {
+        // Release library explicitly (it depends on dxc)
+        self.library = DxcLibrary::new(ComPtr::new());
+    }
+}
+
 pub type DxcValidatorVersion = (u32, u32);
 
 // https://www.wihlidal.com/blog/pipeline/2018-09-16-dxil-signing-post-compile/
