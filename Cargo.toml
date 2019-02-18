@@ -5,7 +5,6 @@ authors = ["Jasper-Bekkers <bekkers@gmail.com>"]
 edition = "2018"
 description = "This crate provides an FFI layer and idiomatic rust wrappers for the new DXC hlsl compiler."
 license = "MIT"
-license-file = "LICENSE"
 readme = "README.md"
 homepage = "https://github.com/Jasper-Bekkers/hassle-rs"
 repository = "https://github.com/Jasper-Bekkers/hassle-rs"
