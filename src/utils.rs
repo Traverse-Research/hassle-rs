@@ -64,3 +64,24 @@ pub fn compile_hlsl(
         }
     }
 }
+
+/// Helper function to validate a DXIL binary independant from the compilation process,
+/// this function expected `dxcompiler.dll` and `dxil.dll` to be available in the current
+/// execution environment.
+pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, String> {
+    let dxc = Dxc::new();
+    let dxil = Dxil::new();
+
+    let validator = dxil.create_validator().unwrap();
+    let library = dxc.create_library().unwrap();
+
+    let blob_encoding = library.create_blob_with_encoding(&data).unwrap();
+
+    match validator.validate(blob_encoding.into()) {
+        Ok(result) => Ok(result.get_result().unwrap().to_vec()),
+        Err(result) => {
+            let error_blob = result.0.get_error_buffer().unwrap();
+            Err(library.get_blob_as_string(&error_blob))
+        }
+    }
+}
