@@ -33,6 +33,10 @@ More info: https://www.wihlidal.com/blog/pipeline/2018-09-16-dxil-signing-post-c
 
 Licensed under MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses/MIT)
 
+## Contibutions
+
+ - Graham Wihlidal
+
 ## Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
