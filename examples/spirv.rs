@@ -10,6 +10,7 @@ fn main() {
             let module = load_bytes(spirv).unwrap();
             println!("{}", module.disassemble());
         }
+        // Could very well happen that one needs to recompile or download a dxcompiler.dll
         Err(s) => panic!("Failed to compile to SPIR-V: {}", s),
     }
 }
