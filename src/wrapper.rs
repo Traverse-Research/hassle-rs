@@ -393,27 +393,13 @@ impl Dxc {
 #[derive(Debug)]
 pub struct DxcValidator {
     inner: ComPtr<IDxcValidator>,
-    dxc: Dxc,
-    library: DxcLibrary,
-}
-
-impl Drop for DxcValidator {
-    fn drop(&mut self) {
-        // Release library explicitly (it depends on dxc)
-        self.library = DxcLibrary::new(ComPtr::new());
-    }
 }
 
 pub type DxcValidatorVersion = (u32, u32);
 
-// https://www.wihlidal.com/blog/pipeline/2018-09-16-dxil-signing-post-compile/
 impl DxcValidator {
-    fn new(inner: ComPtr<IDxcValidator>, dxc: Dxc, library: DxcLibrary) -> Self {
-        Self {
-            inner,
-            dxc,
-            library,
-        }
+    fn new(inner: ComPtr<IDxcValidator>) -> Self {
+        Self { inner }
     }
 
     pub fn version(&self) -> Result<DxcValidatorVersion, HRESULT> {
@@ -437,7 +423,10 @@ impl DxcValidator {
         }
     }
 
-    pub fn validate(&mut self, blob: DxcBlob) -> Result<(DxcBlob, String), HRESULT> {
+    pub fn validate(
+        &self,
+        blob: DxcBlob,
+    ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
         let result_hr = unsafe {
             self.inner.validate(
@@ -446,28 +435,15 @@ impl DxcValidator {
                 result.as_mut_ptr(),
             )
         };
-        if result_hr != 0 {
-            //Failed to validate dxil container
-            return Err(result_hr);
-        }
 
         let mut validate_status = 0u32;
-        let result_hr = unsafe { result.get_status(&mut validate_status) };
-        if result_hr != 0 {
-            // Failed to get dxil validate status
-            return Err(result_hr);
-        }
+        unsafe { result.get_status(&mut validate_status) };
 
-        let (blob, errors) = if validate_status == 0 {
-            (blob, String::new())
+        if result_hr == 0 && validate_status == 0 {
+            Ok(DxcOperationResult::new(result))
         } else {
-            // The dxil container failed validation
-            let result = DxcOperationResult::new(result);
-            let print_blob = result.get_error_buffer()?;
-            (blob, self.library.get_blob_as_string(&print_blob))
-        };
-
-        Ok((blob, errors))
+            Err((DxcOperationResult::new(result), result_hr))
+        }
     }
 }
 
@@ -487,9 +463,6 @@ impl Dxil {
     }
 
     pub fn create_validator(&self) -> Result<DxcValidator, HRESULT> {
-        // Currently need DxcLibrary for blob manipulation
-        let dxc = Dxc::new();
-        let library = dxc.create_library()?;
         let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
         return_hr!(
             self.get_dxc_create_instance()(
@@ -497,7 +470,7 @@ impl Dxil {
                 &IID_IDxcValidator,
                 validator.as_mut_ptr(),
             ),
-            DxcValidator::new(validator, dxc, library)
+            DxcValidator::new(validator)
         );
     }
 }
