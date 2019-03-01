@@ -295,6 +295,21 @@ impl DxcLibrary {
         Self { inner }
     }
 
+    pub fn create_blob_with_encoding(&self, data: &[u8]) -> Result<DxcBlobEncoding, HRESULT> {
+        let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
+        return_hr!(
+            unsafe {
+                self.inner.create_blob_with_encoding_from_pinned(
+                    data.as_ptr() as *const c_void,
+                    data.len() as u32,
+                    0, // Binary; no code page
+                    blob.as_mut_ptr(),
+                )
+            },
+            DxcBlobEncoding::new(blob)
+        );
+    }
+
     pub fn create_blob_with_encoding_from_str(
         &self,
         text: &str,
@@ -354,7 +369,7 @@ impl Dxc {
         let mut compiler: ComPtr<IDxcCompiler2> = ComPtr::new();
         return_hr!(
             self.get_dxc_create_instance()(
-                &CLSDI_DxcCompiler,
+                &CLSID_DxcCompiler,
                 &IID_IDxcCompiler2,
                 compiler.as_mut_ptr(),
             ),
@@ -371,6 +386,88 @@ impl Dxc {
                 library.as_mut_ptr(),
             ),
             DxcLibrary::new(library)
+        );
+    }
+}
+
+#[derive(Debug)]
+pub struct DxcValidator {
+    inner: ComPtr<IDxcValidator>,
+}
+
+pub type DxcValidatorVersion = (u32, u32);
+
+impl DxcValidator {
+    fn new(inner: ComPtr<IDxcValidator>) -> Self {
+        Self { inner }
+    }
+
+    pub fn version(&self) -> Result<DxcValidatorVersion, HRESULT> {
+        let mut version: ComPtr<IDxcVersionInfo> = ComPtr::new();
+
+        let result_hr = unsafe {
+            self.inner
+                .query_interface(&IID_IDxcVersionInfo, version.as_mut_ptr())
+        };
+
+        if result_hr != 0 {
+            return Err(result_hr);
+        }
+
+        let mut major = 0;
+        let mut minor = 0;
+
+        return_hr! {
+            unsafe { version.get_version(&mut major, &mut minor) },
+            (major, minor)
+        }
+    }
+
+    pub fn validate(&self, blob: DxcBlob) -> Result<DxcBlob, (DxcOperationResult, HRESULT)> {
+        let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
+        let result_hr = unsafe {
+            self.inner.validate(
+                blob.inner.as_ptr(),
+                DXC_VALIDATOR_FLAGS_IN_PLACE_EDIT,
+                result.as_mut_ptr(),
+            )
+        };
+
+        let mut validate_status = 0u32;
+        unsafe { result.get_status(&mut validate_status) };
+
+        if result_hr == 0 && validate_status == 0 {
+            Ok(blob)
+        } else {
+            Err((DxcOperationResult::new(result), result_hr))
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Dxil {
+    dxil_lib: Library,
+}
+
+impl Dxil {
+    pub fn new() -> Self {
+        let dxil_lib = Library::new("dxil.dll").expect("Failed to load dxil.dll");
+        Self { dxil_lib }
+    }
+
+    fn get_dxc_create_instance(&self) -> Symbol<DxcCreateInstanceProc> {
+        unsafe { self.dxil_lib.get(b"DxcCreateInstance\0").unwrap() }
+    }
+
+    pub fn create_validator(&self) -> Result<DxcValidator, HRESULT> {
+        let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
+        return_hr!(
+            self.get_dxc_create_instance()(
+                &CLSID_DxcValidator,
+                &IID_IDxcValidator,
+                validator.as_mut_ptr(),
+            ),
+            DxcValidator::new(validator)
         );
     }
 }
