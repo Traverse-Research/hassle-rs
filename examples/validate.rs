@@ -6,6 +6,8 @@ pub struct MinimalHeader {
     hash_digest: [u32; 4],
 }
 
+// zero_digest & get_digest from https://github.com/gwihlidal/dxil-signing/blob/master/rust/src/main.rs
+
 fn zero_digest(buffer: &mut [u8]) -> () {
     let buffer_ptr: *mut u8 = buffer.as_mut_ptr();
     let header_ptr: *mut MinimalHeader = buffer_ptr as *mut _;
