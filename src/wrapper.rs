@@ -423,10 +423,7 @@ impl DxcValidator {
         }
     }
 
-    pub fn validate(
-        &self,
-        blob: DxcBlob,
-    ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
+    pub fn validate(&self, blob: DxcBlob) -> Result<DxcBlob, (DxcOperationResult, HRESULT)> {
         let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
         let result_hr = unsafe {
             self.inner.validate(
@@ -440,7 +437,7 @@ impl DxcValidator {
         unsafe { result.get_status(&mut validate_status) };
 
         if result_hr == 0 && validate_status == 0 {
-            Ok(DxcOperationResult::new(result))
+            Ok(blob)
         } else {
             Err((DxcOperationResult::new(result), result_hr))
         }

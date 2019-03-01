@@ -26,3 +26,6 @@ default-target = "x86_64-pc-windows-msvc"
 libloading = "0.5.0"
 com-rs = "0.2.0"
 winapi = "0.3.6"
+
+[dev-dependencies]
+rspirv = "0.5.4"

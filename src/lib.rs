@@ -34,5 +34,5 @@ pub mod utils;
 pub mod wrapper;
 
 pub use crate::ffi::*;
-pub use crate::utils::*;
+pub use crate::utils::{compile_hlsl, validate_dxil};
 pub use crate::wrapper::*;

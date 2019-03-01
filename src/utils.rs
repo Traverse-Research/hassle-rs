@@ -78,7 +78,7 @@ pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, String> {
     let blob_encoding = library.create_blob_with_encoding(&data).unwrap();
 
     match validator.validate(blob_encoding.into()) {
-        Ok(result) => Ok(result.get_result().unwrap().to_vec()),
+        Ok(blob) => Ok(blob.to_vec()),
         Err(result) => {
             let error_blob = result.0.get_error_buffer().unwrap();
             Err(library.get_blob_as_string(&error_blob))
