@@ -33,7 +33,7 @@ pub fn compile_hlsl(
     target_profile: &str,
     args: &[&str],
     defines: &[(&str, Option<&str>)],
-) -> Result<Vec<u32>, String> {
+) -> Result<Vec<u8>, String> {
     let dxc = Dxc::new();
 
     let compiler = dxc.create_compiler().unwrap();
