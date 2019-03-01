@@ -417,28 +417,23 @@ impl DxcValidator {
     }
 
     pub fn version(&self) -> Result<DxcValidatorVersion, HRESULT> {
-        // TODO:
-        /*iid!(pub IID_IDxcVersionInfo = 0xb04f5b50, 0x2059, 0x4f12, 0xa8, 0xff, 0xa1, 0xe0, 0xcd, 0xe1, 0xcc, 0x7e);
-        com_interface! {
-            interface IDxcVersionInfo: IUnknown{
-                iid: IID_IDxcVersionInfo,
-                vtable: IDxcVersionInfoVtbl,
+        let mut version: ComPtr<IDxcVersionInfo> = ComPtr::new();
 
-                fn get_version(major: *mut u32, minor: *mut u32) -> HRESULT;
-                fn get_flags(flags: *mut u32) -> HRESULT;
-            }
-        }*/
-        Ok((1, 3))
-    }
+        let result_hr = unsafe {
+            self.inner
+                .query_interface(&IID_IDxcVersionInfo, version.as_mut_ptr())
+        };
 
-    pub fn validate_slice(&mut self, data: &[u8]) -> Result<(Vec<u8>, String), HRESULT> {
-        let blob_encoding = self.library.create_blob_with_encoding(data)?;
-        let blob: DxcBlob = blob_encoding.into();
-        let (blob, errors) = self.validate(blob)?;
-        if errors.is_empty() {
-            Ok((blob.to_vec(), String::new()))
-        } else {
-            Ok((Vec::new(), errors))
+        if result_hr != 0 {
+            return Err(result_hr);
+        }
+
+        let mut major = 0;
+        let mut minor = 0;
+
+        return_hr! {
+            unsafe { version.get_version(&mut major, &mut minor) },
+            (major, minor)
         }
     }
 
