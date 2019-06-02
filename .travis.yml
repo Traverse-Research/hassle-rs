@@ -10,6 +10,7 @@ matrix:
 
   include:
     - rust: stable
+      os: windows
 
     - name: "rustfmt"
       rust: stable
@@ -19,13 +20,12 @@ matrix:
     - name: "warnings"
       rust: stable
       script: cargo check --all
+      os: windows
 
     - name: "release"
       rust: stable
+      os: windows
       script:
         - cargo build --verbose --all --release
-
-    - os: windows
-
 script:
 - cargo build --all --verbose
