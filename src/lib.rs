@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+#![allow(non_upper_case_globals)]
+
 //! # Hassle
 //!
 //! This crate provides an FFI layer and idiomatic rust wrappers for the new [DirectXShaderCompiler](https://github.com/Microsoft/DirectXShaderCompiler) library.
