@@ -5,15 +5,18 @@ cache: cargo
 matrix:
   allow_failures:
     - rust: nightly
-    - os: windows
   fast_finish: true
 
   include:
+    - rust: nightly
+      os: windows
+
     - rust: stable
       os: windows
 
     - name: "rustfmt"
       rust: stable
+      os: windows
       before_script: rustup component add rustfmt-preview
       script: cargo fmt --all -- --check
 
