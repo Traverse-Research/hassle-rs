@@ -1,0 +1,31 @@
+language: rust
+sudo: false
+cache: cargo
+
+matrix:
+  allow_failures:
+    - rust: nightly
+    - os: windows
+  fast_finish: true
+
+  include:
+    - rust: stable
+
+    - name: "rustfmt"
+      rust: stable
+      before_script: rustup component add rustfmt-preview
+      script: cargo fmt --all -- --check
+
+    - name: "warnings"
+      rust: stable
+      script: cargo check --all
+
+    - name: "release"
+      rust: stable
+      script:
+        - cargo build --verbose --all --release
+
+    - os: windows
+
+script:
+- cargo build --all --verbose

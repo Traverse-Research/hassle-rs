@@ -1,8 +1,9 @@
 hassle-rs
 ========
+[![hassle on travis-ci.com](https://travis-ci.com/Jasper-Bekkers/hassle-rs.svg?branch=master)](https://travis-ci.com/Jasper-Bekkers/hassle-rs)
 [![Latest version](https://img.shields.io/crates/v/hassle-rs.svg)](https://crates.io/crates/hassle-rs)
 [![Documentation](https://docs.rs/hassle-rs/badge.svg)](https://docs.rs/hassle-rs)
-[![](https://tokei.rs/b1/github/Jasper-Bekkers/hassle-rs)](https://github.com/Jasper-Bekkers/hassle-rs)
+[![Lines of code](https://tokei.rs/b1/github/Jasper-Bekkers/hassle-rs)](https://github.com/Jasper-Bekkers/hassle-rs)
 ![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 
 This crate provides an FFI layer and idiomatic rust wrappers for the new [DirectXShaderCompiler](https://github.com/Microsoft/DirectXShaderCompiler) library.
