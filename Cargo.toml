@@ -26,6 +26,10 @@ default-target = "x86_64-pc-windows-msvc"
 libloading = "0.5.0"
 com-rs = "0.2.0"
 winapi = "0.3.6"
+bitflags = "1.0.4"
 
 [dev-dependencies]
 rspirv = "0.5.4"
+
+[features]
+default = ["winapi/wtypes", "winapi/oleauto"]

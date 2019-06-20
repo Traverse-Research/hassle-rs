@@ -31,9 +31,17 @@
 //!     ],
 //! );
 //! ```
+
+#[macro_use]
+extern crate bitflags;
+
 pub mod ffi;
 pub mod utils;
+
+#[macro_use]
 pub mod wrapper;
+
+pub mod intellisense;
 
 pub use crate::ffi::*;
 pub use crate::utils::{compile_hlsl, validate_dxil};
