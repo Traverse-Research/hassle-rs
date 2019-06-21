@@ -25,5 +25,5 @@ fn main() {
 
     let cursor = translation_unit.get_cursor().unwrap();
 
-    let result = intellisense::utils::print_cursor_tree(&cursor);
+    let result = intellisense::utils::print_cursor_tree(&cursor, &source);
 }

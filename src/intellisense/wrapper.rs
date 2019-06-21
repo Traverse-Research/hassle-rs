@@ -4,6 +4,8 @@ use com_rs::ComPtr;
 use winapi::shared::winerror::HRESULT;
 use winapi::shared::wtypes::BSTR;
 use winapi::shared::ntdef::LPSTR;
+use std::ffi::CString;
+use std::os::raw::c_char;
 
 #[derive(Debug)]
 pub struct DxcIntellisense {
@@ -40,16 +42,23 @@ impl DxcIntellisense {
         file_name: &[u8],
         contents: &[u8],
     ) -> Result<DxcUnsavedFile, HRESULT> {
-        use winapi::shared::ntdef::LPCSTR;
+
+        let c_file_name = match CString::new(file_name) {
+            Ok(cs) => cs,
+            Err(_) => return Err(-1)
+        };
+
+        let c_contents = match CString::new(contents) {
+            Ok(cs) => cs,
+            Err(_) => return Err(-1)
+        };
 
         let mut file: ComPtr<IDxcUnsavedFile> = ComPtr::new();
         unsafe {
-            let file_name_ptr = (file_name.as_ptr()) as LPCSTR;
-            let contents_ptr = (contents.as_ptr()) as LPCSTR;
             return_hr!(
                 self.inner.create_unsaved_file(
-                    file_name_ptr,
-                    contents_ptr,
+                    c_file_name.as_ptr(),
+                    c_contents.as_ptr(),
                     contents.len() as u32,
                     file.as_mut_ptr()
                 ),
@@ -78,23 +87,37 @@ impl DxcIndex {
         unsaved_files: &[&DxcUnsavedFile],
         options: DxcTranslationUnitFlags,
     ) -> Result<DxcTranslationUnit, HRESULT> {
+
+        let c_source_filename = match CString::new(source_filename) {
+            Ok(cs) => cs,
+            Err(_) => return Err(-1)
+        };
+
         let mut uf = vec![];
 
         for unsaved_file in unsaved_files {
             uf.push(unsaved_file.inner.as_ptr());
         }
 
-        let mut cliargs = vec![];
-
-        for arg in args {
-            cliargs.push(arg.as_ptr());
-        }
-
-        let mut tu: ComPtr<IDxcTranslationUnit> = ComPtr::new();
         unsafe {
+
+            let mut c_args: Vec<CString> = vec![];
+            let mut cliargs = vec![];
+
+            for arg in args.into_iter() {
+                let c_arg = match CString::new(*arg) {
+                    Ok(cs) => cs,
+                    Err(_) => return Err(-1)
+                };
+
+                cliargs.push(c_arg.as_ptr() as *const u8);
+                c_args.push(c_arg);
+            }
+
+            let mut tu: ComPtr<IDxcTranslationUnit> = ComPtr::new();
             return_hr!(
                 self.inner.parse_translation_unit(
-                    source_filename.as_ptr(),
+                    c_source_filename.as_ptr() as *const u8,
                     cliargs.as_ptr(),
                     cliargs.len() as i32,
                     uf.as_ptr(),
@@ -463,6 +486,16 @@ pub struct DxcType {
 impl DxcType {
     pub fn new(inner: ComPtr<IDxcType>) -> Self {
         DxcType { inner }
+    }
+
+    pub fn get_spelling(&self) -> Result<String, HRESULT> {
+        unsafe {
+            let mut spelling: LPSTR = std::ptr::null_mut();
+            return_hr!(
+                self.inner.GetSpelling(&mut spelling),
+                crate::intellisense::utils::from_lpstr(spelling)?
+            );
+        }
     }
 }
 
