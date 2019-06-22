@@ -92,14 +92,100 @@ impl DxcOperationResult {
     }
 }
 
+pub trait DxcIncludeHandler {
+    fn load_source(&self, filename: String) -> Option<String>;
+}
+
+#[repr(C)]
+struct DxcIncludeHandlerWrapperVtbl {
+    query_interface: extern "stdcall" fn(
+        *const com_rs::IUnknown,
+        &com_rs::IID,
+        *mut *mut core::ffi::c_void,
+    ) -> com_rs::HResult,
+    add_ref: extern "stdcall" fn(*const com_rs::IUnknown) -> u32,
+    release: extern "stdcall" fn(*const com_rs::IUnknown) -> u32,
+    load_source:
+        extern "stdcall" fn(*mut com_rs::IUnknown, LPCWSTR, *mut *mut IDxcBlob) -> com_rs::HResult,
+}
+
+#[repr(C)]
+struct DxcIncludeHandlerWrapper<'a> {
+    vtable: Box<DxcIncludeHandlerWrapperVtbl>,
+    handler: Box<dyn DxcIncludeHandler>,
+    blobs: Vec<DxcBlobEncoding>,
+    library: &'a DxcLibrary,
+}
+
+impl<'a> DxcIncludeHandlerWrapper<'a> {
+    extern "stdcall" fn query_interface(
+        _me: *const com_rs::IUnknown,
+        _rrid: &com_rs::IID,
+        _ppv_obj: *mut *mut core::ffi::c_void,
+    ) -> com_rs::HResult {
+        0 // dummy impl
+    }
+
+    extern "stdcall" fn add_ref(_me: *const com_rs::IUnknown) -> u32 {
+        0 // dummy impl
+    }
+
+    extern "stdcall" fn release(_me: *const com_rs::IUnknown) -> u32 {
+        0 // dummy impl
+    }
+
+    extern "stdcall" fn load_source(
+        me: *mut com_rs::IUnknown,
+        filename: LPCWSTR,
+        include_source: *mut *mut IDxcBlob,
+    ) -> com_rs::HResult {
+        let me = me as *mut DxcIncludeHandlerWrapper;
+
+        let filename = crate::utils::from_wide(filename as *mut _);
+
+        let source = unsafe { &(*me).handler.load_source(filename) };
+
+        if let Some(source) = source {
+            let mut blob = unsafe {
+                (*me)
+                    .library
+                    .create_blob_with_encoding_from_str(&source)
+                    .unwrap()
+            };
+
+            unsafe {
+                blob.inner.add_ref(); // bump ref, release() called in Drop impl
+
+                *include_source = *blob.inner.as_mut_ptr();
+                (*me).blobs.push(blob);
+            }
+
+            0
+        } else {
+            -2147024894i32 // ERROR_FILE_NOT_FOUND / 0x80070002
+        }
+    }
+}
+
+impl<'a> Drop for DxcIncludeHandlerWrapper<'a> {
+    fn drop(&mut self) {
+        for b in &self.blobs {
+            unsafe {
+                b.inner.release();
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct DxcCompiler {
     inner: ComPtr<IDxcCompiler2>,
+    library: DxcLibrary,
 }
 
 impl DxcCompiler {
-    fn new(inner: ComPtr<IDxcCompiler2>) -> Self {
-        Self { inner }
+    fn new(inner: ComPtr<IDxcCompiler2>, library: DxcLibrary) -> Self {
+        Self { inner, library }
     }
 
     fn prep_defines(
@@ -133,6 +219,29 @@ impl DxcCompiler {
         }
     }
 
+    fn prep_include_handler(
+        library: &DxcLibrary,
+        include_handler: Option<Box<dyn DxcIncludeHandler>>,
+    ) -> Option<Box<DxcIncludeHandlerWrapper>> {
+        if let Some(include_handler) = include_handler {
+            let vtable = DxcIncludeHandlerWrapperVtbl {
+                query_interface: DxcIncludeHandlerWrapper::query_interface,
+                add_ref: DxcIncludeHandlerWrapper::add_ref,
+                release: DxcIncludeHandlerWrapper::release,
+                load_source: DxcIncludeHandlerWrapper::load_source,
+            };
+
+            Some(Box::new(DxcIncludeHandlerWrapper {
+                vtable: Box::new(vtable),
+                handler: include_handler,
+                blobs: vec![],
+                library,
+            }))
+        } else {
+            None
+        }
+    }
+
     pub fn compile(
         &self,
         blob: &DxcBlobEncoding,
@@ -140,6 +249,7 @@ impl DxcCompiler {
         entry_point: &str,
         target_profile: &str,
         args: &[&str],
+        include_handler: Option<Box<dyn DxcIncludeHandler>>,
         defines: &[(&str, Option<&str>)],
     ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
@@ -149,6 +259,8 @@ impl DxcCompiler {
         let mut wide_defines = vec![];
         let mut dxc_defines = vec![];
         Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
+
+        let handler_wrapper = Self::prep_include_handler(&self.library, include_handler);
 
         let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
         let result_hr = unsafe {
@@ -161,7 +273,7 @@ impl DxcCompiler {
                 dxc_args.len() as u32,
                 dxc_defines.as_ptr(),
                 dxc_defines.len() as u32,
-                std::ptr::null(),
+                handler_wrapper.map_or(std::ptr::null(), |v| Box::into_raw(v) as _),
                 result.as_mut_ptr(),
             )
         };
@@ -185,6 +297,7 @@ impl DxcCompiler {
         entry_point: &str,
         target_profile: &str,
         args: &[&str],
+        include_handler: Option<Box<dyn DxcIncludeHandler>>,
         defines: &[(&str, Option<&str>)],
     ) -> Result<(DxcOperationResult, String, DxcBlob), (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
@@ -194,6 +307,8 @@ impl DxcCompiler {
         let mut wide_defines = vec![];
         let mut dxc_defines = vec![];
         Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
+
+        let handler_wrapper = Self::prep_include_handler(&self.library, include_handler);
 
         let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
         let mut debug_blob: ComPtr<IDxcBlob> = ComPtr::new();
@@ -209,7 +324,7 @@ impl DxcCompiler {
                 dxc_args.len() as u32,
                 dxc_defines.as_ptr(),
                 dxc_defines.len() as u32,
-                std::ptr::null(),
+                handler_wrapper.map_or(std::ptr::null(), |v| Box::into_raw(v) as _),
                 result.as_mut_ptr(),
                 &mut debug_filename,
                 debug_blob.as_mut_ptr(),
@@ -237,6 +352,7 @@ impl DxcCompiler {
         blob: &DxcBlobEncoding,
         source_name: &str,
         args: &[&str],
+        include_handler: Option<Box<dyn DxcIncludeHandler>>,
         defines: &[(&str, Option<&str>)],
     ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
@@ -247,6 +363,8 @@ impl DxcCompiler {
         let mut dxc_defines = vec![];
         Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
 
+        let handler_wrapper = Self::prep_include_handler(&self.library, include_handler);
+
         let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
         let result_hr = unsafe {
             self.inner.preprocess(
@@ -256,7 +374,7 @@ impl DxcCompiler {
                 dxc_args.len() as u32,
                 dxc_defines.as_ptr(),
                 dxc_defines.len() as u32,
-                std::ptr::null(),
+                handler_wrapper.map_or(std::ptr::null(), |v| Box::into_raw(v) as _),
                 result.as_mut_ptr(),
             )
         };
@@ -373,7 +491,7 @@ impl Dxc {
                 &IID_IDxcCompiler2,
                 compiler.as_mut_ptr(),
             ),
-            DxcCompiler::new(compiler)
+            DxcCompiler::new(compiler, self.create_library().unwrap())
         );
     }
 

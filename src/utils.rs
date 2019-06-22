@@ -21,6 +21,22 @@ pub(crate) fn from_wide(wide: LPWSTR) -> String {
         .unwrap()
 }
 
+struct DefaultIncludeHandler {}
+
+impl DxcIncludeHandler for DefaultIncludeHandler {
+    fn load_source(&self, filename: String) -> Option<String> {
+        use std::io::Read;
+        match std::fs::File::open(filename) {
+            Ok(mut f) => {
+                let mut content = String::new();
+                f.read_to_string(&mut content).unwrap();
+                Some(content)
+            }
+            Err(_) => None,
+        }
+    }
+}
+
 /// Helper function to directly compile a HLSL shader to an intermediate language,
 /// this function expects `dxcompiler.dll` to be available in the current
 /// executable environment.
@@ -49,6 +65,7 @@ pub fn compile_hlsl(
         entry_point,
         target_profile,
         args,
+        Some(Box::new(DefaultIncludeHandler {})),
         defines,
     );
 
