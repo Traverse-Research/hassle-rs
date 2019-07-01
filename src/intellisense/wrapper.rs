@@ -476,6 +476,19 @@ impl DxcCursor {
             );
         }
     }
+
+    pub fn get_source<'a>(&self, source: &'a str) -> Result<&'a str, HRESULT> {
+        let range = self.get_extent()?;
+
+        let DxcSourceOffsets {
+            start_offset,
+            end_offset,
+        } = range.get_offsets()?;
+
+        let source_range = (start_offset as usize)..(end_offset as usize);
+
+        return Ok(&source[source_range]);
+    }
 }
 
 #[derive(Debug)]
