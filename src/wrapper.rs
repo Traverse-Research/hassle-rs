@@ -292,7 +292,7 @@ pub struct DxcLibrary {
 }
 
 impl DxcLibrary {
-    pub fn new(inner: ComPtr<IDxcLibrary>) -> Self {
+    fn new(inner: ComPtr<IDxcLibrary>) -> Self {
         Self { inner }
     }
 
@@ -362,7 +362,7 @@ impl Dxc {
         Self { dxc_lib }
     }
 
-    pub fn get_dxc_create_instance(&self) -> Symbol<DxcCreateInstanceProc> {
+    pub(crate) fn get_dxc_create_instance(&self) -> Symbol<DxcCreateInstanceProc> {
         unsafe { self.dxc_lib.get(b"DxcCreateInstance\0").unwrap() }
     }
 

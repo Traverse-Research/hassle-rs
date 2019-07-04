@@ -1,11 +1,10 @@
 use crate::intellisense::ffi::*;
 use crate::wrapper::Dxc;
 use com_rs::ComPtr;
+use std::ffi::CString;
+use winapi::shared::ntdef::LPSTR;
 use winapi::shared::winerror::HRESULT;
 use winapi::shared::wtypes::BSTR;
-use winapi::shared::ntdef::LPSTR;
-use std::ffi::CString;
-use std::os::raw::c_char;
 
 #[derive(Debug)]
 pub struct DxcIntellisense {
@@ -13,7 +12,7 @@ pub struct DxcIntellisense {
 }
 
 impl DxcIntellisense {
-    pub fn new(inner: ComPtr<IDxcIntelliSense>) -> Self {
+    fn new(inner: ComPtr<IDxcIntelliSense>) -> Self {
         Self { inner }
     }
 
@@ -42,15 +41,14 @@ impl DxcIntellisense {
         file_name: &[u8],
         contents: &[u8],
     ) -> Result<DxcUnsavedFile, HRESULT> {
-
         let c_file_name = match CString::new(file_name) {
             Ok(cs) => cs,
-            Err(_) => return Err(-1)
+            Err(_) => return Err(-1),
         };
 
         let c_contents = match CString::new(contents) {
             Ok(cs) => cs,
-            Err(_) => return Err(-1)
+            Err(_) => return Err(-1),
         };
 
         let mut file: ComPtr<IDxcUnsavedFile> = ComPtr::new();
@@ -74,7 +72,7 @@ pub struct DxcIndex {
 }
 
 impl DxcIndex {
-    pub fn new(inner: ComPtr<IDxcIndex>) -> Self {
+    fn new(inner: ComPtr<IDxcIndex>) -> Self {
         return Self { inner };
     }
 }
@@ -87,10 +85,9 @@ impl DxcIndex {
         unsaved_files: &[&DxcUnsavedFile],
         options: DxcTranslationUnitFlags,
     ) -> Result<DxcTranslationUnit, HRESULT> {
-
         let c_source_filename = match CString::new(source_filename) {
             Ok(cs) => cs,
-            Err(_) => return Err(-1)
+            Err(_) => return Err(-1),
         };
 
         let mut uf = vec![];
@@ -100,14 +97,13 @@ impl DxcIndex {
         }
 
         unsafe {
-
             let mut c_args: Vec<CString> = vec![];
             let mut cliargs = vec![];
 
             for arg in args.into_iter() {
                 let c_arg = match CString::new(*arg) {
                     Ok(cs) => cs,
-                    Err(_) => return Err(-1)
+                    Err(_) => return Err(-1),
                 };
 
                 cliargs.push(c_arg.as_ptr() as *const u8);
@@ -144,7 +140,7 @@ impl DxcUnsavedFile {
         }
     }
 
-    pub fn new(inner: ComPtr<IDxcUnsavedFile>) -> Self {
+    fn new(inner: ComPtr<IDxcUnsavedFile>) -> Self {
         DxcUnsavedFile { inner }
     }
 }
@@ -155,7 +151,7 @@ pub struct DxcTranslationUnit {
 }
 
 impl DxcTranslationUnit {
-    pub fn new(inner: ComPtr<IDxcTranslationUnit>) -> Self {
+    fn new(inner: ComPtr<IDxcTranslationUnit>) -> Self {
         DxcTranslationUnit { inner }
     }
 
@@ -186,7 +182,7 @@ pub struct DxcCursor {
 }
 
 impl DxcCursor {
-    pub fn new(inner: ComPtr<IDxcCursor>) -> Self {
+    fn new(inner: ComPtr<IDxcCursor>) -> Self {
         DxcCursor { inner }
     }
 
@@ -243,9 +239,9 @@ impl DxcCursor {
 
                     *ptr = *(result.offset(i as isize));
 
-                    let dxcCursor = DxcCursor::new(childcursor);
+                    let dxc_cursor = DxcCursor::new(childcursor);
 
-                    children.push(dxcCursor);
+                    children.push(dxc_cursor);
                 }
 
                 if result_length < max_children_count {
@@ -497,7 +493,7 @@ pub struct DxcType {
 }
 
 impl DxcType {
-    pub fn new(inner: ComPtr<IDxcType>) -> Self {
+    fn new(inner: ComPtr<IDxcType>) -> Self {
         DxcType { inner }
     }
 
@@ -518,7 +514,7 @@ pub struct DxcSourceLocation {
 }
 
 impl DxcSourceLocation {
-    pub fn new(inner: ComPtr<IDxcSourceLocation>) -> Self {
+    fn new(inner: ComPtr<IDxcSourceLocation>) -> Self {
         DxcSourceLocation { inner }
     }
 }
@@ -551,7 +547,7 @@ impl DxcSourceRange {
 }
 
 impl DxcSourceRange {
-    pub fn new(inner: ComPtr<IDxcSourceRange>) -> Self {
+    fn new(inner: ComPtr<IDxcSourceRange>) -> Self {
         DxcSourceRange { inner }
     }
 }
@@ -562,7 +558,7 @@ pub struct DxcFile {
 }
 
 impl DxcFile {
-    pub fn new(inner: ComPtr<IDxcFile>) -> Self {
+    fn new(inner: ComPtr<IDxcFile>) -> Self {
         DxcFile { inner }
     }
 }
