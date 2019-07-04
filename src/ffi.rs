@@ -46,7 +46,7 @@ com_interface! {
         fn create_blob_with_encoding_from_pinned(text: *const c_void, size: u32, code_page: u32, blob_encoding: *mut *mut IDxcBlobEncoding) -> HRESULT;
         fn create_blob_with_encoding_on_heap_copy(text: *const c_void, size: u32, code_page: u32, blob_encoding: *mut *mut IDxcBlobEncoding) -> HRESULT;
         fn create_blob_with_encoding_on_malloc(text: *const c_void, malloc: *const c_void, size: u32, code_page: u32, blob_encoding: *mut *mut IDxcBlobEncoding) -> HRESULT;
-        fn create_include_handler(include_handler: *const c_void) -> HRESULT;
+        fn create_include_handler(include_handler: *mut *mut c_void) -> HRESULT;
         fn create_stream_from_blob_read_only(blob: *const IDxcBlob, stream: *mut *mut c_void) -> HRESULT;
         fn get_blob_as_utf8(blob: *const IDxcBlob, blob_encoding: *mut *mut IDxcBlobEncoding) -> HRESULT;
         fn get_blob_as_utf16(blob: *const IDxcBlob, blob_encoding: *mut *mut IDxcBlobEncoding) -> HRESULT;
