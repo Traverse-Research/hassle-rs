@@ -194,7 +194,7 @@ impl DxcCursor {
             let mut children = vec![];
             return_hr!(
                 self.inner
-                    .GetChildren(skip, max_count, &mut result_length, &mut result),
+                    .get_children(skip, max_count, &mut result_length, &mut result),
                 {
                     for i in 0..result_length {
                         let mut childcursor = ComPtr::<IDxcCursor>::new();
@@ -221,7 +221,7 @@ impl DxcCursor {
             let mut result_length: u32 = 0;
 
             loop {
-                let hr = self.inner.GetChildren(
+                let hr = self.inner.get_children(
                     current_children_count,
                     max_children_count,
                     &mut result_length,
@@ -257,7 +257,7 @@ impl DxcCursor {
         unsafe {
             let mut range: ComPtr<IDxcSourceRange> = ComPtr::new();
             return_hr!(
-                self.inner.GetExtent(range.as_mut_ptr()),
+                self.inner.get_extent(range.as_mut_ptr()),
                 DxcSourceRange::new(range)
             );
         }
@@ -267,7 +267,7 @@ impl DxcCursor {
         unsafe {
             let mut location: ComPtr<IDxcSourceLocation> = ComPtr::new();
             return_hr!(
-                self.inner.GetLocation(location.as_mut_ptr()),
+                self.inner.get_location(location.as_mut_ptr()),
                 DxcSourceLocation::new(location)
             );
         }
@@ -277,7 +277,7 @@ impl DxcCursor {
         unsafe {
             let mut name: BSTR = std::ptr::null_mut();
             return_hr!(
-                self.inner.GetDisplayName(&mut name),
+                self.inner.get_display_name(&mut name),
                 crate::intellisense::utils::from_bstr(name)?
             );
         }
@@ -287,7 +287,7 @@ impl DxcCursor {
         unsafe {
             let mut name: BSTR = std::ptr::null_mut();
             return_hr!(
-                self.inner.GetFormattedName(formatting, &mut name),
+                self.inner.get_formatted_name(formatting, &mut name),
                 crate::intellisense::utils::from_bstr(name)?
             );
         }
@@ -298,7 +298,7 @@ impl DxcCursor {
             let mut name: BSTR = std::ptr::null_mut();
             return_hr!(
                 self.inner
-                    .GetQualifiedName(include_template_args, &mut name),
+                    .get_qualified_name(include_template_args, &mut name),
                 crate::intellisense::utils::from_bstr(name)?
             );
         }
@@ -307,7 +307,7 @@ impl DxcCursor {
     pub fn get_kind(&self) -> Result<DxcCursorKind, HRESULT> {
         unsafe {
             let mut cursor_kind: DxcCursorKind = DxcCursorKind::UnexposedDecl;
-            return_hr!(self.inner.GetKind(&mut cursor_kind), cursor_kind);
+            return_hr!(self.inner.get_kind(&mut cursor_kind), cursor_kind);
         }
     }
 
@@ -315,7 +315,7 @@ impl DxcCursor {
         unsafe {
             let mut cursor_kind_flags: DxcCursorKindFlags = DxcCursorKindFlags::None;
             return_hr!(
-                self.inner.GetKindFlags(&mut cursor_kind_flags),
+                self.inner.get_kind_flags(&mut cursor_kind_flags),
                 cursor_kind_flags
             );
         }
@@ -325,7 +325,7 @@ impl DxcCursor {
         unsafe {
             let mut inner = ComPtr::<IDxcCursor>::new();
             return_hr!(
-                self.inner.GetSemanticParent(inner.as_mut_ptr()),
+                self.inner.get_semantic_parent(inner.as_mut_ptr()),
                 DxcCursor::new(inner)
             );
         }
@@ -335,7 +335,7 @@ impl DxcCursor {
         unsafe {
             let mut inner = ComPtr::<IDxcCursor>::new();
             return_hr!(
-                self.inner.GetLexicalParent(inner.as_mut_ptr()),
+                self.inner.get_lexical_parent(inner.as_mut_ptr()),
                 DxcCursor::new(inner)
             );
         }
@@ -345,7 +345,7 @@ impl DxcCursor {
         unsafe {
             let mut inner = ComPtr::<IDxcType>::new();
             return_hr!(
-                self.inner.GetCursorType(inner.as_mut_ptr()),
+                self.inner.get_cursor_type(inner.as_mut_ptr()),
                 DxcType::new(inner)
             );
         }
@@ -354,7 +354,7 @@ impl DxcCursor {
     pub fn get_num_arguments(&self) -> Result<i32, HRESULT> {
         unsafe {
             let mut result: i32 = 0;
-            return_hr!(self.inner.GetNumArguments(&mut result), result);
+            return_hr!(self.inner.get_num_arguments(&mut result), result);
         }
     }
 
@@ -362,7 +362,7 @@ impl DxcCursor {
         unsafe {
             let mut inner = ComPtr::<IDxcCursor>::new();
             return_hr!(
-                self.inner.GetArgumentAt(index, inner.as_mut_ptr()),
+                self.inner.get_argument_at(index, inner.as_mut_ptr()),
                 DxcCursor::new(inner)
             );
         }
@@ -372,7 +372,7 @@ impl DxcCursor {
         unsafe {
             let mut inner = ComPtr::<IDxcCursor>::new();
             return_hr!(
-                self.inner.GetReferencedCursor(inner.as_mut_ptr()),
+                self.inner.get_referenced_cursor(inner.as_mut_ptr()),
                 DxcCursor::new(inner)
             );
         }
@@ -385,7 +385,7 @@ impl DxcCursor {
         unsafe {
             let mut inner = ComPtr::<IDxcCursor>::new();
             return_hr!(
-                self.inner.GetDefinitionCursor(inner.as_mut_ptr()),
+                self.inner.get_definition_cursor(inner.as_mut_ptr()),
                 DxcCursor::new(inner)
             );
         }
@@ -403,7 +403,7 @@ impl DxcCursor {
 
             let mut children = vec![];
             return_hr!(
-                self.inner.FindReferencesInFile(
+                self.inner.find_references_in_file(
                     file.inner.as_ptr(),
                     skip,
                     top,
@@ -431,7 +431,7 @@ impl DxcCursor {
         unsafe {
             let mut spelling: LPSTR = std::ptr::null_mut();
             return_hr!(
-                self.inner.GetSpelling(&mut spelling),
+                self.inner.get_spelling(&mut spelling),
                 crate::intellisense::utils::from_lpstr(spelling)?
             );
         }
@@ -441,23 +441,23 @@ impl DxcCursor {
         unsafe {
             let mut result: bool = false;
             return_hr!(
-                self.inner.IsEqualTo(other.inner.as_ptr(), &mut result),
+                self.inner.is_equal_to(other.inner.as_ptr(), &mut result),
                 result
             );
         }
     }
 
-    pub fn is_null(&self) -> Result<bool, HRESULT> {
+    pub fn is_null(&mut self) -> Result<bool, HRESULT> {
         unsafe {
             let mut result: bool = false;
-            return_hr!(self.inner.IsNull(&mut result), result);
+            return_hr!(IDxcCursor::is_null(&self.inner, &mut result), result);
         }
     }
 
     pub fn is_definition(&self) -> Result<bool, HRESULT> {
         unsafe {
             let mut result: bool = false;
-            return_hr!(self.inner.IsDefinition(&mut result), result);
+            return_hr!(self.inner.is_definition(&mut result), result);
         }
     }
 
@@ -467,7 +467,7 @@ impl DxcCursor {
             let mut inner = ComPtr::<IDxcCursor>::new();
             return_hr!(
                 self.inner
-                    .GetSnappedChild(location.inner.as_ptr(), inner.as_mut_ptr()),
+                    .get_snapped_child(location.inner.as_ptr(), inner.as_mut_ptr()),
                 DxcCursor::new(inner)
             );
         }
@@ -501,7 +501,7 @@ impl DxcType {
         unsafe {
             let mut spelling: LPSTR = std::ptr::null_mut();
             return_hr!(
-                self.inner.GetSpelling(&mut spelling),
+                self.inner.get_spelling(&mut spelling),
                 crate::intellisense::utils::from_lpstr(spelling)?
             );
         }
@@ -536,7 +536,7 @@ impl DxcSourceRange {
             let mut start_offset: u32 = 0;
             let mut end_offset: u32 = 0;
             return_hr!(
-                self.inner.GetOffsets(&mut start_offset, &mut end_offset),
+                self.inner.get_offsets(&mut start_offset, &mut end_offset),
                 DxcSourceOffsets {
                     start_offset,
                     end_offset

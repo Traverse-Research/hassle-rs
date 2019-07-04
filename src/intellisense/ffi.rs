@@ -65,40 +65,40 @@ bitflags! {
     pub struct  DxcTranslationUnitFlags : u32
     {
         // Used to indicate that no special translation-unit options are needed.
-     const   None = 0x0;
+        const   None = 0x0;
 
         // Used to indicate that the parser should construct a "detailed"
         // preprocessing record, including all macro definitions and instantiations.
-      const    DetailedPreprocessingRecord = 0x01;
+        const    DetailedPreprocessingRecord = 0x01;
 
         // Used to indicate that the translation unit is incomplete.
-     const     Incomplete = 0x02;
+        const     Incomplete = 0x02;
 
         // Used to indicate that the translation unit should be built with an
         // implicit precompiled header for the preamble.
-     const     PrecompiledPreamble = 0x04;
+        const     PrecompiledPreamble = 0x04;
 
         // Used to indicate that the translation unit should cache some
         // code-completion results with each reparse of the source file.
-     const     CacheCompletionResults = 0x08;
+        const     CacheCompletionResults = 0x08;
 
         // Used to indicate that the translation unit will be serialized with
         // SaveTranslationUnit.
-      const    ForSerialization = 0x10;
+        const    ForSerialization = 0x10;
 
         // DEPRECATED
-      const    CXXChainedPCH = 0x20;
+        const    CXXChainedPCH = 0x20;
 
         // Used to indicate that function/method bodies should be skipped while parsing.
-      const    SkipFunctionBodies = 0x40;
+        const    SkipFunctionBodies = 0x40;
 
         // Used to indicate that brief documentation comments should be
         // included into the set of code completions returned from this translation
         // unit.
-      const    IncludeBriefCommentsInCodeCompletion = 0x80;
+        const    IncludeBriefCommentsInCodeCompletion = 0x80;
 
         // Used to indicate that compilation should occur on the caller's thread.
-       const   UseCallerThread = 0x800;
+        const   UseCallerThread = 0x800;
     }
 }
 
@@ -107,27 +107,27 @@ bitflags! {
     pub struct  DxcDiagnosticDisplayOptions : u32
     {
         // Display the source-location information where the diagnostic was located.
-       const DisplaySourceLocation = 0x01;
+        const DisplaySourceLocation = 0x01;
 
         // If displaying the source-location information of the diagnostic,
         // also include the column number.
-      const   DisplayColumn = 0x02;
+        const   DisplayColumn = 0x02;
 
         // If displaying the source-location information of the diagnostic,
         // also include information about source ranges in a machine-parsable format.
-      const   DisplaySourceRanges = 0x04;
+        const   DisplaySourceRanges = 0x04;
 
         // Display the option name associated with this diagnostic, if any.
-       const  DisplayOption = 0x08;
+        const  DisplayOption = 0x08;
 
         // Display the category number associated with this diagnostic, if any.
-       const  DisplayCategoryId = 0x10;
+        const  DisplayCategoryId = 0x10;
 
         // Display the category name associated with this diagnostic, if any.
-       const  DisplayCategoryName = 0x20;
+        const  DisplayCategoryName = 0x20;
 
         // Display the severity of the diagnostic message.
-       const  DisplaySeverity = 0x200;
+        const  DisplaySeverity = 0x200;
     }
 }
 
@@ -518,15 +518,15 @@ com_interface! {
         iid: IID_IDxcDiagnostic,
         vtable: IDxcDiagnosticVtbl,
 
-        fn FormatDiagnostic(options: DxcDiagnosticDisplayOptions, result: *mut LPSTR) -> HRESULT;
-        fn GetSeverity(result: *mut DxcDiagnosticSeverity) -> HRESULT;
-        fn GetLocation(result: *mut *mut IDxcSourceLocation) -> HRESULT;
-        fn GetSpelling(result: *mut LPSTR) -> HRESULT;
-        fn GetCategoryText(result: *mut LPSTR) -> HRESULT;
-        fn GetNumRanges(result: *mut u32) -> HRESULT;
-        fn GetRangeAt(index: u32, result: *mut *mut IDxcSourceRange) -> HRESULT;
-        fn GetNumFixIts(result: *mut u32) -> HRESULT;
-        fn GetFixItAt(index: u32, replacementRange: *mut *mut IDxcSourceRange, text: *mut LPSTR) -> HRESULT;
+        fn format_diagnostic(options: DxcDiagnosticDisplayOptions, result: *mut LPSTR) -> HRESULT;
+        fn get_severity(result: *mut DxcDiagnosticSeverity) -> HRESULT;
+        fn get_location(result: *mut *mut IDxcSourceLocation) -> HRESULT;
+        fn get_spelling(result: *mut LPSTR) -> HRESULT;
+        fn get_category_text(result: *mut LPSTR) -> HRESULT;
+        fn get_num_ranges(result: *mut u32) -> HRESULT;
+        fn get_range_at(index: u32, result: *mut *mut IDxcSourceRange) -> HRESULT;
+        fn get_num_fix_its(result: *mut u32) -> HRESULT;
+        fn get_fix_it_at(index: u32, replacement_range: *mut *mut IDxcSourceRange, text: *mut LPSTR) -> HRESULT;
     }
 }
 
@@ -536,9 +536,9 @@ com_interface! {
         iid: IID_IDxcInclusion,
         vtable: IDxcInclusionVtbl,
 
-        fn GetIncludedFile(result: *mut *mut IDxcFile) -> HRESULT;
-        fn GetStackLength(result: *mut u32) -> HRESULT;
-        fn GetStackItem(index: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
+        fn get_included_file(result: *mut *mut IDxcFile) -> HRESULT;
+        fn get_stack_length(result: *mut u32) -> HRESULT;
+        fn get_stack_item(index: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
     }
 }
 
@@ -548,13 +548,13 @@ com_interface! {
         iid: IID_IDxcToken,
         vtable: IDxcTokenVtbl,
 
-        fn GetKind(value: *mut DxcTokenKind) -> HRESULT;
+        fn get_kind(value: *mut DxcTokenKind) -> HRESULT;
 
-        fn GetLocation(value: *mut *mut IDxcSourceLocation) -> HRESULT;
+        fn get_location(value: *mut *mut IDxcSourceLocation) -> HRESULT;
 
-        fn GetExtent(value: *mut *mut IDxcSourceRange) -> HRESULT;
+        fn get_extent(value: *mut *mut IDxcSourceRange) -> HRESULT;
 
-        fn GetSpelling(value: *mut LPSTR) -> HRESULT;
+        fn get_spelling(value: *mut LPSTR) -> HRESULT;
     }
 }
 
@@ -563,9 +563,9 @@ com_interface! {
     interface IDxcType: IUnknown{
         iid: IID_IDxcType,
         vtable: IDxcTypeVtbl,
-        fn GetSpelling(result: *mut LPSTR) -> HRESULT;
-        fn IsEqualTo(other: *const IDxcType, result: *mut bool) -> HRESULT;
-        fn GetKind(result: *mut IDxcType) -> HRESULT;
+        fn get_spelling(result: *mut LPSTR) -> HRESULT;
+        fn is_equal_to(other: *const IDxcType, result: *mut bool) -> HRESULT;
+        fn get_kind(result: *mut IDxcType) -> HRESULT;
     }
 }
 
@@ -575,9 +575,9 @@ com_interface! {
         iid: IID_IDxcSourceLocation,
         vtable: IDxcSourceLocationVtbl,
 
-        fn IsEqualTo(other: *const IDxcSourceLocation, result: *mut bool) ->HRESULT;
-        fn GetSpellingLocation(file: *mut *mut IDxcFile, line: *mut u32, col: *mut u32, offset: *mut u32) ->HRESULT;
-        fn IsNull(result: *mut bool) ->HRESULT;
+        fn is_equal_to(other: *const IDxcSourceLocation, result: *mut bool) ->HRESULT;
+        fn get_spelling_location(file: *mut *mut IDxcFile, line: *mut u32, col: *mut u32, offset: *mut u32) ->HRESULT;
+        fn is_null(result: *mut bool) ->HRESULT;
     }
 }
 
@@ -587,10 +587,10 @@ com_interface! {
         iid: IID_IDxcSourceRange,
         vtable: IDxcSourceRangeVtbl,
 
-        fn IsNull(value: *mut bool) -> HRESULT;
-        fn GetStart(value: *mut *mut IDxcSourceLocation) -> HRESULT;
-        fn GetEnd(value: *mut *mut IDxcSourceLocation) -> HRESULT;
-        fn GetOffsets(startOffset: *mut u32, endOffset: *mut u32) -> HRESULT;
+        fn is_null(value: *mut bool) -> HRESULT;
+        fn get_start(value: *mut *mut IDxcSourceLocation) -> HRESULT;
+        fn get_end(value: *mut *mut IDxcSourceLocation) -> HRESULT;
+        fn get_offsets(start_offset: *mut u32, end_offset: *mut u32) -> HRESULT;
     }
 }
 
@@ -600,56 +600,56 @@ com_interface! {
         iid: IID_IDxcCursor,
         vtable: IDxcCursorVtbl,
 
-        fn GetExtent(range: *mut *mut IDxcSourceRange) -> HRESULT;
+        fn get_extent(range: *mut *mut IDxcSourceRange) -> HRESULT;
 
-        fn GetLocation(result: *mut *mut IDxcSourceLocation) -> HRESULT;
+        fn get_location(result: *mut *mut IDxcSourceLocation) -> HRESULT;
 
-        fn GetKind(result: *mut DxcCursorKind) -> HRESULT;
+        fn get_kind(result: *mut DxcCursorKind) -> HRESULT;
 
-        fn GetKindFlags(result: *mut DxcCursorKindFlags) -> HRESULT;
+        fn get_kind_flags(result: *mut DxcCursorKindFlags) -> HRESULT;
 
-        fn GetSemanticParent(result: *mut*mut IDxcCursor) -> HRESULT;
+        fn get_semantic_parent(result: *mut*mut IDxcCursor) -> HRESULT;
 
-        fn GetLexicalParent(result:*mut*mut IDxcCursor) -> HRESULT;
+        fn get_lexical_parent(result:*mut*mut IDxcCursor) -> HRESULT;
 
-        fn GetCursorType(result:*mut*mut IDxcType) -> HRESULT;
+        fn get_cursor_type(result:*mut*mut IDxcType) -> HRESULT;
 
-        fn GetNumArguments(result:*mut i32) -> HRESULT;
+        fn get_num_arguments(result:*mut i32) -> HRESULT;
 
-        fn GetArgumentAt(index: i32, result: *mut *mut IDxcCursor) -> HRESULT;
+        fn get_argument_at(index: i32, result: *mut *mut IDxcCursor) -> HRESULT;
 
-        fn GetReferencedCursor(result:*mut *mut IDxcCursor) -> HRESULT;
+        fn get_referenced_cursor(result:*mut *mut IDxcCursor) -> HRESULT;
 
         /// <summary>For a cursor that is either a reference to or a declaration of some entity, retrieve a cursor that describes the definition of that entity.</summary>
         /// <remarks>Some entities can be declared multiple times within a translation unit, but only one of those declarations can also be a definition.</remarks>
         /// <returns>A cursor to the definition of this entity; nullptr if there is no definition in this translation unit.</returns>
-        fn GetDefinitionCursor(result:*mut *mut IDxcCursor) -> HRESULT;
+        fn get_definition_cursor(result:*mut *mut IDxcCursor) -> HRESULT;
 
-        fn FindReferencesInFile(file: *const IDxcFile, skip: u32, top:u32, resultLength: *mut u32, result: *mut *mut *mut IDxcCursor) -> HRESULT;
+        fn find_references_in_file(file: *const IDxcFile, skip: u32, top:u32, result_length: *mut u32, result: *mut *mut *mut IDxcCursor) -> HRESULT;
 
         /// <summary>Gets the name for the entity references by the cursor, e.g. foo for an 'int foo' variable.</summary>
-        fn GetSpelling(result: *mut LPSTR) -> HRESULT;
+        fn get_spelling(result: *mut LPSTR) -> HRESULT;
 
-        fn IsEqualTo(other: *const IDxcCursor, result:*mut bool) -> HRESULT;
+        fn is_equal_to(other: *const IDxcCursor, result:*mut bool) -> HRESULT;
 
-        fn IsNull(result:*mut bool) -> HRESULT;
+        fn is_null(result:*mut bool) -> HRESULT;
 
-        fn IsDefinition(result:*mut bool) -> HRESULT;
+        fn is_definition(result:*mut bool) -> HRESULT;
 
         /// <summary>Gets the display name for the cursor, including e.g. parameter types for a function.</summary>
-        fn GetDisplayName(result:*mut BSTR) -> HRESULT;
+        fn get_display_name(result:*mut BSTR) -> HRESULT;
 
         /// <summary>Gets the qualified name for the symbol the cursor refers to.</summary>
-        fn GetQualifiedName(includeTemplateArgs:bool, result:*mut BSTR) -> HRESULT;
+        fn get_qualified_name(include_template_args:bool, result:*mut BSTR) -> HRESULT;
 
         /// <summary>Gets a name for the cursor, applying the specified formatting flags.</summary>
-        fn GetFormattedName(formatting: DxcCursorFormatting, result:*mut BSTR) -> HRESULT;
+        fn get_formatted_name(formatting: DxcCursorFormatting, result:*mut BSTR) -> HRESULT;
 
         /// <summary>Gets children in result up to top elements.</summary>
-        fn GetChildren(skip: u32, top: u32,resultLength:*mut u32, result:*mut*mut*mut IDxcCursor) -> HRESULT;
+        fn get_children(skip: u32, top: u32, result_length:*mut u32, result:*mut*mut*mut IDxcCursor) -> HRESULT;
 
         /// <summary>Gets the cursor following a location within a compound cursor.</summary>
-        fn GetSnappedChild(location:  *const IDxcSourceLocation, result:*mut*mut IDxcCursor) -> HRESULT;
+        fn get_snapped_child(location:  *const IDxcSourceLocation, result:*mut*mut IDxcCursor) -> HRESULT;
     }
 }
 
@@ -659,7 +659,7 @@ com_interface! {
         iid: IID_IDxcUnsavedFile,
         vtable: IDxcUnsavedFileVtbl,
 
-        fn get_file_name(fileName: *mut LPSTR) -> HRESULT;
+        fn get_file_name(file_name: *mut LPSTR) -> HRESULT;
         fn get_contents(contents: *mut LPSTR) -> HRESULT;
         fn get_length(lenth : *mut u32) -> HRESULT;
     }
@@ -672,10 +672,10 @@ com_interface! {
         vtable: IDxcFileVtbl,
 
         /// <summary>Gets the file name for this file.</summary>
-        fn GetName(result: *mut LPSTR) -> HRESULT;
+        fn get_name(result: *mut LPSTR) -> HRESULT;
 
         /// <summary>Checks whether this file is equal to the other specified file.</summary>
-        fn IsEqualTo(other : *const IDxcFile, result: *mut bool) -> HRESULT;
+        fn is_equal_to(other : *const IDxcFile, result: *mut bool) -> HRESULT;
     }
 }
 
@@ -687,7 +687,7 @@ com_interface! {
 
         fn get_cursor(cursor: *mut *mut IDxcCursor) -> HRESULT;
 
-        fn tokenize(range: *const IDxcSourceRange, tokens: *mut *mut *mut IDxcToken, tokenCount: *mut u32) -> HRESULT;
+        fn tokenize(range: *const IDxcSourceRange, tokens: *mut *mut *mut IDxcToken, token_count: *mut u32) -> HRESULT;
 
         fn get_location( file: *mut IDxcFile, line: u32, column: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
 
@@ -705,13 +705,13 @@ com_interface! {
 
         fn get_location_for_offset(file : *const IDxcFile, offset: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
 
-        fn get_skipped_ranges(file: *const IDxcFile, resultCount: *mut u32, result: *mut *mut *mut IDxcSourceRange) -> HRESULT;
+        fn get_skipped_ranges(file: *const IDxcFile, result_count: *mut u32, result: *mut *mut *mut IDxcSourceRange) -> HRESULT;
 
         fn get_diagnostic_details(
-            index: u32,  options: DxcDiagnosticDisplayOptions, errorCode: *mut u32, errorLine: *mut u32, errorColumn: *mut u32,
-            errorFile: *mut BSTR, errorOffset: *mut u32, errorLength: *mut u32, errorMessage: *mut BSTR) -> HRESULT;
+            index: u32,  options: DxcDiagnosticDisplayOptions, error_code: *mut u32, error_line: *mut u32, error_column: *mut u32,
+            error_file: *mut BSTR, error_offset: *mut u32, error_length: *mut u32, error_message: *mut BSTR) -> HRESULT;
 
-        fn get_inclusion_list(resultCount: *mut u32, result: *mut *mut *mut IDxcInclusion) -> HRESULT;
+        fn get_inclusion_list(result_count: *mut u32, result: *mut *mut *mut IDxcInclusion) -> HRESULT;
     }
 }
 
@@ -746,7 +746,7 @@ com_interface! {
         fn get_range( start: *const IDxcSourceLocation, end: *const IDxcSourceLocation, location: *mut *mut IDxcSourceRange)  -> HRESULT;
         fn get_default_diagnostic_display_options(value: *mut DxcDiagnosticDisplayOptions)  -> HRESULT;
         fn get_default_editing_tu_options(value: *mut DxcTranslationUnitFlags)  -> HRESULT;
-        fn create_unsaved_file(fileName: LPCSTR, contents: LPCSTR, contentLength: u32 , result: *mut *mut IDxcUnsavedFile)  -> HRESULT;
+        fn create_unsaved_file(file_name: LPCSTR, contents: LPCSTR, content_length: u32 , result: *mut *mut IDxcUnsavedFile)  -> HRESULT;
     }
 }
 
