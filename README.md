@@ -37,6 +37,7 @@ Licensed under MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses
 ## Contibutions
 
  - Graham Wihlidal
+ - Tiago Carvalho
 
 ## Contribution
 

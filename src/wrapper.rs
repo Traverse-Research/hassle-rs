@@ -7,6 +7,7 @@ use std::ffi::c_void;
 use winapi::shared::ntdef::{LPCWSTR, LPWSTR};
 use winapi::shared::winerror::HRESULT;
 
+#[macro_export]
 macro_rules! return_hr {
     ($hr:expr, $v: expr) => {
         let hr = $hr;
@@ -479,7 +480,7 @@ impl Dxc {
         Self { dxc_lib }
     }
 
-    fn get_dxc_create_instance(&self) -> Symbol<DxcCreateInstanceProc> {
+    pub(crate) fn get_dxc_create_instance(&self) -> Symbol<DxcCreateInstanceProc> {
         unsafe { self.dxc_lib.get(b"DxcCreateInstance\0").unwrap() }
     }
 
