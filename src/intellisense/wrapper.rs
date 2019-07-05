@@ -17,7 +17,7 @@ impl DxcIntellisense {
     }
 
     pub fn get_default_editing_tu_options(&self) -> Result<DxcTranslationUnitFlags, HRESULT> {
-        let mut options: DxcTranslationUnitFlags = DxcTranslationUnitFlags::None;
+        let mut options: DxcTranslationUnitFlags = DxcTranslationUnitFlags::NONE;
         unsafe {
             return_hr!(
                 self.inner.get_default_editing_tu_options(&mut options),
@@ -38,18 +38,11 @@ impl DxcIntellisense {
 
     pub fn create_unsaved_file(
         &self,
-        file_name: &[u8],
-        contents: &[u8],
+        file_name: &str,
+        contents: &str,
     ) -> Result<DxcUnsavedFile, HRESULT> {
-        let c_file_name = match CString::new(file_name) {
-            Ok(cs) => cs,
-            Err(_) => return Err(-1),
-        };
-
-        let c_contents = match CString::new(contents) {
-            Ok(cs) => cs,
-            Err(_) => return Err(-1),
-        };
+        let c_file_name = CString::new(file_name).expect("Failed to convert `file_name`");
+        let c_contents = CString::new(contents).expect("Failed to convert `contents`");
 
         let mut file: ComPtr<IDxcUnsavedFile> = ComPtr::new();
         unsafe {
@@ -80,15 +73,13 @@ impl DxcIndex {
 impl DxcIndex {
     pub fn parse_translation_unit(
         &self,
-        source_filename: &[u8],
-        args: &[&[u8]],
+        source_filename: &str,
+        args: &[&str],
         unsaved_files: &[&DxcUnsavedFile],
         options: DxcTranslationUnitFlags,
     ) -> Result<DxcTranslationUnit, HRESULT> {
-        let c_source_filename = match CString::new(source_filename) {
-            Ok(cs) => cs,
-            Err(_) => return Err(-1),
-        };
+        let c_source_filename =
+            CString::new(source_filename).expect("Failed to convert `source_filename`");
 
         let mut uf = vec![];
 
@@ -101,11 +92,7 @@ impl DxcIndex {
             let mut cliargs = vec![];
 
             for arg in args.into_iter() {
-                let c_arg = match CString::new(*arg) {
-                    Ok(cs) => cs,
-                    Err(_) => return Err(-1),
-                };
-
+                let c_arg = CString::new(*arg).expect("Failed to convert `arg`");
                 cliargs.push(c_arg.as_ptr() as *const u8);
                 c_args.push(c_arg);
             }
@@ -278,7 +265,7 @@ impl DxcCursor {
             let mut name: BSTR = std::ptr::null_mut();
             return_hr!(
                 self.inner.get_display_name(&mut name),
-                crate::intellisense::utils::from_bstr(name)?
+                crate::utils::from_bstr(name)
             );
         }
     }
@@ -288,7 +275,7 @@ impl DxcCursor {
             let mut name: BSTR = std::ptr::null_mut();
             return_hr!(
                 self.inner.get_formatted_name(formatting, &mut name),
-                crate::intellisense::utils::from_bstr(name)?
+                crate::utils::from_bstr(name)
             );
         }
     }
@@ -299,21 +286,21 @@ impl DxcCursor {
             return_hr!(
                 self.inner
                     .get_qualified_name(include_template_args, &mut name),
-                crate::intellisense::utils::from_bstr(name)?
+                crate::utils::from_bstr(name)
             );
         }
     }
 
     pub fn get_kind(&self) -> Result<DxcCursorKind, HRESULT> {
         unsafe {
-            let mut cursor_kind: DxcCursorKind = DxcCursorKind::UnexposedDecl;
+            let mut cursor_kind: DxcCursorKind = DxcCursorKind::UNEXPOSED_DECL;
             return_hr!(self.inner.get_kind(&mut cursor_kind), cursor_kind);
         }
     }
 
     pub fn get_kind_flags(&self) -> Result<DxcCursorKindFlags, HRESULT> {
         unsafe {
-            let mut cursor_kind_flags: DxcCursorKindFlags = DxcCursorKindFlags::None;
+            let mut cursor_kind_flags: DxcCursorKindFlags = DxcCursorKindFlags::NONE;
             return_hr!(
                 self.inner.get_kind_flags(&mut cursor_kind_flags),
                 cursor_kind_flags
@@ -378,9 +365,6 @@ impl DxcCursor {
         }
     }
 
-    /// <summary>For a cursor that is either a reference to or a declaration of some entity, retrieve a cursor that describes the definition of that entity.</summary>
-    /// <remarks>Some entities can be declared multiple times within a translation unit, but only one of those declarations can also be a definition.</remarks>
-    /// <returns>A cursor to the definition of this entity; nullptr if there is no definition in this translation unit.</returns>
     pub fn get_definition_cursor(&self) -> Result<DxcCursor, HRESULT> {
         unsafe {
             let mut inner = ComPtr::<IDxcCursor>::new();
@@ -426,13 +410,12 @@ impl DxcCursor {
         }
     }
 
-    /// <summary>Gets the name for the entity references by the cursor, e.g. foo for an 'int foo' variable.</summary>
     pub fn get_spelling(&self) -> Result<String, HRESULT> {
         unsafe {
             let mut spelling: LPSTR = std::ptr::null_mut();
             return_hr!(
                 self.inner.get_spelling(&mut spelling),
-                crate::intellisense::utils::from_lpstr(spelling)?
+                crate::utils::from_lpstr(spelling)
             );
         }
     }
@@ -461,7 +444,6 @@ impl DxcCursor {
         }
     }
 
-    /// <summary>Gets the cursor following a location within a compound cursor.</summary>
     pub fn get_snapped_child(&self, location: &DxcSourceLocation) -> Result<DxcCursor, HRESULT> {
         unsafe {
             let mut inner = ComPtr::<IDxcCursor>::new();
@@ -502,7 +484,7 @@ impl DxcType {
             let mut spelling: LPSTR = std::ptr::null_mut();
             return_hr!(
                 self.inner.get_spelling(&mut spelling),
-                crate::intellisense::utils::from_lpstr(spelling)?
+                crate::utils::from_lpstr(spelling)
             );
         }
     }

@@ -1,5 +1,8 @@
 use crate::wrapper::*;
+use winapi::shared::ntdef::LPSTR;
 use winapi::shared::ntdef::LPWSTR;
+use winapi::shared::wtypes::BSTR;
+use winapi::um::oleauto::{SysFreeString, SysStringLen};
 
 pub(crate) fn to_wide(msg: &str) -> Vec<u16> {
     use std::ffi::OsStr;
@@ -19,6 +22,26 @@ pub(crate) fn from_wide(wide: LPWSTR) -> String {
     OsString::from_wide(unsafe { std::slice::from_raw_parts(wide, len) })
         .into_string()
         .unwrap()
+}
+
+pub(crate) fn from_bstr(string: BSTR) -> String {
+    unsafe {
+        let len = SysStringLen(string);
+        let slice: &[u16] = ::std::slice::from_raw_parts(string, len as usize);
+        let result = String::from_utf16(slice).unwrap();
+        SysFreeString(string);
+
+        return result;
+    }
+}
+
+pub(crate) fn from_lpstr(string: LPSTR) -> String {
+    unsafe {
+        let len = (0..).take_while(|&i| *string.offset(i) != 0).count();
+
+        let slice: &[u8] = std::slice::from_raw_parts(string as *const u8, len);
+        std::str::from_utf8(slice).map(|s| s.to_owned()).unwrap()
+    }
 }
 
 struct DefaultIncludeHandler {}

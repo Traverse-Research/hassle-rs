@@ -16,11 +16,11 @@ fn main() {
     let index = intellisense.create_index().unwrap();
 
     let unsaved_file = intellisense
-        .create_unsaved_file(name.as_bytes(), source.as_bytes())
+        .create_unsaved_file(name, source)
         .unwrap();
 
     let translation_unit = index
-        .parse_translation_unit(name.as_bytes(), &args, &vec![&unsaved_file], local_options)
+        .parse_translation_unit(name, &args, &vec![&unsaved_file], local_options)
         .unwrap();
 
     let cursor = translation_unit.get_cursor().unwrap();

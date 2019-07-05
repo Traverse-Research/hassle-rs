@@ -4,511 +4,299 @@ use winapi::shared::winerror::HRESULT;
 use winapi::shared::wtypes::BSTR;
 
 bitflags! {
-    pub struct DxcGlobalOptions : u32
-    {
+    pub struct DxcGlobalOptions : u32 {
         const NONE = 0x0;
-        const ThreadBackgroundPriorityForIndexing = 0x1;
-        const ThreadBackgroundPriorityForEditing = 0x2;
-        const ThreadBackgroundPriorityForAll
-            = DxcGlobalOptions::ThreadBackgroundPriorityForIndexing.bits
-            | DxcGlobalOptions::ThreadBackgroundPriorityForEditing.bits;
-    }
-}
-
-// Describes the severity of a particular diagnostic.
-bitflags! {
-    pub struct  DxcDiagnosticSeverity : u32
-    {
-        // A diagnostic that has been suppressed, e.g., by a command-line option.
-        const Ignored = 0;
-
-        // This diagnostic is a note that should be attached to the previous (non-note) diagnostic.
-        const Note = 1;
-
-        // This diagnostic indicates suspicious code that may not be wrong.
-        const Warning = 2;
-
-        // This diagnostic indicates that the code is ill-formed.
-        const Error = 3;
-
-        // This diagnostic indicates that the code is ill-formed such that future
-        // parser rec unlikely to produce useful results.
-        const Fatal = 4;
+        const THREAD_BACKGROUND_PRIORITY_FOR_INDEXING = 0x1;
+        const THREAD_BACKGROUND_PRIORITY_FOR_EDITING = 0x2;
+        const THREAD_BACKGROUND_PRIORITY_FOR_ALL
+            = DxcGlobalOptions::THREAD_BACKGROUND_PRIORITY_FOR_INDEXING.bits
+            | DxcGlobalOptions::THREAD_BACKGROUND_PRIORITY_FOR_EDITING.bits;
     }
 }
 
 bitflags! {
-    pub struct  DxcTokenKind: u32
-    {
-        const Punctuation = 0; // A token that contains some kind of punctuation.
-        const Keyword = 1;     // A language keyword.
-        const Identifier = 2;  // An identifier (that is not a keyword).
-        const Literal = 3;     // A numeric, string, or character literal.
-        const Comment = 4;     // A comment.
-        const Unknown = 5;     // An unknown token (possibly known to a future version).
-        const BuiltInType = 6; // A built-in type like int, void or float3.
+    pub struct DxcDiagnosticSeverity : u32 {
+        const IGNORED = 0;
+        const NOTE = 1;
+        const WARNING = 2;
+        const ERROR = 3;
+        const FATAL = 4;
     }
 }
 
 bitflags! {
-    pub struct   DxcCursorFormatting : u32
-    {
-        const _Default = 0x0;             // Default rules, language-insensitive formatting.
-        const UseLanguageOptions = 0x1;  // Language-sensitive formatting.
-        const SuppressSpecifiers = 0x2;  // Supresses type specifiers.
-        const SuppressTagKeyword = 0x4;  // Suppressed tag keyword (eg, 'class').
-        const IncludeNamespaceKeyword = 0x8;  // Include namespace keyword.
+    pub struct DxcTokenKind : u32 {
+        const PUNCTUATION = 0;
+        const KEYWORD = 1;
+        const IDENTIFIER = 2;
+        const LITERAL = 3;
+        const COMMENT = 4;
+        const UNKNOWN = 5;
+        const BUILT_IN_TYPE = 6;
     }
 }
 
 bitflags! {
-    pub struct  DxcTranslationUnitFlags : u32
-    {
-        // Used to indicate that no special translation-unit options are needed.
-        const   None = 0x0;
-
-        // Used to indicate that the parser should construct a "detailed"
-        // preprocessing record, including all macro definitions and instantiations.
-        const    DetailedPreprocessingRecord = 0x01;
-
-        // Used to indicate that the translation unit is incomplete.
-        const     Incomplete = 0x02;
-
-        // Used to indicate that the translation unit should be built with an
-        // implicit precompiled header for the preamble.
-        const     PrecompiledPreamble = 0x04;
-
-        // Used to indicate that the translation unit should cache some
-        // code-completion results with each reparse of the source file.
-        const     CacheCompletionResults = 0x08;
-
-        // Used to indicate that the translation unit will be serialized with
-        // SaveTranslationUnit.
-        const    ForSerialization = 0x10;
-
-        // DEPRECATED
-        const    CXXChainedPCH = 0x20;
-
-        // Used to indicate that function/method bodies should be skipped while parsing.
-        const    SkipFunctionBodies = 0x40;
-
-        // Used to indicate that brief documentation comments should be
-        // included into the set of code completions returned from this translation
-        // unit.
-        const    IncludeBriefCommentsInCodeCompletion = 0x80;
-
-        // Used to indicate that compilation should occur on the caller's thread.
-        const   UseCallerThread = 0x800;
-    }
-}
-
-// Options to control the display of diagnostics.
-bitflags! {
-    pub struct  DxcDiagnosticDisplayOptions : u32
-    {
-        // Display the source-location information where the diagnostic was located.
-        const DisplaySourceLocation = 0x01;
-
-        // If displaying the source-location information of the diagnostic,
-        // also include the column number.
-        const   DisplayColumn = 0x02;
-
-        // If displaying the source-location information of the diagnostic,
-        // also include information about source ranges in a machine-parsable format.
-        const   DisplaySourceRanges = 0x04;
-
-        // Display the option name associated with this diagnostic, if any.
-        const  DisplayOption = 0x08;
-
-        // Display the category number associated with this diagnostic, if any.
-        const  DisplayCategoryId = 0x10;
-
-        // Display the category name associated with this diagnostic, if any.
-        const  DisplayCategoryName = 0x20;
-
-        // Display the severity of the diagnostic message.
-        const  DisplaySeverity = 0x200;
+    pub struct DxcCursorFormatting : u32 {
+        const DEFAULT = 0x0;
+        const USE_LANGUAGE_OPTIONS = 0x1;
+        const SUPPRESS_SPECIFIERS = 0x2;
+        const SUPPRESS_TAG_KEYWORD = 0x4;
+        const INCLUDE_NAMESPACE_KEYWORD = 0x8;
     }
 }
 
 bitflags! {
-    pub struct DxcCursorKindFlags: u32
-    {
-       const None = 0;
-       const Declaration = 0x1;
-       const Reference = 0x2;
-       const Expression = 0x4;
-       const Statement = 0x8;
-       const Attribute = 0x10;
-       const Invalid = 0x20;
-       const TranslationUnit = 0x40;
-       const Preprocessing = 0x80;
-       const Unexposed = 0x100;
+    pub struct DxcTranslationUnitFlags : u32 {
+        const NONE = 0x0;
+        const DETAILED_PREPROCESSING_RECORD = 0x01;
+        const INCOMPLETE = 0x02;
+        const PRECOMPILED_PREAMBLE = 0x04;
+        const CACHE_COMPLETION_RESULTS = 0x08;
+        const FOR_SERIALIZATION = 0x10;
+        const CXX_CHAINED_PCH = 0x20;
+        const SKIP_FUNCTION_BODIES = 0x40;
+        const INCLUDE_BRIEF_COMMENTS_IN_CODE_COMPLETION = 0x80;
+        const USE_CALLER_THREAD = 0x800;
     }
 }
 
 bitflags! {
-    pub struct DxcCursorKind: u32 {
-        /* Declarations */
-        const UnexposedDecl = 1; // A declaration whose specific kind is not exposed via this interface.
-        const StructDecl = 2; // A C or C++ struct.
-        const UnionDecl = 3; // A C or C++ union.
-        const ClassDecl = 4; // A C++ class.
-        const EnumDecl = 5; // An enumeration.
-        const FieldDecl = 6; // A field (in C) or non-static data member (in C++) in a struct; union, or C++ class.
-        const EnumConstantDecl = 7; // An enumerator constant.
-        const FunctionDecl = 8; // A function.
-        const VarDecl = 9; // A variable.
-        const ParmDecl = 10; // A function or method parameter.
-        const ObjCInterfaceDecl = 11; // An Objective-C interface.
-        const ObjCCategoryDecl = 12; // An Objective-C interface for a category.
-        const ObjCProtocolDecl = 13; // An Objective-C protocol declaration.
-        const ObjCPropertyDecl = 14; // An Objective-C property declaration.
-        const ObjCIvarDecl = 15; // An Objective-C instance variable.
-        const ObjCInstanceMethodDecl = 16; // An Objective-C instance method.
-        const ObjCClassMethodDecl = 17; // An Objective-C class method.
-        const ObjCImplementationDecl = 18; // An Objective-C \@implementation.
-        const ObjCCategoryImplDecl = 19; // An Objective-C \@implementation for a category.
-        const TypedefDecl = 20; // A typedef
-        const CXXMethod = 21; // A C++ class method.
-        const Namespace = 22; // A C++ namespace.
-        const LinkageSpec = 23; // A linkage specification, e.g. 'extern "C"'.
-        const Constructor = 24; // A C++ constructor.
-        const Destructor = 25; // A C++ destructor.
-        const ConversionFunction = 26; // A C++ conversion function.
-        const TemplateTypeParameter = 27; // A C++ template type parameter.
-        const NonTypeTemplateParameter = 28; // A C++ non-type template parameter.
-        const TemplateTemplateParameter = 29; // A C++ template template parameter.
-        const FunctionTemplate = 30; // A C++ function template.
-        const ClassTemplate = 31; // A C++ class template.
-        const ClassTemplatePartialSpecialization = 32; // A C++ class template partial specialization.
-        const NamespaceAlias = 33; // A C++ namespace alias declaration.
-        const UsingDirective = 34; // A C++ using directive.
-        const UsingDeclaration = 35; // A C++ using declaration.
-        const TypeAliasDecl = 36; // A C++ alias declaration
-        const ObjCSynthesizeDecl = 37; // An Objective-C \@synthesize definition.
-        const ObjCDynamicDecl = 38; // An Objective-C \@dynamic definition.
-        const CXXAccessSpecifier = 39; // An access specifier.
+    pub struct DxcDiagnosticDisplayOptions : u32 {
+        const DISPLAY_SOURCE_LOCATION = 0x01;
+        const DISPLAY_COLUMN = 0x02;
+        const DISPLAY_SOURCE_RANGES = 0x04;
+        const DISPLAY_OPTION = 0x08;
+        const DISPLAY_CATEGORY_ID = 0x10;
+        const DISPLAY_CATEGORY_NAME = 0x20;
+        const DISPLAY_SEVERITY = 0x200;
+    }
+}
 
-        const FirstDecl = DxcCursorKind::UnexposedDecl.bits;
-        const LastDecl = DxcCursorKind::CXXAccessSpecifier.bits;
+bitflags! {
+    pub struct DxcCursorKindFlags : u32 {
+       const NONE = 0;
+       const DECLARATION = 0x1;
+       const REFERENCE = 0x2;
+       const EXPRESSION = 0x4;
+       const STATEMENT = 0x8;
+       const ATTRIBUTE = 0x10;
+       const INVALID = 0x20;
+       const TRANSLATION_UNIT = 0x40;
+       const PREPROCESSING = 0x80;
+       const UNEXPOSED = 0x100;
+    }
+}
 
-        /* References */
-        const FirstRef = 40; /* Decl references */
-        const ObjCSuperClassRef = 40;
-        const ObjCProtocolRef = 41;
-        const ObjCClassRef = 42;
-        /**
-         * \brief A reference to a type declaration.
-        *
-        * A type reference occurs anywhere where a type is named but not
-        * declared. For example, given:
-        *
-        * \code
-        * typedef unsigned size_type;
-        * size_type size;
-        * \endcode
-        *
-        * The typedef is a declaration of size_type (TypedefDecl),
-        * while the type of the variable "size" is referenced. The cursor
-        * referenced by the type of size is the typedef for size_type.
-        */
-        const TypeRef = 43; // A reference to a type declaration.
-        const CXXBaseSpecifier = 44;
-        const TemplateRef = 45; // A reference to a class template, function template, template template parameter, or class template partial specialization.
-        const NamespaceRef = 46; // A reference to a namespace or namespace alias.
-        const MemberRef = 47; // A reference to a member of a struct, union, or class that occurs in some non-expression context, e.g., a designated initializer.
-        /**
-         * \brief A reference to a labeled statement.
-        *
-        * This cursor kind is used to describe the jump to "start_over" in the
-        * goto statement in the following example:
-        *
-        * \code
-        *   start_over:
-        *     ++counter;
-        *
-        *     goto start_over;
-        * \endcode
-        *
-        * A label reference cursor refers to a label statement.
-        */
-        const LabelRef = 48; // A reference to a labeled statement.
+bitflags! {
+    pub struct DxcCursorKind : u32 {
+        const UNEXPOSED_DECL = 1;
+        const STRUCT_DECL = 2;
+        const UNION_DECL = 3;
+        const CLASS_DECL = 4;
+        const ENUM_DECL = 5;
+        const FIELD_DECL = 6;
+        const ENUM_CONSTANT_DECL = 7;
+        const FUNCTION_DECL = 8;
+        const VAR_DECL = 9;
+        const PARM_DECL = 10;
+        const OBJ_C_INTERFACE_DECL = 11;
+        const OBJ_C_CATEGORY_DECL = 12;
+        const OBJ_C_PROTOCOL_DECL = 13;
+        const OBJ_C_PROPERTY_DECL = 14;
+        const OBJ_C_IVAR_DECL = 15;
+        const OBJ_C_INSTANCE_METHOD_DECL = 16;
+        const OBJ_C_CLASS_METHOD_DECL = 17;
+        const OBJ_C_IMPLEMENTATION_DECL = 18;
+        const OBJ_C_CATEGORY_IMPL_DECL = 19;
+        const TYPEDEF_DECL = 20;
+        const CXX_METHOD = 21;
+        const NAMESPACE = 22;
+        const LINKAGE_SPEC = 23;
+        const CONSTRUCTOR = 24;
+        const DESTRUCTOR = 25;
+        const CONVERSION_FUNCTION = 26;
+        const TEMPLATE_TYPE_PARAMETER = 27;
+        const NON_TYPE_TEMPLATE_PARAMETER = 28;
+        const TEMPLATE_TEMPLATE_PARAMETER = 29;
+        const FUNCTION_TEMPLATE = 30;
+        const CLASS_TEMPLATE = 31;
+        const CLASS_TEMPLATE_PARTIAL_SPECIALIZATION = 32;
+        const NAMESPACE_ALIAS = 33;
+        const USING_DIRECTIVE = 34;
+        const USING_DECLARATION = 35;
+        const TYPE_ALIAS_DECL = 36;
+        const OBJ_C_SYNTHESIZE_DECL = 37;
+        const OBJ_C_DYNAMIC_DECL = 38;
+        const CXX_ACCESS_SPECIFIER = 39;
 
-        // A reference to a set of overloaded functions or function templates
-        // that has not yet been resolved to a specific function or function template.
-        //
-        // An overloaded declaration reference cursor occurs in C++ templates where
-        // a dependent name refers to a function.
-        const OverloadedDeclRef = 49;
-        const VariableRef = 50; // A reference to a variable that occurs in some non-expression context, e.g., a C++ lambda capture list.
+        const FIRST_DECL = DxcCursorKind::UNEXPOSED_DECL.bits;
+        const LAST_DECL = DxcCursorKind::CXX_ACCESS_SPECIFIER.bits;
 
-        const LastRef = DxcCursorKind::VariableRef.bits;
+        const FIRST_REF = 40;
+        const OBJ_C_SUPER_CLASS_REF = 40;
+        const OBJ_C_PROTOCOL_REF = 41;
+        const OBJ_C_CLASS_REF = 42;
+        const TYPE_REF = 43;
+        const CXX_BASE_SPECIFIER = 44;
+        const TEMPLATE_REF = 45;
+        const NAMESPACE_REF = 46;
+        const MEMBER_REF = 47;
+        const LABEL_REF = 48;
+        const OVERLOADED_DECL_REF = 49;
+        const VARIABLE_REF = 50;
+        const LAST_REF = DxcCursorKind::VARIABLE_REF.bits;
+        const FIRST_INVALID = 70;
+        const INVALID_FILE = 70;
+        const NO_DECL_FOUND = 71;
+        const NOT_IMPLEMENTED = 72;
+        const INVALID_CODE = 73;
+        const LAST_INVALID = DxcCursorKind::INVALID_CODE.bits;
+        const FIRST_EXPR = 100;
+        const UNEXPOSED_EXPR = 100;
+        const DECL_REF_EXPR = 101;
+        const MEMBER_REF_EXPR = 102;
+        const CALL_EXPR = 103;
+        const OBJ_C_MESSAGE_EXPR = 104;
+        const BLOCK_EXPR = 105;
+        const INTEGER_LITERAL = 106;
+        const FLOATING_LITERAL = 107;
+        const IMAGINARY_LITERAL = 108;
+        const STRING_LITERAL = 109;
+        const CHARACTER_LITERAL = 110;
+        const PAREN_EXPR = 111;
+        const UNARY_OPERATOR = 112;
+        const ARRAY_SUBSCRIPT_EXPR = 113;
+        const BINARY_OPERATOR = 114;
+        const COMPOUND_ASSIGN_OPERATOR = 115;
+        const CONDITIONAL_OPERATOR = 116;
+        const C_STYLE_CAST_EXPR = 117;
+        const COMPOUND_LITERAL_EXPR = 118;
+        const INIT_LIST_EXPR = 119;
+        const ADDR_LABEL_EXPR = 120;
+        const STMT_EXPR = 121;
+        const GENERIC_SELECTION_EXPR = 122;
+        const GNU_NULL_EXPR = 123;
+        const CXX_STATIC_CAST_EXPR = 124;
+        const CXX_DYNAMIC_CAST_EXPR = 125;
+        const CXX_REINTERPRET_CAST_EXPR = 126;
+        const CXX_CONST_CAST_EXPR = 127;
+        const CXX_FUNCTIONAL_CAST_EXPR = 128;
+        const CXX_TYPEID_EXPR = 129;
+        const CXX_BOOL_LITERAL_EXPR = 130;
+        const CXX_NULL_PTR_LITERAL_EXPR = 131;
+        const CXX_THIS_EXPR = 132;
+        const CXX_THROW_EXPR = 133;
+        const CXX_NEW_EXPR = 134;
+        const CXX_DELETE_EXPR = 135;
+        const UNARY_EXPR = 136;
+        const OBJ_C_STRING_LITERAL = 137;
+        const OBJ_C_ENCODE_EXPR = 138;
+        const OBJ_C_SELECTOR_EXPR = 139;
+        const OBJ_C_PROTOCOL_EXPR = 140;
+        const OBJ_C_BRIDGED_CAST_EXPR = 141;
+        const PACK_EXPANSION_EXPR = 142;
+        const SIZE_OF_PACK_EXPR = 143;
+        const LAMBDA_EXPR = 144;
+        const OBJ_C_BOOL_LITERAL_EXPR = 145;
+        const OBJ_C_SELF_EXPR = 146;
+        const LAST_EXPR = DxcCursorKind::OBJ_C_SELF_EXPR.bits;
+        const FIRST_STMT = 200;
+        const UNEXPOSED_STMT = 200;
+        const LABEL_STMT = 201;
+        const COMPOUND_STMT = 202;
+        const CASE_STMT = 203;
+        const DEFAULT_STMT = 204;
+        const IF_STMT = 205;
+        const SWITCH_STMT = 206;
+        const WHILE_STMT = 207;
+        const DO_STMT = 208;
+        const FOR_STMT = 209;
+        const GOTO_STMT = 210;
+        const INDIRECT_GOTO_STMT = 211;
+        const CONTINUE_STMT = 212;
+        const BREAK_STMT = 213;
+        const RETURN_STMT = 214;
+        const GCC_ASM_STMT = 215;
+        const ASM_STMT = DxcCursorKind::GCC_ASM_STMT.bits;
 
-        /* Error conditions */
-        const FirstInvalid = 70;
-        const InvalidFile = 70;
-        const NoDeclFound = 71;
-        const NotImplemented = 72;
-        const InvalidCode = 73;
-        const LastInvalid = DxcCursorKind::InvalidCode.bits;
+        const OBJ_C_AT_TRY_STMT = 216;
+        const OBJ_C_AT_CATCH_STMT = 217;
+        const OBJ_C_AT_FINALLY_STMT = 218;
+        const OBJ_C_AT_THROW_STMT = 219;
+        const OBJ_C_AT_SYNCHRONIZED_STMT = 220;
+        const OBJ_C_AUTORELEASE_POOL_STMT = 221;
+        const OBJ_C_FOR_COLLECTION_STMT = 222;
+        const CXX_CATCH_STMT = 223;
+        const CXX_TRY_STMT = 224;
+        const CXX_FOR_RANGE_STMT = 225;
+        const SEH_TRY_STMT = 226;
+        const SEH_EXCEPT_STMT = 227;
+        const SEH_FINALLY_STMT = 228;
+        const MS_ASM_STMT = 229;
+        const NULL_STMT = 230;
+        const DECL_STMT = 231;
+        const OMP_PARALLEL_DIRECTIVE = 232;
+        const OMP_SIMD_DIRECTIVE = 233;
+        const OMP_FOR_DIRECTIVE = 234;
+        const OMP_SECTIONS_DIRECTIVE = 235;
+        const OMP_SECTION_DIRECTIVE = 236;
+        const OMP_SINGLE_DIRECTIVE = 237;
+        const OMP_PARALLEL_FOR_DIRECTIVE = 238;
+        const OMP_PARALLEL_SECTIONS_DIRECTIVE = 239;
+        const OMP_TASK_DIRECTIVE = 240;
+        const OMP_MASTER_DIRECTIVE = 241;
+        const OMP_CRITICAL_DIRECTIVE = 242;
+        const OMP_TASKYIELD_DIRECTIVE = 243;
+        const OMP_BARRIER_DIRECTIVE = 244;
+        const OMP_TASKWAIT_DIRECTIVE = 245;
+        const OMP_FLUSH_DIRECTIVE = 246;
+        const SEH_LEAVE_STMT = 247;
+        const OMP_ORDERED_DIRECTIVE = 248;
+        const OMP_ATOMIC_DIRECTIVE = 249;
+        const OMP_FOR_SIMD_DIRECTIVE = 250;
+        const OMP_PARALLEL_FOR_SIMD_DIRECTIVE = 251;
+        const OMP_TARGET_DIRECTIVE = 252;
+        const OMP_TEAMS_DIRECTIVE = 253;
+        const OMP_TASKGROUP_DIRECTIVE = 254;
+        const OMP_CANCELLATION_POINT_DIRECTIVE = 255;
+        const OMP_CANCEL_DIRECTIVE = 256;
+        const LAST_STMT = DxcCursorKind::OMP_CANCEL_DIRECTIVE.bits;
 
-        /* Expressions */
-        const FirstExpr = 100;
+        const TRANSLATION_UNIT = 300;
 
-        /**
-         * \brief An expression whose specific kind is not exposed via this
-        * interface.
-        *
-        * Unexposed expressions have the same operations as any other kind
-        * of expression; one can extract their location information,
-        * spelling, children, etc. However, the specific kind of the
-        * expression is not reported.
-        */
-        const UnexposedExpr = 100; // An expression whose specific kind is not exposed via this interface.
-        const DeclRefExpr = 101; // An expression that refers to some value declaration, such as a function, varible, or enumerator.
-        const MemberRefExpr = 102; // An expression that refers to a member of a struct, union, class, Objective-C class, etc.
-        const CallExpr = 103; // An expression that calls a function.
-        const ObjCMessageExpr = 104; // An expression that sends a message to an Objective-C object or class.
-        const BlockExpr = 105; // An expression that represents a block literal.
-        const IntegerLiteral = 106; // An integer literal.
-        const FloatingLiteral = 107; // A floating point number literal.
-        const ImaginaryLiteral = 108; // An imaginary number literal.
-        const StringLiteral = 109; // A string literal.
-        const CharacterLiteral = 110; // A character literal.
-        const ParenExpr = 111; // A parenthesized expression, e.g. "(1)". This AST node is only formed if full location information is requested.
-        const UnaryOperator = 112; // This represents the unary-expression's (except sizeof and alignof).
-        const ArraySubscriptExpr = 113; // [C99 6.5.2.1] Array Subscripting.
-        const BinaryOperator = 114; // A builtin binary operation expression such as "x + y" or "x <= y".
-        const CompoundAssignOperator = 115; // Compound assignment such as "+=".
-        const ConditionalOperator = 116; // The ?: ternary operator.
-        const CStyleCastExpr = 117; // An explicit cast in C (C99 6.5.4) or a C-style cast in C++ (C++ [expr.cast]), which uses the syntax (Type)expr, eg: (int)f.
-        const CompoundLiteralExpr = 118; // [C99 6.5.2.5]
-        const InitListExpr = 119; // Describes an C or C++ initializer list.
-        const AddrLabelExpr = 120; // The GNU address of label extension, representing &&label.
-        const StmtExpr = 121; // This is the GNU Statement Expression extension: ({int X=4; X;})
-        const GenericSelectionExpr = 122; // Represents a C11 generic selection.
+        const FIRST_ATTR = 400;
+        const UNEXPOSED_ATTR = 400;
 
-        /** \brief Implements the GNU __null extension, which is a name for a null
-         * pointer constant that has integral type (e.g., int or long) and is the same
-        * size and alignment as a pointer.
-        *
-        * The __null extension is typically only used by system headers, which define
-        * NULL as __null in C++ rather than using 0 (which is an integer that may not
-        * match the size of a pointer).
-        */
-        const GNUNullExpr = 123;
-        const CXXStaticCastExpr = 124; // C++'s static_cast<> expression.
-        const CXXDynamicCastExpr = 125; // C++'s dynamic_cast<> expression.
-        const CXXReinterpretCastExpr = 126; // C++'s reinterpret_cast<> expression.
-        const CXXConstCastExpr = 127; // C++'s const_cast<> expression.
+        const IB_ACTION_ATTR = 401;
+        const IB_OUTLET_ATTR = 402;
+        const IB_OUTLET_COLLECTION_ATTR = 403;
+        const CXX_FINAL_ATTR = 404;
+        const CXX_OVERRIDE_ATTR = 405;
+        const ANNOTATE_ATTR = 406;
+        const ASM_LABEL_ATTR = 407;
+        const PACKED_ATTR = 408;
+        const PURE_ATTR = 409;
+        const CONST_ATTR = 410;
+        const NO_DUPLICATE_ATTR = 411;
+        const CUDA_CONSTANT_ATTR = 412;
+        const CUDA_DEVICE_ATTR = 413;
+        const CUDA_GLOBAL_ATTR = 414;
+        const CUDA_HOST_ATTR = 415;
+        const CUDA_SHARED_ATTR = 416;
+        const LAST_ATTR = DxcCursorKind::CUDA_SHARED_ATTR.bits;
 
-        /** \brief Represents an explicit C++ type conversion that uses "functional"
-         * notion (C++ [expr.type.conv]).
-        *
-        * Example:
-        * \code
-        *   x = int(0.5);
-        * \endcode
-        */
-        const CXXFunctionalCastExpr = 128;
-        const CXXTypeidExpr = 129; // A C++ typeid expression (C++ [expr.typeid]).
-        const CXXBoolLiteralExpr = 130; // [C++ 2.13.5] C++ Boolean Literal.
-        const CXXNullPtrLiteralExpr = 131; // [C++0x 2.14.7] C++ Pointer Literal.
-        const CXXThisExpr = 132; // Represents the "this" expression in C++
-        const CXXThrowExpr = 133; // [C++ 15] C++ Throw Expression, both 'throw' and 'throw' assignment-expression.
-        const CXXNewExpr = 134; // A new expression for memory allocation and constructor calls, e.g: "new CXXNewExpr(foo)".
-        const CXXDeleteExpr = 135; // A delete expression for memory deallocation and destructor calls, e.g. "delete[] pArray".
-        const UnaryExpr = 136; // A unary expression.
-        const ObjCStringLiteral = 137; // An Objective-C string literal i.e. @"foo".
-        const ObjCEncodeExpr = 138; // An Objective-C \@encode expression.
-        const ObjCSelectorExpr = 139; // An Objective-C \@selector expression.
-        const ObjCProtocolExpr = 140; // An Objective-C \@protocol expression.
+        const PREPROCESSING_DIRECTIVE = 500;
+        const MACRO_DEFINITION = 501;
+        const MACRO_EXPANSION = 502;
+        const MACRO_INSTANTIATION = DxcCursorKind::MACRO_EXPANSION.bits;
+        const INCLUSION_DIRECTIVE = 503;
+        const FIRST_PREPROCESSING = DxcCursorKind::PREPROCESSING_DIRECTIVE.bits;
+        const LAST_PREPROCESSING = DxcCursorKind::INCLUSION_DIRECTIVE.bits;
 
-        /** \brief An Objective-C "bridged" cast expression, which casts between
-         * Objective-C pointers and C pointers, transferring ownership in the process.
-        *
-        * \code
-        *   NSString *str = (__bridge_transfer NSString *)CFCreateString();
-        * \endcode
-        */
-        const ObjCBridgedCastExpr = 141;
-
-        /** \brief Represents a C++0x pack expansion that produces a sequence of
-         * expressions.
-        *
-        * A pack expansion expression contains a pattern (which itself is an
-        * expression) followed by an ellipsis. For example:
-        *
-        * \code
-        * template<typename F, typename ...Types>
-        * void forward(F f, Types &&...args) {
-        *  f(static_cast<Types&&>(args)...);
-        * }
-        * \endcode
-        */
-        const PackExpansionExpr = 142;
-
-        /** \brief Represents an expression that computes the length of a parameter
-         * pack.
-        *
-        * \code
-        * template<typename ...Types>
-        * struct count {
-        *   static const unsigned value = sizeof...(Types);
-        * };
-        * \endcode
-        */
-        const SizeOfPackExpr = 143;
-
-        /* \brief Represents a C++ lambda expression that produces a local function
-        * object.
-        *
-        * \code
-        * void abssort(float *x, unsigned N) {
-        *   std::sort(x, x + N,
-        *             [](float a, float b) {
-        *               return std::abs(a) < std::abs(b);
-        *             });
-        * }
-        * \endcode
-        */
-        const LambdaExpr = 144;
-        const ObjCBoolLiteralExpr = 145; // Objective-c Boolean Literal.
-        const ObjCSelfExpr = 146; // Represents the "self" expression in a ObjC method.
-        const LastExpr = DxcCursorKind::ObjCSelfExpr.bits;
-
-        /* Statements */
-        const FirstStmt = 200;
-        /**
-         * \brief A statement whose specific kind is not exposed via this
-        * interface.
-        *
-        * Unexposed statements have the same operations as any other kind of
-        * statement; one can extract their location information, spelling,
-        * children, etc. However, the specific kind of the statement is not
-        * reported.
-        */
-        const UnexposedStmt = 200;
-
-        /** \brief A labelled statement in a function.
-         *
-        * This cursor kind is used to describe the "start_over:" label statement in
-        * the following example:
-        *
-        * \code
-        *   start_over:
-        *     ++counter;
-        * \endcode
-        *
-        */
-        const LabelStmt = 201;
-        const CompoundStmt = 202; // A group of statements like { stmt stmt }. This cursor kind is used to describe compound statements, e.g. function bodies.
-        const CaseStmt = 203; // A case statement.
-        const DefaultStmt = 204; // A default statement.
-        const IfStmt = 205; // An if statement
-        const SwitchStmt = 206; // A switch statement.
-        const WhileStmt = 207; // A while statement.
-        const DoStmt = 208; // A do statement.
-        const ForStmt = 209; // A for statement.
-        const GotoStmt = 210; // A goto statement.
-        const IndirectGotoStmt = 211; // An indirect goto statement.
-        const ContinueStmt = 212; // A continue statement.
-        const BreakStmt = 213; // A break statement.
-        const ReturnStmt = 214; // A return statement.
-        const GCCAsmStmt = 215; // A GCC inline assembly statement extension.
-        const AsmStmt = DxcCursorKind::GCCAsmStmt.bits;
-
-        const ObjCAtTryStmt = 216; // Objective-C's overall \@try-\@catch-\@finally statement.
-        const ObjCAtCatchStmt = 217; // Objective-C's \@catch statement.
-        const ObjCAtFinallyStmt = 218; // Objective-C's \@finally statement.
-        const ObjCAtThrowStmt = 219; // Objective-C's \@throw statement.
-        const ObjCAtSynchronizedStmt = 220; // Objective-C's \@synchronized statement.
-        const ObjCAutoreleasePoolStmt = 221; // Objective-C's autorelease pool statement.
-        const ObjCForCollectionStmt = 222; // Objective-C's collection statement.
-
-        const CXXCatchStmt = 223; // C++'s catch statement.
-        const CXXTryStmt = 224; // C++'s try statement.
-        const CXXForRangeStmt = 225; // C++'s for (* : *) statement.
-
-        const SEHTryStmt = 226; // Windows Structured Exception Handling's try statement.
-        const SEHExceptStmt = 227; // Windows Structured Exception Handling's except statement.
-        const SEHFinallyStmt = 228; // Windows Structured Exception Handling's finally statement.
-
-        const MSAsmStmt = 229; // A MS inline assembly statement extension.
-        const NullStmt = 230; // The null satement ";": C99 6.8.3p3.
-        const DeclStmt = 231; // Adaptor class for mixing declarations with statements and expressions.
-        const OMPParallelDirective = 232; // OpenMP parallel directive.
-        const OMPSimdDirective = 233;  // OpenMP SIMD directive.
-        const OMPForDirective = 234;  // OpenMP for directive.
-        const OMPSectionsDirective = 235;  // OpenMP sections directive.
-        const OMPSectionDirective = 236;  // OpenMP section directive.
-        const OMPSingleDirective = 237;  // OpenMP single directive.
-        const OMPParallelForDirective = 238;  // OpenMP parallel for directive.
-        const OMPParallelSectionsDirective = 239;  // OpenMP parallel sections directive.
-        const OMPTaskDirective = 240;  // OpenMP task directive.
-        const OMPMasterDirective = 241;  // OpenMP master directive.
-        const OMPCriticalDirective = 242;  // OpenMP critical directive.
-        const OMPTaskyieldDirective = 243;  // OpenMP taskyield directive.
-        const OMPBarrierDirective = 244;  // OpenMP barrier directive.
-        const OMPTaskwaitDirective = 245;  // OpenMP taskwait directive.
-        const OMPFlushDirective = 246;  // OpenMP flush directive.
-        const SEHLeaveStmt = 247;  // Windows Structured Exception Handling's leave statement.
-        const OMPOrderedDirective = 248;  // OpenMP ordered directive.
-        const OMPAtomicDirective = 249;  // OpenMP atomic directive.
-        const OMPForSimdDirective = 250;  // OpenMP for SIMD directive.
-        const OMPParallelForSimdDirective = 251;  // OpenMP parallel for SIMD directive.
-        const OMPTargetDirective = 252;  // OpenMP target directive.
-        const OMPTeamsDirective = 253;  // OpenMP teams directive.
-        const OMPTaskgroupDirective = 254;  // OpenMP taskgroup directive.
-        const OMPCancellationPointDirective = 255;  // OpenMP cancellation point directive.
-        const OMPCancelDirective = 256;  // OpenMP cancel directive.
-        const LastStmt = DxcCursorKind::OMPCancelDirective.bits;
-
-        const TranslationUnit = 300; // Cursor that represents the translation unit itself.
-
-        /* Attributes */
-        const FirstAttr = 400;
-        /**
-         * \brief An attribute whose specific kind is not exposed via this
-        * interface.
-        */
-        const UnexposedAttr = 400;
-
-        const IBActionAttr = 401;
-        const IBOutletAttr = 402;
-        const IBOutletCollectionAttr = 403;
-        const CXXFinalAttr = 404;
-        const CXXOverrideAttr = 405;
-        const AnnotateAttr = 406;
-        const AsmLabelAttr = 407;
-        const PackedAttr = 408;
-        const PureAttr = 409;
-        const ConstAttr = 410;
-        const NoDuplicateAttr = 411;
-        const CUDAConstantAttr = 412;
-        const CUDADeviceAttr = 413;
-        const CUDAGlobalAttr = 414;
-        const CUDAHostAttr = 415;
-        const CUDASharedAttr = 416;
-        const LastAttr = DxcCursorKind::CUDASharedAttr.bits;
-
-        /* Preprocessing */
-        const PreprocessingDirective = 500;
-        const MacroDefinition = 501;
-        const MacroExpansion = 502;
-        const MacroInstantiation = DxcCursorKind::MacroExpansion.bits;
-        const InclusionDirective = 503;
-        const FirstPreprocessing = DxcCursorKind::PreprocessingDirective.bits;
-        const LastPreprocessing = DxcCursorKind::InclusionDirective.bits;
-
-        /* Extra Declarations */
-        /**
-         * \brief A module import declaration.
-        */
-        const ModuleImportDecl = 600;
-        const FirstExtraDecl = DxcCursorKind::ModuleImportDecl.bits;
-        const LastExtraDecl = DxcCursorKind::ModuleImportDecl.bits;
+        const MODULE_IMPORT_DECL = 600;
+        const FIRST_EXTRA_DECL = DxcCursorKind::MODULE_IMPORT_DECL.bits;
+        const LAST_EXTRA_DECL = DxcCursorKind::MODULE_IMPORT_DECL.bits;
     }
 }
 
@@ -517,7 +305,6 @@ com_interface! {
     interface IDxcDiagnostic: IUnknown{
         iid: IID_IDxcDiagnostic,
         vtable: IDxcDiagnosticVtbl,
-
         fn format_diagnostic(options: DxcDiagnosticDisplayOptions, result: *mut LPSTR) -> HRESULT;
         fn get_severity(result: *mut DxcDiagnosticSeverity) -> HRESULT;
         fn get_location(result: *mut *mut IDxcSourceLocation) -> HRESULT;
@@ -535,7 +322,6 @@ com_interface! {
     interface IDxcInclusion: IUnknown{
         iid: IID_IDxcInclusion,
         vtable: IDxcInclusionVtbl,
-
         fn get_included_file(result: *mut *mut IDxcFile) -> HRESULT;
         fn get_stack_length(result: *mut u32) -> HRESULT;
         fn get_stack_item(index: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
@@ -547,13 +333,9 @@ com_interface! {
     interface IDxcToken: IUnknown{
         iid: IID_IDxcToken,
         vtable: IDxcTokenVtbl,
-
         fn get_kind(value: *mut DxcTokenKind) -> HRESULT;
-
         fn get_location(value: *mut *mut IDxcSourceLocation) -> HRESULT;
-
         fn get_extent(value: *mut *mut IDxcSourceRange) -> HRESULT;
-
         fn get_spelling(value: *mut LPSTR) -> HRESULT;
     }
 }
@@ -574,7 +356,6 @@ com_interface! {
     interface IDxcSourceLocation: IUnknown{
         iid: IID_IDxcSourceLocation,
         vtable: IDxcSourceLocationVtbl,
-
         fn is_equal_to(other: *const IDxcSourceLocation, result: *mut bool) ->HRESULT;
         fn get_spelling_location(file: *mut *mut IDxcFile, line: *mut u32, col: *mut u32, offset: *mut u32) ->HRESULT;
         fn is_null(result: *mut bool) ->HRESULT;
@@ -586,7 +367,6 @@ com_interface! {
     interface IDxcSourceRange: IUnknown{
         iid: IID_IDxcSourceRange,
         vtable: IDxcSourceRangeVtbl,
-
         fn is_null(value: *mut bool) -> HRESULT;
         fn get_start(value: *mut *mut IDxcSourceLocation) -> HRESULT;
         fn get_end(value: *mut *mut IDxcSourceLocation) -> HRESULT;
@@ -599,56 +379,26 @@ com_interface! {
     interface IDxcCursor: IUnknown{
         iid: IID_IDxcCursor,
         vtable: IDxcCursorVtbl,
-
         fn get_extent(range: *mut *mut IDxcSourceRange) -> HRESULT;
-
         fn get_location(result: *mut *mut IDxcSourceLocation) -> HRESULT;
-
         fn get_kind(result: *mut DxcCursorKind) -> HRESULT;
-
         fn get_kind_flags(result: *mut DxcCursorKindFlags) -> HRESULT;
-
         fn get_semantic_parent(result: *mut*mut IDxcCursor) -> HRESULT;
-
         fn get_lexical_parent(result:*mut*mut IDxcCursor) -> HRESULT;
-
         fn get_cursor_type(result:*mut*mut IDxcType) -> HRESULT;
-
         fn get_num_arguments(result:*mut i32) -> HRESULT;
-
         fn get_argument_at(index: i32, result: *mut *mut IDxcCursor) -> HRESULT;
-
         fn get_referenced_cursor(result:*mut *mut IDxcCursor) -> HRESULT;
-
-        /// <summary>For a cursor that is either a reference to or a declaration of some entity, retrieve a cursor that describes the definition of that entity.</summary>
-        /// <remarks>Some entities can be declared multiple times within a translation unit, but only one of those declarations can also be a definition.</remarks>
-        /// <returns>A cursor to the definition of this entity; nullptr if there is no definition in this translation unit.</returns>
         fn get_definition_cursor(result:*mut *mut IDxcCursor) -> HRESULT;
-
         fn find_references_in_file(file: *const IDxcFile, skip: u32, top:u32, result_length: *mut u32, result: *mut *mut *mut IDxcCursor) -> HRESULT;
-
-        /// <summary>Gets the name for the entity references by the cursor, e.g. foo for an 'int foo' variable.</summary>
         fn get_spelling(result: *mut LPSTR) -> HRESULT;
-
         fn is_equal_to(other: *const IDxcCursor, result:*mut bool) -> HRESULT;
-
         fn is_null(result:*mut bool) -> HRESULT;
-
         fn is_definition(result:*mut bool) -> HRESULT;
-
-        /// <summary>Gets the display name for the cursor, including e.g. parameter types for a function.</summary>
         fn get_display_name(result:*mut BSTR) -> HRESULT;
-
-        /// <summary>Gets the qualified name for the symbol the cursor refers to.</summary>
         fn get_qualified_name(include_template_args:bool, result:*mut BSTR) -> HRESULT;
-
-        /// <summary>Gets a name for the cursor, applying the specified formatting flags.</summary>
         fn get_formatted_name(formatting: DxcCursorFormatting, result:*mut BSTR) -> HRESULT;
-
-        /// <summary>Gets children in result up to top elements.</summary>
         fn get_children(skip: u32, top: u32, result_length:*mut u32, result:*mut*mut*mut IDxcCursor) -> HRESULT;
-
-        /// <summary>Gets the cursor following a location within a compound cursor.</summary>
         fn get_snapped_child(location:  *const IDxcSourceLocation, result:*mut*mut IDxcCursor) -> HRESULT;
     }
 }
@@ -658,7 +408,6 @@ com_interface! {
     interface IDxcUnsavedFile: IUnknown{
         iid: IID_IDxcUnsavedFile,
         vtable: IDxcUnsavedFileVtbl,
-
         fn get_file_name(file_name: *mut LPSTR) -> HRESULT;
         fn get_contents(contents: *mut LPSTR) -> HRESULT;
         fn get_length(lenth : *mut u32) -> HRESULT;
@@ -670,11 +419,7 @@ com_interface! {
     interface IDxcFile: IUnknown{
         iid: IID_IDxcFile,
         vtable: IDxcFileVtbl,
-
-        /// <summary>Gets the file name for this file.</summary>
         fn get_name(result: *mut LPSTR) -> HRESULT;
-
-        /// <summary>Checks whether this file is equal to the other specified file.</summary>
         fn is_equal_to(other : *const IDxcFile, result: *mut bool) -> HRESULT;
     }
 }
@@ -684,33 +429,20 @@ com_interface! {
     interface IDxcTranslationUnit: IUnknown{
         iid: IID_IDxcTranslationUnit,
         vtable: IDxcTranslationUnitVtbl,
-
         fn get_cursor(cursor: *mut *mut IDxcCursor) -> HRESULT;
-
         fn tokenize(range: *const IDxcSourceRange, tokens: *mut *mut *mut IDxcToken, token_count: *mut u32) -> HRESULT;
-
         fn get_location( file: *mut IDxcFile, line: u32, column: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
-
         fn get_num_diagnostics(value : *mut u32) -> HRESULT;
-
         fn get_diagnostic(index: u32, value: *mut *mut IDxcDiagnostic) -> HRESULT;
-
         fn get_file(name : *const u8, result : *mut *mut IDxcFile) -> HRESULT;
-
         fn get_file_name(result : *mut LPSTR) -> HRESULT;
-
         fn reparse(unsaved_files : *mut *mut IDxcUnsavedFile, num_unsaved_files: u32) -> HRESULT;
-
         fn get_cursor_for_location(location: *const IDxcSourceLocation, result : *mut *mut IDxcCursor) -> HRESULT;
-
         fn get_location_for_offset(file : *const IDxcFile, offset: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
-
         fn get_skipped_ranges(file: *const IDxcFile, result_count: *mut u32, result: *mut *mut *mut IDxcSourceRange) -> HRESULT;
-
         fn get_diagnostic_details(
             index: u32,  options: DxcDiagnosticDisplayOptions, error_code: *mut u32, error_line: *mut u32, error_column: *mut u32,
             error_file: *mut BSTR, error_offset: *mut u32, error_length: *mut u32, error_message: *mut BSTR) -> HRESULT;
-
         fn get_inclusion_list(result_count: *mut u32, result: *mut *mut *mut IDxcInclusion) -> HRESULT;
     }
 }
@@ -720,7 +452,6 @@ com_interface! {
     interface IDxcIndex: IUnknown{
         iid: IID_IDxcIndex,
         vtable: IDxcIndexVtbl,
-
         fn set_global_options(options: DxcGlobalOptions) -> HRESULT;
         fn get_global_options(options: *mut DxcGlobalOptions) -> HRESULT;
         fn parse_translation_unit(
@@ -739,7 +470,6 @@ com_interface! {
     interface IDxcIntelliSense: IUnknown{
         iid: IID_IDxcIntelliSense,
         vtable: IDxcIntelliSenseVtbl,
-
         fn create_index(index: *mut *mut IDxcIndex) -> HRESULT;
         fn get_null_location(location: *mut *mut  IDxcSourceLocation)  -> HRESULT;
         fn get_null_range(location: *mut *mut  IDxcSourceRange)  -> HRESULT;
