@@ -159,8 +159,6 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
             };
 
             unsafe {
-                blob.inner.add_ref(); // bump ref, release() called in Drop impl
-
                 *include_source = *blob.inner.as_mut_ptr();
                 (*me).blobs.push(blob);
                 (*me).pinned.push(Rc::clone(&pinned_source));
@@ -169,16 +167,6 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
             0
         } else {
             -2147024894i32 // ERROR_FILE_NOT_FOUND / 0x80070002
-        }
-    }
-}
-
-impl<'a> Drop for DxcIncludeHandlerWrapper<'a> {
-    fn drop(&mut self) {
-        for b in &self.blobs {
-            unsafe {
-                b.inner.release();
-            }
         }
     }
 }
