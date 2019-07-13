@@ -4,6 +4,7 @@ use com_rs::ComPtr;
 use libloading::{Library, Symbol};
 use std::convert::Into;
 use std::ffi::c_void;
+use std::rc::Rc;
 use winapi::shared::ntdef::{LPCWSTR, LPWSTR};
 use winapi::shared::winerror::HRESULT;
 
@@ -115,6 +116,7 @@ struct DxcIncludeHandlerWrapper<'a> {
     vtable: Box<DxcIncludeHandlerWrapperVtbl>,
     handler: Box<dyn DxcIncludeHandler>,
     blobs: Vec<DxcBlobEncoding>,
+    pinned: Vec<Rc<String>>,
     library: &'a DxcLibrary,
 }
 
@@ -147,10 +149,12 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
         let source = unsafe { &(*me).handler.load_source(filename) };
 
         if let Some(source) = source {
+            let pinned_source = Rc::new(source.clone());
+
             let mut blob = unsafe {
                 (*me)
                     .library
-                    .create_blob_with_encoding_from_str(&source)
+                    .create_blob_with_encoding_from_str(Rc::clone(&pinned_source))
                     .unwrap()
             };
 
@@ -159,6 +163,7 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
 
                 *include_source = *blob.inner.as_mut_ptr();
                 (*me).blobs.push(blob);
+                (*me).pinned.push(Rc::clone(&pinned_source));
             }
 
             0
@@ -237,6 +242,7 @@ impl DxcCompiler {
                 handler: include_handler,
                 blobs: vec![],
                 library,
+                pinned: vec![],
             }))
         } else {
             None
@@ -431,7 +437,7 @@ impl DxcLibrary {
 
     pub fn create_blob_with_encoding_from_str(
         &self,
-        text: &str,
+        text: Rc<String>,
     ) -> Result<DxcBlobEncoding, HRESULT> {
         let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
         const CP_UTF8: u32 = 65001; // UTF-8 translation

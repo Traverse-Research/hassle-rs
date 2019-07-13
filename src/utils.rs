@@ -1,4 +1,5 @@
 use crate::wrapper::*;
+use std::rc::Rc;
 use winapi::shared::ntdef::LPSTR;
 use winapi::shared::ntdef::LPWSTR;
 use winapi::shared::wtypes::BSTR;
@@ -78,8 +79,10 @@ pub fn compile_hlsl(
     let compiler = dxc.create_compiler().unwrap();
     let library = dxc.create_library().unwrap();
 
+    let source = Rc::new(String::from(shader_text));
+
     let blob = library
-        .create_blob_with_encoding_from_str(shader_text)
+        .create_blob_with_encoding_from_str(Rc::clone(&source))
         .unwrap();
 
     let result = compiler.compile(
