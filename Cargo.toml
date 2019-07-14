@@ -8,7 +8,7 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/Jasper-Bekkers/hassle-rs"
 repository = "https://github.com/Jasper-Bekkers/hassle-rs"
-keywords = ["rendering", "shader", "pipeline", "hlsl", "dxc", "intellisense"]
+keywords = ["shader", "pipeline", "hlsl", "dxc", "intellisense"]
 categories = ["rendering", "rendering::graphics-api"]
 include = [
     "src/*.rs",
