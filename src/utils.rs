@@ -1,8 +1,8 @@
+use crate::os::{BSTR, LPSTR, LPWSTR};
 use crate::wrapper::*;
 use std::rc::Rc;
-use winapi::shared::ntdef::LPSTR;
-use winapi::shared::ntdef::LPWSTR;
-use winapi::shared::wtypes::BSTR;
+
+#[cfg(windows)]
 use winapi::um::oleauto::{SysFreeString, SysStringLen};
 
 pub(crate) fn to_wide(msg: &str) -> Vec<u16> {
@@ -25,6 +25,7 @@ pub(crate) fn from_wide(wide: LPWSTR) -> String {
         .unwrap()
 }
 
+#[cfg(windows)]
 pub(crate) fn from_bstr(string: BSTR) -> String {
     unsafe {
         let len = SysStringLen(string);
@@ -36,6 +37,7 @@ pub(crate) fn from_bstr(string: BSTR) -> String {
     }
 }
 
+#[cfg(windows)]
 pub(crate) fn from_lpstr(string: LPSTR) -> String {
     unsafe {
         let len = (0..).take_while(|&i| *string.offset(i) != 0).count();

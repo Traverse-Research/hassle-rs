@@ -1,10 +1,9 @@
 #![allow(clippy::transmute_ptr_to_ptr)]
 #![allow(clippy::too_many_arguments)]
 
+use crate::os::{HRESULT, LPCWSTR, LPWSTR};
 use com_rs::{com_interface, iid, IUnknown, IID};
 use std::ffi::c_void;
-use winapi::shared::ntdef::{LPCWSTR, LPWSTR};
-use winapi::shared::winerror::HRESULT;
 
 pub type DxcCreateInstanceProc =
     extern "system" fn(rclsid: &IID, riid: &IID, ppv: *mut *mut c_void) -> HRESULT;

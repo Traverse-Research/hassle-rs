@@ -1,7 +1,5 @@
+use crate::os::{BSTR, HRESULT, LPCSTR, LPSTR};
 use com_rs::{com_interface, iid, IUnknown};
-use winapi::shared::ntdef::{LPCSTR, LPSTR};
-use winapi::shared::winerror::HRESULT;
-use winapi::shared::wtypes::BSTR;
 
 bitflags! {
     pub struct DxcGlobalOptions : u32 {

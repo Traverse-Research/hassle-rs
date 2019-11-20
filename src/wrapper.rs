@@ -1,12 +1,11 @@
 use crate::ffi::*;
+use crate::os::{HRESULT, LPCSTR, LPSTR};
 use crate::utils::{from_wide, to_wide};
 use com_rs::ComPtr;
 use libloading::{Library, Symbol};
 use std::convert::Into;
 use std::ffi::c_void;
 use std::rc::Rc;
-use winapi::shared::ntdef::{LPCWSTR, LPWSTR};
-use winapi::shared::winerror::HRESULT;
 
 #[macro_export]
 macro_rules! return_hr {
