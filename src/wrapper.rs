@@ -106,6 +106,8 @@ struct DxcIncludeHandlerWrapperVtbl {
     ) -> com_rs::HResult,
     add_ref: extern "stdcall" fn(*const com_rs::IUnknown) -> u32,
     release: extern "stdcall" fn(*const com_rs::IUnknown) -> u32,
+    dummy0: *const c_void,
+    dummy1: *const c_void,
     load_source:
         extern "stdcall" fn(*mut com_rs::IUnknown, LPCWSTR, *mut *mut IDxcBlob) -> com_rs::HResult,
 }
@@ -141,8 +143,7 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
         filename: LPCWSTR,
         include_source: *mut *mut IDxcBlob,
     ) -> com_rs::HResult {
-        unimplemented!();
-        /*let me = me as *mut DxcIncludeHandlerWrapper;
+        let me = me as *mut DxcIncludeHandlerWrapper;
 
         let filename = crate::utils::from_wide(filename as *mut _);
 
@@ -154,7 +155,7 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
             let mut blob = unsafe {
                 (*me)
                     .library
-                    .create_blob_with_encoding_from_str(Rc::clone(&pinned_source))
+                    .create_blob_with_encoding_from_str(&*pinned_source)
                     .unwrap()
             };
 
@@ -167,7 +168,7 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
             0
         } else {
             -2147024894i32 // ERROR_FILE_NOT_FOUND / 0x80070002
-        }*/
+        }
     }
 }
 
@@ -222,6 +223,8 @@ impl DxcCompiler {
                 query_interface: DxcIncludeHandlerWrapper::query_interface,
                 add_ref: DxcIncludeHandlerWrapper::add_ref,
                 release: DxcIncludeHandlerWrapper::release,
+                dummy0: std::ptr::null(),
+                dummy1: std::ptr::null(),
                 load_source: DxcIncludeHandlerWrapper::load_source,
             };
 
