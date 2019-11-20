@@ -1,35 +1,29 @@
+#[cfg(windows)]
 use crate::os::{BSTR, LPSTR, LPWSTR};
+use crate::os::{LPWSTR, WCHAR};
 use crate::wrapper::*;
 use std::rc::Rc;
 
 #[cfg(windows)]
 use winapi::um::oleauto::{SysFreeString, SysStringLen};
 
-pub(crate) fn to_wide(msg: &str) -> Vec<u16> {
-    use std::ffi::OsStr;
-    use std::iter::once;
-    use std::os::windows::ffi::OsStrExt;
-
-    let wide: Vec<u16> = OsStr::new(msg).encode_wide().chain(once(0)).collect();
-    wide
+pub(crate) fn to_wide(msg: &str) -> Vec<WCHAR> {
+    widestring::WideCString::from_str(msg).unwrap().into_vec()
 }
 
 pub(crate) fn from_wide(wide: LPWSTR) -> String {
-    use std::ffi::OsString;
-    use std::os::windows::ffi::OsStringExt;
-
-    let len = unsafe { (0..).take_while(|&i| *wide.offset(i) != 0).count() };
-
-    OsString::from_wide(unsafe { std::slice::from_raw_parts(wide, len) })
-        .into_string()
-        .unwrap()
+    unsafe {
+        widestring::WideCStr::from_ptr_str(wide)
+            .to_string()
+            .expect("utf16 decode failed")
+    }
 }
 
 #[cfg(windows)]
 pub(crate) fn from_bstr(string: BSTR) -> String {
     unsafe {
         let len = SysStringLen(string);
-        let slice: &[u16] = ::std::slice::from_raw_parts(string, len as usize);
+        let slice: &[WCHAR] = ::std::slice::from_raw_parts(string, len as usize);
         let result = String::from_utf16(slice).unwrap();
         SysFreeString(string);
 
@@ -81,10 +75,10 @@ pub fn compile_hlsl(
     let compiler = dxc.create_compiler().unwrap();
     let library = dxc.create_library().unwrap();
 
-    let source = Rc::new(String::from(shader_text));
+    //let source = Rc::new(String::from(shader_text));
 
     let blob = library
-        .create_blob_with_encoding_from_str(Rc::clone(&source))
+        .create_blob_with_encoding_from_str(shader_text)
         .unwrap();
 
     let result = compiler.compile(

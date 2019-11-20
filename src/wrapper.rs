@@ -1,5 +1,5 @@
 use crate::ffi::*;
-use crate::os::{HRESULT, LPCSTR, LPSTR};
+use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
 use crate::utils::{from_wide, to_wide};
 use com_rs::ComPtr;
 use libloading::{Library, Symbol};
@@ -141,7 +141,8 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
         filename: LPCWSTR,
         include_source: *mut *mut IDxcBlob,
     ) -> com_rs::HResult {
-        let me = me as *mut DxcIncludeHandlerWrapper;
+        unimplemented!();
+        /*let me = me as *mut DxcIncludeHandlerWrapper;
 
         let filename = crate::utils::from_wide(filename as *mut _);
 
@@ -166,7 +167,7 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
             0
         } else {
             -2147024894i32 // ERROR_FILE_NOT_FOUND / 0x80070002
-        }
+        }*/
     }
 }
 
@@ -183,7 +184,7 @@ impl DxcCompiler {
 
     fn prep_defines(
         defines: &[(&str, Option<&str>)],
-        wide_defines: &mut Vec<(Vec<u16>, Vec<u16>)>,
+        wide_defines: &mut Vec<(Vec<WCHAR>, Vec<WCHAR>)>,
         dxc_defines: &mut Vec<DxcDefine>,
     ) {
         for (name, value) in defines {
@@ -202,7 +203,7 @@ impl DxcCompiler {
         }
     }
 
-    fn prep_args(args: &[&str], wide_args: &mut Vec<Vec<u16>>, dxc_args: &mut Vec<LPCWSTR>) {
+    fn prep_args(args: &[&str], wide_args: &mut Vec<Vec<WCHAR>>, dxc_args: &mut Vec<LPCWSTR>) {
         for a in args {
             wide_args.push(to_wide(a));
         }
@@ -424,10 +425,22 @@ impl DxcLibrary {
 
     pub fn create_blob_with_encoding_from_str(
         &self,
-        text: Rc<String>,
+        text: &str,
     ) -> Result<DxcBlobEncoding, HRESULT> {
         let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
         const CP_UTF8: u32 = 65001; // UTF-8 translation
+
+        /*return_hr!(
+            unsafe {
+                self.inner.create_blob_with_encoding_on_heap_copy(
+                    text.as_ptr() as *const c_void,
+                    text.len() as u32,
+                    CP_UTF8,
+                    blob.as_mut_ptr(),
+                )
+            },
+            DxcBlobEncoding::new(blob)
+        );*/
 
         return_hr!(
             unsafe {
@@ -466,9 +479,21 @@ pub struct Dxc {
     dxc_lib: Library,
 }
 
+#[cfg(windows)]
+fn dxcompiler_lib_name() -> &'static str {
+    "dxcompiler.dll"
+}
+
+#[cfg(not(windows))]
+fn dxcompiler_lib_name() -> &'static str {
+    "../dxc-rs/target/debug/build/dxc-rs-05a2fe30f551ddd3/out/lib/libdxcompiler.so"
+    //"/home/h3/Downloads/ShaderConductor-linux-clang7-x64-Release/Lib/libdxcompiler.so"
+    //"/home/h3/Downloads/ShaderConductor-linux-clang6-x64-Release/Lib/libdxcompiler.so"
+}
+
 impl Dxc {
     pub fn new() -> Self {
-        let dxc_lib = Library::new("dxcompiler.dll").expect("Failed to load dxcompiler.dll");
+        let dxc_lib = Library::new(dxcompiler_lib_name()).expect("Failed to load dxcompiler.dll");
 
         Self { dxc_lib }
     }
@@ -523,7 +548,7 @@ impl DxcValidator {
         };
 
         if result_hr != 0 {
-            return Err(result_hr);
+            return Err(result_hr as _);
         }
 
         let mut major = 0;
