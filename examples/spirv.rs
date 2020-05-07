@@ -1,6 +1,6 @@
 use hassle_rs::*;
 use rspirv::binary::Disassemble;
-use rspirv::mr::load_bytes;
+use rspirv::dr::load_bytes;
 
 fn main() {
     let source = include_str!("copy.hlsl");
