@@ -2,7 +2,6 @@
 use crate::os::{BSTR, LPSTR, LPWSTR};
 use crate::os::{LPWSTR, WCHAR};
 use crate::wrapper::*;
-use std::rc::Rc;
 
 #[cfg(windows)]
 use winapi::um::oleauto::{SysFreeString, SysStringLen};
