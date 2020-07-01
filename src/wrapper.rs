@@ -1,3 +1,9 @@
+#![allow(
+    clippy::too_many_arguments,
+    clippy::new_without_default,
+    clippy::type_complexity
+)]
+
 use crate::ffi::*;
 use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
 use crate::utils::{from_wide, to_wide};
@@ -167,7 +173,7 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
 
             0
         } else {
-            -2147024894i32 // ERROR_FILE_NOT_FOUND / 0x80070002
+            -2_147_024_894_i32 // ERROR_FILE_NOT_FOUND / 0x80070002
         }
     }
 }
@@ -209,7 +215,7 @@ impl DxcCompiler {
             wide_args.push(to_wide(a));
         }
 
-        for ref a in wide_args {
+        for a in wide_args {
             dxc_args.push(a.as_ptr());
         }
     }
