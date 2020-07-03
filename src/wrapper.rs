@@ -173,7 +173,7 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
 
             0
         } else {
-            -2_147_024_894_i32 // ERROR_FILE_NOT_FOUND / 0x80070002
+            -2_147_024_894 // ERROR_FILE_NOT_FOUND / 0x80070002
         }
     }
 }

@@ -1,7 +1,7 @@
 #[cfg(windows)]
 mod os_defs {
     pub use winapi::shared::{
-        ntdef::{LPSTR, LPWSTR},
+        ntdef::{HRESULT, LPCSTR, LPCWSTR, LPSTR, LPWSTR, WCHAR},
         wtypes::BSTR,
     };
 }
@@ -17,8 +17,7 @@ mod os_defs {
     pub type LPCWSTR = *const WCHAR;
     pub type BSTR = *mut OLECHAR;
     pub type LPBSTR = *mut BSTR;
-    pub type HRESULT = LONG;
-    pub type LONG = i64;
+    pub type HRESULT = i32;
 }
 
 pub use os_defs::*;
