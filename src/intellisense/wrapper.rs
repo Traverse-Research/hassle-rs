@@ -1,10 +1,8 @@
 use crate::intellisense::ffi::*;
+use crate::os::{BSTR, HRESULT, LPSTR};
 use crate::wrapper::Dxc;
 use com_rs::ComPtr;
 use std::ffi::CString;
-use winapi::shared::ntdef::LPSTR;
-use winapi::shared::winerror::HRESULT;
-use winapi::shared::wtypes::BSTR;
 
 #[derive(Debug)]
 pub struct DxcIntellisense {

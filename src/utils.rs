@@ -1,6 +1,4 @@
-#[cfg(windows)]
-use crate::os::{BSTR, LPSTR, LPWSTR};
-use crate::os::{LPWSTR, WCHAR};
+use crate::os::{BSTR, LPSTR, LPWSTR, WCHAR};
 use crate::wrapper::*;
 
 #[cfg(windows)]
@@ -30,7 +28,14 @@ pub(crate) fn from_bstr(string: BSTR) -> String {
     }
 }
 
-#[cfg(windows)]
+#[cfg(not(windows))]
+pub(crate) fn from_bstr(string: BSTR) -> String {
+    // TODO (Marijn): This does NOT cover embedded NULLs:
+    // https://docs.microsoft.com/en-us/windows/win32/api/oleauto/nf-oleauto-sysstringlen#remarks
+    // Fortunately BSTRs are only used in names currently, which _likely_ don't include NULL characters (like binary data)
+    from_lpstr(string as LPSTR)
+}
+
 pub(crate) fn from_lpstr(string: LPSTR) -> String {
     unsafe {
         let len = (0..).take_while(|&i| *string.offset(i) != 0).count();

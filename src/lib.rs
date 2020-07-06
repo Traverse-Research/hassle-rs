@@ -39,7 +39,6 @@ pub mod utils;
 #[macro_use]
 pub mod wrapper;
 
-#[cfg(windows)]
 pub mod intellisense;
 
 pub use crate::ffi::*;
