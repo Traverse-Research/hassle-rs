@@ -1,4 +1,5 @@
 use crate::os::{BSTR, HRESULT, LPCSTR, LPSTR};
+use bitflags::bitflags;
 use com_rs::{com_interface, iid, IUnknown};
 
 bitflags! {

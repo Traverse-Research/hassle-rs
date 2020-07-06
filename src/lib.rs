@@ -32,8 +32,6 @@
 //! );
 //! ```
 
-extern crate bitflags;
-
 pub mod ffi;
 pub mod os;
 pub mod utils;
