@@ -2,6 +2,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::os::{HRESULT, LPCWSTR, LPWSTR};
+pub(crate) use crate::unknown::IDxcUnknownShim;
 use com_rs::{com_interface, iid, IUnknown, IID};
 use std::ffi::c_void;
 
@@ -17,7 +18,7 @@ pub type DxcCreateInstanceProc2 = extern "system" fn(
 
 iid!(pub IID_IDxcBlob = 0x8BA5_FB08, 0x5195, 0x40e2, 0xAC, 0x58, 0x0D, 0x98, 0x9C, 0x3A, 0x01, 0x02);
 com_interface! {
-    interface IDxcBlob: IUnknown{
+    interface IDxcBlob: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcBlob,
         vtable: IDxcBlobVtbl,
         fn get_buffer_pointer() -> *const c_void;
@@ -27,7 +28,7 @@ com_interface! {
 
 iid!(pub IID_IDxcBlobEncoding = 0x7241_d424, 0x2646, 0x4191, 0x97, 0xc0, 0x98, 0xe9, 0x6e, 0x42, 0xfc, 0x68);
 com_interface! {
-    interface IDxcBlobEncoding: IDxcBlob, IUnknown{
+    interface IDxcBlobEncoding: IDxcBlob, IDxcUnknownShim, IUnknown {
         iid: IID_IDxcBlobEncoding,
         vtable: IDxcBlobEncodingVtbl,
         fn get_encoding(known: *mut u32, code_page: *mut u32) -> HRESULT;
@@ -36,7 +37,7 @@ com_interface! {
 
 iid!(pub IID_IDxcLibrary = 0xe520_4dc7, 0xd18c, 0x4c3c, 0xbd, 0xfb, 0x85, 0x16, 0x73, 0x98, 0x0f, 0xe7);
 com_interface! {
-    interface IDxcLibrary: IUnknown{
+    interface IDxcLibrary: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcLibrary,
         vtable: IDxcLibraryVtbl,
         fn set_malloc(malloc: *const c_void) -> HRESULT;
@@ -54,7 +55,7 @@ com_interface! {
 
 iid!(pub IID_IDxcOperationResult = 0xCEDB_484A, 0xD4E9, 0x445A, 0xB9, 0x91, 0xCA, 0x21, 0xCA, 0x15, 0x7D, 0xC2);
 com_interface! {
-    interface IDxcOperationResult: IUnknown{
+    interface IDxcOperationResult: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcOperationResult,
         vtable: IDxcOperationResultVtbl,
         fn get_status(status: *mut u32) -> HRESULT;
@@ -65,7 +66,7 @@ com_interface! {
 
 iid!(pub IID_IDxcIncludeHandler = 0x7f61_fc7d, 0x950d, 0x467f, 0xb3, 0xe3, 0x3c, 0x02, 0xfb, 0x49, 0x18, 0x7c);
 com_interface! {
-    interface IDxcIncludeHandler: IUnknown{
+    interface IDxcIncludeHandler: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcIncludeHandler,
         vtable: IDxcIncludeHandlerVtbl,
         fn load_source(filename: LPCWSTR, include_source: *mut *mut IDxcBlob) -> HRESULT;
@@ -81,7 +82,7 @@ pub struct DxcDefine {
 
 iid!(pub IID_IDxcCompiler = 0x8c21_0bf3, 0x011f, 0x4422, 0x8d, 0x70, 0x6f, 0x9a, 0xcb, 0x8d, 0xb6, 0x17);
 com_interface! {
-    interface IDxcCompiler: IUnknown{
+    interface IDxcCompiler: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcCompiler,
         vtable: IDxcCompilerVtbl,
         fn compile(
@@ -114,7 +115,7 @@ com_interface! {
 
 iid!(pub IID_IDxcCompiler2 = 0xA005_A9D9, 0xB8BB, 0x4594, 0xB5, 0xC9, 0x0E, 0x63, 0x3B, 0xEC, 0x4D, 0x37);
 com_interface! {
-    interface IDxcCompiler2: IDxcCompiler, IUnknown{
+    interface IDxcCompiler2: IDxcCompiler, IDxcUnknownShim, IUnknown {
         iid: IID_IDxcCompiler2,
         vtable: IDxcCompiler2Vtbl,
 
@@ -136,7 +137,7 @@ com_interface! {
 
 iid!(pub IID_IDxcLinker = 0xF1B5_BE2A, 0x62DD, 0x4327, 0xA1, 0xC2, 0x42, 0xAC, 0x1E, 0x1E, 0x78, 0xE6);
 com_interface! {
-    interface IDxcLinker: IUnknown{
+    interface IDxcLinker: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcLinker,
         vtable: IDxcLinkerVtbl,
 
@@ -161,7 +162,7 @@ pub const DXC_VALIDATOR_FLAGS_VALID_MASK: u32 = 0x7;
 
 iid!(pub IID_IDxcValidator = 0xA6E8_2BD2, 0x1FD7, 0x4826, 0x98, 0x11, 0x28, 0x57, 0xE7, 0x97, 0xF4, 0x9A);
 com_interface! {
-    interface IDxcValidator: IUnknown{
+    interface IDxcValidator: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcValidator,
         vtable: IDxcValidatorVtbl,
 
@@ -171,7 +172,7 @@ com_interface! {
 
 iid!(pub IID_IDxcContainerBuilder = 0x334b_1f50, 0x2292, 0x4b35, 0x99, 0xa1, 0x25, 0x58, 0x8d, 0x8c, 0x17, 0xfe);
 com_interface! {
-    interface IDxcContainerBuilder: IUnknown{
+    interface IDxcContainerBuilder: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcContainerBuilder,
         vtable: IDxcContainerBuilderVtbl,
 
@@ -184,7 +185,7 @@ com_interface! {
 
 iid!(pub IID_IDxcAssembler = 0x091f_7a26, 0x1c1f, 0x4948, 0x90, 0x4b, 0xe6, 0xe3, 0xa8, 0xa7, 0x71, 0xd5);
 com_interface! {
-    interface IDxcAssembler: IUnknown{
+    interface IDxcAssembler: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcAssembler,
         vtable: IDxcAssemblerVtbl,
 
@@ -194,7 +195,7 @@ com_interface! {
 
 iid!(pub IID_IDxcContainerReflection = 0xd2c2_1b26, 0x8350, 0x4bdc, 0x97, 0x6a, 0x33, 0x1c, 0xe6, 0xf4, 0xc5, 0x4c);
 com_interface! {
-    interface IDxcContainerReflection: IUnknown{
+    interface IDxcContainerReflection: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcContainerReflection,
         vtable: IDxcContainerReflectionVtbl,
 
@@ -209,7 +210,7 @@ com_interface! {
 
 iid!(pub IID_IDxcOptimizerPass = 0xAE2C_D79F, 0xCC22, 0x453F, 0x9B, 0x6B, 0xB1, 0x24, 0xE7, 0xA5, 0x20, 0x4C);
 com_interface! {
-    interface IDxcOptimizerPass: IUnknown{
+    interface IDxcOptimizerPass: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcOptimizerPass,
         vtable: IDxcOptimizerPassVtbl,
 
@@ -223,7 +224,7 @@ com_interface! {
 
 iid!(pub IID_IDxcOptimizer = 0x2574_0E2E, 0x9CBA, 0x401B, 0x91, 0x19, 0x4F, 0xB4, 0x2F, 0x39, 0xF2, 0x70);
 com_interface! {
-    interface IDxcOptimizer: IUnknown{
+    interface IDxcOptimizer: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcOptimizer,
         vtable: IDxcOptimizerVtbl,
 
@@ -244,7 +245,7 @@ pub const DXC_VERSION_INFO_FLAGS_INTERNAL: u32 = 2; // Internal Validator (non-s
 
 iid!(pub IID_IDxcVersionInfo = 0xb04f_5b50, 0x2059, 0x4f12, 0xa8, 0xff, 0xa1, 0xe0, 0xcd, 0xe1, 0xcc, 0x7e);
 com_interface! {
-    interface IDxcVersionInfo: IUnknown{
+    interface IDxcVersionInfo: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcVersionInfo,
         vtable: IDxcVersionInfoVtbl,
 
@@ -255,7 +256,7 @@ com_interface! {
 
 iid!(pub IID_IDxcVersionInfo2 = 0xfb69_04c4, 0x42f0, 0x4b62, 0x9c, 0x46, 0x98, 0x3a, 0xf7, 0xda, 0x7c, 0x83);
 com_interface! {
-    interface IDxcVersionInfo2: IUnknown{
+    interface IDxcVersionInfo2: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcVersionInfo2,
         vtable: IDxcVersionInfo2Vtbl,
 

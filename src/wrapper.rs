@@ -110,8 +110,12 @@ struct DxcIncludeHandlerWrapperVtbl {
         &com_rs::IID,
         *mut *mut core::ffi::c_void,
     ) -> com_rs::HResult,
-    add_ref: extern "stdcall" fn(*const com_rs::IUnknown) -> u32,
-    release: extern "stdcall" fn(*const com_rs::IUnknown) -> u32,
+    add_ref: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
+    release: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
+    #[cfg(not(windows))]
+    complete_object_destructor: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
+    #[cfg(not(windows))]
+    deleting_destructor: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
     load_source:
         extern "stdcall" fn(*mut com_rs::IUnknown, LPCWSTR, *mut *mut IDxcBlob) -> com_rs::HResult,
 }
@@ -134,11 +138,7 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
         0 // dummy impl
     }
 
-    extern "stdcall" fn add_ref(_me: *const com_rs::IUnknown) -> u32 {
-        0 // dummy impl
-    }
-
-    extern "stdcall" fn release(_me: *const com_rs::IUnknown) -> u32 {
+    extern "stdcall" fn dummy(_me: *const com_rs::IUnknown) -> HRESULT {
         0 // dummy impl
     }
 
@@ -225,8 +225,12 @@ impl DxcCompiler {
         if let Some(include_handler) = include_handler {
             let vtable = DxcIncludeHandlerWrapperVtbl {
                 query_interface: DxcIncludeHandlerWrapper::query_interface,
-                add_ref: DxcIncludeHandlerWrapper::add_ref,
-                release: DxcIncludeHandlerWrapper::release,
+                add_ref: DxcIncludeHandlerWrapper::dummy,
+                release: DxcIncludeHandlerWrapper::dummy,
+                #[cfg(not(windows))]
+                complete_object_destructor: DxcIncludeHandlerWrapper::dummy,
+                #[cfg(not(windows))]
+                deleting_destructor: DxcIncludeHandlerWrapper::dummy,
                 load_source: DxcIncludeHandlerWrapper::load_source,
             };
 
