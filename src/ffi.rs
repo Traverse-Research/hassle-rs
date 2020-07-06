@@ -105,7 +105,7 @@ com_interface! {
             arg_count: u32,
             defines: *const DxcDefine,
             def_count: u32,
-            include_handler: *const c_void,
+            include_handler: *const IDxcIncludeHandler,
             result: *mut *mut IDxcOperationResult) -> HRESULT;
 
         fn preprocess(
@@ -115,7 +115,7 @@ com_interface! {
             arg_count: u32,
             defines: *const DxcDefine,
             def_count: u32,
-            include_handler: *const c_void,
+            include_handler: *const IDxcIncludeHandler,
             result: *mut *mut IDxcOperationResult) -> HRESULT;
 
         fn disassemble(
@@ -141,7 +141,7 @@ com_interface! {
             arg_count: u32,
             defines: *const DxcDefine,
             def_count: u32,
-            include_handler: *const c_void,
+            include_handler: *const IDxcIncludeHandler,
             result: *mut *mut IDxcOperationResult,
             debug_blob_name: *mut LPWSTR,
             debug_blob: *mut *mut IDxcBlob) -> HRESULT;
