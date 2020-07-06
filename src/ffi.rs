@@ -20,8 +20,6 @@ com_interface! {
     interface IDxcBlob: IUnknown{
         iid: IID_IDxcBlob,
         vtable: IDxcBlobVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
         fn get_buffer_pointer() -> *const c_void;
         fn get_buffer_size() -> usize;
     }
@@ -32,8 +30,6 @@ com_interface! {
     interface IDxcBlobEncoding: IDxcBlob, IUnknown{
         iid: IID_IDxcBlobEncoding,
         vtable: IDxcBlobEncodingVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
         fn get_encoding(known: *mut u32, code_page: *mut u32) -> HRESULT;
     }
 }
@@ -43,8 +39,6 @@ com_interface! {
     interface IDxcLibrary: IUnknown{
         iid: IID_IDxcLibrary,
         vtable: IDxcLibraryVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
         fn set_malloc(malloc: *const c_void) -> HRESULT;
         fn create_blob_from_blob(blob: *const IDxcBlob, offset: u32, length: u32, result_blob: *mut *mut IDxcBlob) -> HRESULT;
         fn create_blob_from_file(filename: LPCWSTR, code_page: *const u32, blob_encoding: *mut *mut IDxcBlobEncoding) -> HRESULT;
@@ -63,8 +57,6 @@ com_interface! {
     interface IDxcOperationResult: IUnknown{
         iid: IID_IDxcOperationResult,
         vtable: IDxcOperationResultVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
         fn get_status(status: *mut u32) -> HRESULT;
         fn get_result(result: *mut *mut IDxcBlob) -> HRESULT;
         fn get_error_buffer(errors: *mut *mut IDxcBlobEncoding) -> HRESULT;
@@ -76,8 +68,6 @@ com_interface! {
     interface IDxcIncludeHandler: IUnknown{
         iid: IID_IDxcIncludeHandler,
         vtable: IDxcIncludeHandlerVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
         fn load_source(filename: LPCWSTR, include_source: *mut *mut IDxcBlob) -> HRESULT;
     }
 }
@@ -94,8 +84,6 @@ com_interface! {
     interface IDxcCompiler: IUnknown{
         iid: IID_IDxcCompiler,
         vtable: IDxcCompilerVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
         fn compile(
             blob: *const IDxcBlob,
             source_name: LPCWSTR,
@@ -129,8 +117,6 @@ com_interface! {
     interface IDxcCompiler2: IDxcCompiler, IUnknown{
         iid: IID_IDxcCompiler2,
         vtable: IDxcCompiler2Vtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
 
         fn compile_with_debug(
             blob: *const IDxcBlob,
@@ -153,8 +139,6 @@ com_interface! {
     interface IDxcLinker: IUnknown{
         iid: IID_IDxcLinker,
         vtable: IDxcLinkerVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
 
         fn register_library(lib_name: LPCWSTR, lib: *const IDxcBlob) -> HRESULT;
 
@@ -180,8 +164,6 @@ com_interface! {
     interface IDxcValidator: IUnknown{
         iid: IID_IDxcValidator,
         vtable: IDxcValidatorVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
 
         fn validate(shader: *const IDxcBlob, flags: u32, result: *mut *mut IDxcOperationResult) -> HRESULT;
     }
@@ -192,8 +174,6 @@ com_interface! {
     interface IDxcContainerBuilder: IUnknown{
         iid: IID_IDxcContainerBuilder,
         vtable: IDxcContainerBuilderVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
 
         fn load(dxil_container_header: *const IDxcBlob) -> HRESULT;
         fn add_part(four_cc: u32, source: *const IDxcBlob) -> HRESULT;
@@ -207,8 +187,6 @@ com_interface! {
     interface IDxcAssembler: IUnknown{
         iid: IID_IDxcAssembler,
         vtable: IDxcAssemblerVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
 
         fn assemble_to_container(shader: *const IDxcBlob, result: *mut *mut IDxcOperationResult) -> HRESULT;
     }
@@ -219,8 +197,6 @@ com_interface! {
     interface IDxcContainerReflection: IUnknown{
         iid: IID_IDxcContainerReflection,
         vtable: IDxcContainerReflectionVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
 
         fn load(container: *const IDxcBlob) -> HRESULT;
         fn get_part_count(result: *mut u32) -> HRESULT;
@@ -236,8 +212,6 @@ com_interface! {
     interface IDxcOptimizerPass: IUnknown{
         iid: IID_IDxcOptimizerPass,
         vtable: IDxcOptimizerPassVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
 
         fn get_option_name(result: *mut LPWSTR) -> HRESULT;
         fn get_description(result: *mut LPWSTR) -> HRESULT;
@@ -252,8 +226,6 @@ com_interface! {
     interface IDxcOptimizer: IUnknown{
         iid: IID_IDxcOptimizer,
         vtable: IDxcOptimizerVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
 
         fn get_available_pass_count(count: *mut u32) -> HRESULT;
         fn get_available_pass(index: u32, result: *mut *mut IDxcOptimizerPass) -> HRESULT;
@@ -275,8 +247,6 @@ com_interface! {
     interface IDxcVersionInfo: IUnknown{
         iid: IID_IDxcVersionInfo,
         vtable: IDxcVersionInfoVtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
 
         fn get_version(major: *mut u32, minor: *mut u32) -> HRESULT;
         fn get_flags(flags: *mut u32) -> HRESULT;
@@ -288,8 +258,6 @@ com_interface! {
     interface IDxcVersionInfo2: IUnknown{
         iid: IID_IDxcVersionInfo2,
         vtable: IDxcVersionInfo2Vtbl,
-        fn dummy0() -> HRESULT;
-        fn dummy1() -> HRESULT;
 
         fn get_commit_info(commit_count: *mut u32, commit_hash: *mut *mut u8) -> HRESULT;
     }

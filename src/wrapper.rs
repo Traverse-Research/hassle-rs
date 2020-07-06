@@ -112,8 +112,6 @@ struct DxcIncludeHandlerWrapperVtbl {
     ) -> com_rs::HResult,
     add_ref: extern "stdcall" fn(*const com_rs::IUnknown) -> u32,
     release: extern "stdcall" fn(*const com_rs::IUnknown) -> u32,
-    dummy0: *const c_void,
-    dummy1: *const c_void,
     load_source:
         extern "stdcall" fn(*mut com_rs::IUnknown, LPCWSTR, *mut *mut IDxcBlob) -> com_rs::HResult,
 }
@@ -229,8 +227,6 @@ impl DxcCompiler {
                 query_interface: DxcIncludeHandlerWrapper::query_interface,
                 add_ref: DxcIncludeHandlerWrapper::add_ref,
                 release: DxcIncludeHandlerWrapper::release,
-                dummy0: std::ptr::null(),
-                dummy1: std::ptr::null(),
                 load_source: DxcIncludeHandlerWrapper::load_source,
             };
 
