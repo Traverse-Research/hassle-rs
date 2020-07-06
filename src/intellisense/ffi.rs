@@ -304,6 +304,8 @@ com_interface! {
     interface IDxcDiagnostic: IUnknown{
         iid: IID_IDxcDiagnostic,
         vtable: IDxcDiagnosticVtbl,
+        fn complete_object_destructor() -> HRESULT;
+        fn deleting_destructor() -> HRESULT;
         fn format_diagnostic(options: DxcDiagnosticDisplayOptions, result: *mut LPSTR) -> HRESULT;
         fn get_severity(result: *mut DxcDiagnosticSeverity) -> HRESULT;
         fn get_location(result: *mut *mut IDxcSourceLocation) -> HRESULT;
@@ -321,6 +323,8 @@ com_interface! {
     interface IDxcInclusion: IUnknown{
         iid: IID_IDxcInclusion,
         vtable: IDxcInclusionVtbl,
+        fn complete_object_destructor() -> HRESULT;
+        fn deleting_destructor() -> HRESULT;
         fn get_included_file(result: *mut *mut IDxcFile) -> HRESULT;
         fn get_stack_length(result: *mut u32) -> HRESULT;
         fn get_stack_item(index: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
@@ -332,6 +336,8 @@ com_interface! {
     interface IDxcToken: IUnknown{
         iid: IID_IDxcToken,
         vtable: IDxcTokenVtbl,
+        fn complete_object_destructor() -> HRESULT;
+        fn deleting_destructor() -> HRESULT;
         fn get_kind(value: *mut DxcTokenKind) -> HRESULT;
         fn get_location(value: *mut *mut IDxcSourceLocation) -> HRESULT;
         fn get_extent(value: *mut *mut IDxcSourceRange) -> HRESULT;
@@ -344,6 +350,8 @@ com_interface! {
     interface IDxcType: IUnknown{
         iid: IID_IDxcType,
         vtable: IDxcTypeVtbl,
+        fn complete_object_destructor() -> HRESULT;
+        fn deleting_destructor() -> HRESULT;
         fn get_spelling(result: *mut LPSTR) -> HRESULT;
         fn is_equal_to(other: *const IDxcType, result: *mut bool) -> HRESULT;
         fn get_kind(result: *mut IDxcType) -> HRESULT;
@@ -355,9 +363,11 @@ com_interface! {
     interface IDxcSourceLocation: IUnknown{
         iid: IID_IDxcSourceLocation,
         vtable: IDxcSourceLocationVtbl,
-        fn is_equal_to(other: *const IDxcSourceLocation, result: *mut bool) ->HRESULT;
-        fn get_spelling_location(file: *mut *mut IDxcFile, line: *mut u32, col: *mut u32, offset: *mut u32) ->HRESULT;
-        fn is_null(result: *mut bool) ->HRESULT;
+        fn complete_object_destructor() -> HRESULT;
+        fn deleting_destructor() -> HRESULT;
+        fn is_equal_to(other: *const IDxcSourceLocation, result: *mut bool) -> HRESULT;
+        fn get_spelling_location(file: *mut *mut IDxcFile, line: *mut u32, col: *mut u32, offset: *mut u32) -> HRESULT;
+        fn is_null(result: *mut bool) -> HRESULT;
     }
 }
 
@@ -366,6 +376,8 @@ com_interface! {
     interface IDxcSourceRange: IUnknown{
         iid: IID_IDxcSourceRange,
         vtable: IDxcSourceRangeVtbl,
+        fn complete_object_destructor() -> HRESULT;
+        fn deleting_destructor() -> HRESULT;
         fn is_null(value: *mut bool) -> HRESULT;
         fn get_start(value: *mut *mut IDxcSourceLocation) -> HRESULT;
         fn get_end(value: *mut *mut IDxcSourceLocation) -> HRESULT;
@@ -378,6 +390,8 @@ com_interface! {
     interface IDxcCursor: IUnknown{
         iid: IID_IDxcCursor,
         vtable: IDxcCursorVtbl,
+        fn complete_object_destructor() -> HRESULT;
+        fn deleting_destructor() -> HRESULT;
         fn get_extent(range: *mut *mut IDxcSourceRange) -> HRESULT;
         fn get_location(result: *mut *mut IDxcSourceLocation) -> HRESULT;
         fn get_kind(result: *mut DxcCursorKind) -> HRESULT;
@@ -407,6 +421,8 @@ com_interface! {
     interface IDxcUnsavedFile: IUnknown{
         iid: IID_IDxcUnsavedFile,
         vtable: IDxcUnsavedFileVtbl,
+        fn complete_object_destructor() -> HRESULT;
+        fn deleting_destructor() -> HRESULT;
         fn get_file_name(file_name: *mut LPSTR) -> HRESULT;
         fn get_contents(contents: *mut LPSTR) -> HRESULT;
         fn get_length(lenth : *mut u32) -> HRESULT;
@@ -428,6 +444,8 @@ com_interface! {
     interface IDxcTranslationUnit: IUnknown{
         iid: IID_IDxcTranslationUnit,
         vtable: IDxcTranslationUnitVtbl,
+        fn complete_object_destructor() -> HRESULT;
+        fn deleting_destructor() -> HRESULT;
         fn get_cursor(cursor: *mut *mut IDxcCursor) -> HRESULT;
         fn tokenize(range: *const IDxcSourceRange, tokens: *mut *mut *mut IDxcToken, token_count: *mut u32) -> HRESULT;
         fn get_location( file: *mut IDxcFile, line: u32, column: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
@@ -451,6 +469,8 @@ com_interface! {
     interface IDxcIndex: IUnknown{
         iid: IID_IDxcIndex,
         vtable: IDxcIndexVtbl,
+        fn complete_object_destructor() -> HRESULT;
+        fn deleting_destructor() -> HRESULT;
         fn set_global_options(options: DxcGlobalOptions) -> HRESULT;
         fn get_global_options(options: *mut DxcGlobalOptions) -> HRESULT;
         fn parse_translation_unit(
@@ -469,6 +489,8 @@ com_interface! {
     interface IDxcIntelliSense: IUnknown{
         iid: IID_IDxcIntelliSense,
         vtable: IDxcIntelliSenseVtbl,
+        fn complete_object_destructor() -> HRESULT;
+        fn deleting_destructor() -> HRESULT;
         fn create_index(index: *mut *mut IDxcIndex) -> HRESULT;
         fn get_null_location(location: *mut *mut  IDxcSourceLocation)  -> HRESULT;
         fn get_null_range(location: *mut *mut  IDxcSourceRange)  -> HRESULT;
