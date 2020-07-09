@@ -58,7 +58,7 @@ impl DxcIncludeHandler for DefaultIncludeHandler {
 
 #[derive(Error, Debug)]
 pub enum HassleError {
-    #[error("Win32 error: {0:X}")]
+    #[error("Win32 error: {0:x}")]
     Win32Error(HRESULT),
     #[error("{0}")]
     CompileError(String),
@@ -117,7 +117,9 @@ pub fn compile_hlsl(
                 .get_error_buffer()
                 .map_err(HassleError::Win32Error)?;
             Err(HassleError::CompileError(
-                library.get_blob_as_string(&error_blob),
+                library
+                    .get_blob_as_string(&error_blob)
+                    .map_err(HassleError::Win32Error)?,
             ))
         }
         Ok(result) => {
@@ -152,7 +154,9 @@ pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
                 .get_error_buffer()
                 .map_err(HassleError::Win32Error)?;
             Err(HassleError::ValidationError(
-                library.get_blob_as_string(&error_blob),
+                library
+                    .get_blob_as_string(&error_blob)
+                    .map_err(HassleError::Win32Error)?,
             ))
         }
     }
