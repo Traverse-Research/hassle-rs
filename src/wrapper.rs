@@ -495,14 +495,14 @@ fn dxcompiler_lib_name() -> &'static str {
 
 #[cfg(not(windows))]
 fn dxcompiler_lib_name() -> &'static str {
-    "../dxc-rs/target/debug/build/dxc-rs-05a2fe30f551ddd3/out/lib/libdxcompiler.so"
-    //"/home/h3/Downloads/ShaderConductor-linux-clang7-x64-Release/Lib/libdxcompiler.so"
-    //"/home/h3/Downloads/ShaderConductor-linux-clang6-x64-Release/Lib/libdxcompiler.so"
+    "./libdxcompiler.so"
 }
 
 impl Dxc {
     pub fn new() -> Self {
-        let dxc_lib = Library::new(dxcompiler_lib_name()).expect("Failed to load dxcompiler.dll");
+        let lib_name = dxcompiler_lib_name();
+        let dxc_lib =
+            Library::new(lib_name).unwrap_or_else(|_| panic!("Failed to load {}", lib_name));
 
         Self { dxc_lib }
     }
