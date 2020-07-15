@@ -37,6 +37,63 @@ bitflags! {
 }
 
 bitflags! {
+    pub struct DxcTypeKind : u32 {
+        const Invalid = 0; // Reprents an invalid type (e.g., where no type is available).
+        const Unexposed = 1; // A type whose specific kind is not exposed via this interface.
+        // Builtin types
+        const Void = 2;
+        const Bool = 3;
+        const Char_U = 4;
+        const UChar = 5;
+        const Char16 = 6;
+        const Char32 = 7;
+        const UShort = 8;
+        const UInt = 9;
+        const ULong = 10;
+        const ULongLong = 11;
+        const UInt128 = 12;
+        const Char_S = 13;
+        const SChar = 14;
+        const WChar = 15;
+        const Short = 16;
+        const Int = 17;
+        const Long = 18;
+        const LongLong = 19;
+        const Int128 = 20;
+        const Float = 21;
+        const Double = 22;
+        const LongDouble = 23;
+        const NullPtr = 24;
+        const Overload = 25;
+        const Dependent = 26;
+        const ObjCId = 27;
+        const ObjCClass = 28;
+        const ObjCSel = 29;
+        const FirstBuiltin = DxcTypeKind::Void.bits;
+        const LastBuiltin = DxcTypeKind::ObjCSel.bits;
+
+        const Complex = 100;
+        const Pointer = 101;
+        const BlockPointer = 102;
+        const LValueReference = 103;
+        const RValueReference = 104;
+        const Record = 105;
+        const Enum = 106;
+        const Typedef = 107;
+        const ObjCInterface = 108;
+        const ObjCObjectPointer = 109;
+        const FunctionNoProto = 110;
+        const FunctionProto = 111;
+        const ConstantArray = 112;
+        const Vector = 113;
+        const IncompleteArray = 114;
+        const VariableArray = 115;
+        const DependentSizedArray = 116;
+        const MemberPointer = 117;
+    }
+}
+
+bitflags! {
     pub struct DxcCursorFormatting : u32 {
         const DEFAULT = 0x0;
         const USE_LANGUAGE_OPTIONS = 0x1;
@@ -347,7 +404,7 @@ com_interface! {
         vtable: IDxcTypeVtbl,
         fn get_spelling(result: *mut LPSTR) -> HRESULT;
         fn is_equal_to(other: *const IDxcType, result: *mut bool) -> HRESULT;
-        fn get_kind(result: *mut IDxcType) -> HRESULT;
+        fn get_kind(result: *mut DxcTypeKind) -> HRESULT;
     }
 }
 
