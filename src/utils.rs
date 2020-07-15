@@ -1,5 +1,6 @@
-use crate::os::{BSTR, LPSTR, LPWSTR, WCHAR};
+use crate::os::{BSTR, HRESULT, LPSTR, LPWSTR, WCHAR};
 use crate::wrapper::*;
+use thiserror::Error;
 
 #[cfg(windows)]
 use winapi::um::oleauto::{SysFreeString, SysStringLen};
@@ -61,6 +62,16 @@ impl DxcIncludeHandler for DefaultIncludeHandler {
     }
 }
 
+#[derive(Error, Debug)]
+pub enum HassleError {
+    #[error("Win32 error: {0}")]
+    Win32Error(HRESULT),
+    #[error("Compile error: {0}")]
+    CompileError(String),
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+}
+
 /// Helper function to directly compile a HLSL shader to an intermediate language,
 /// this function expects `dxcompiler.dll` to be available in the current
 /// executable environment.
@@ -73,17 +84,21 @@ pub fn compile_hlsl(
     target_profile: &str,
     args: &[&str],
     defines: &[(&str, Option<&str>)],
-) -> Result<Vec<u8>, String> {
+) -> Result<Vec<u8>, HassleError> {
     let dxc = Dxc::new();
 
-    let compiler = dxc.create_compiler().unwrap();
-    let library = dxc.create_library().unwrap();
+    let compiler = dxc
+        .create_compiler()
+        .map_err(|e| HassleError::Win32Error(e))?;
+    let library = dxc
+        .create_library()
+        .map_err(|e| HassleError::Win32Error(e))?;
 
     //let source = Rc::new(String::from(shader_text));
 
     let blob = library
         .create_blob_with_encoding_from_str(shader_text)
-        .unwrap();
+        .map_err(|e| HassleError::Win32Error(e))?;
 
     let result = compiler.compile(
         &blob,
@@ -97,11 +112,18 @@ pub fn compile_hlsl(
 
     match result {
         Err(result) => {
-            let error_blob = result.0.get_error_buffer().unwrap();
-            Err(library.get_blob_as_string(&error_blob))
+            let error_blob = result
+                .0
+                .get_error_buffer()
+                .map_err(|e| HassleError::Win32Error(e))?;
+            Err(HassleError::CompileError(
+                library.get_blob_as_string(&error_blob),
+            ))
         }
         Ok(result) => {
-            let result_blob = result.get_result().unwrap();
+            let result_blob = result
+                .get_result()
+                .map_err(|e| HassleError::Win32Error(e))?;
 
             Ok(result_blob.to_vec())
         }
@@ -111,20 +133,31 @@ pub fn compile_hlsl(
 /// Helper function to validate a DXIL binary independant from the compilation process,
 /// this function expected `dxcompiler.dll` and `dxil.dll` to be available in the current
 /// execution environment.
-pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, String> {
+pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
     let dxc = Dxc::new();
     let dxil = Dxil::new();
 
-    let validator = dxil.create_validator().unwrap();
-    let library = dxc.create_library().unwrap();
+    let validator = dxil
+        .create_validator()
+        .map_err(|e| HassleError::Win32Error(e))?;
+    let library = dxc
+        .create_library()
+        .map_err(|e| HassleError::Win32Error(e))?;
 
-    let blob_encoding = library.create_blob_with_encoding(&data).unwrap();
+    let blob_encoding = library
+        .create_blob_with_encoding(&data)
+        .map_err(|e| HassleError::Win32Error(e))?;
 
     match validator.validate(blob_encoding.into()) {
         Ok(blob) => Ok(blob.to_vec()),
         Err(result) => {
-            let error_blob = result.0.get_error_buffer().unwrap();
-            Err(library.get_blob_as_string(&error_blob))
+            let error_blob = result
+                .0
+                .get_error_buffer()
+                .map_err(|e| HassleError::Win32Error(e))?;
+            Err(HassleError::ValidationError(
+                library.get_blob_as_string(&error_blob),
+            ))
         }
     }
 }
