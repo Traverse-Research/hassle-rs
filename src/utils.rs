@@ -87,18 +87,14 @@ pub fn compile_hlsl(
 ) -> Result<Vec<u8>, HassleError> {
     let dxc = Dxc::new();
 
-    let compiler = dxc
-        .create_compiler()
-        .map_err(|e| HassleError::Win32Error(e))?;
-    let library = dxc
-        .create_library()
-        .map_err(|e| HassleError::Win32Error(e))?;
+    let compiler = dxc.create_compiler().map_err(HassleError::Win32Error)?;
+    let library = dxc.create_library().map_err(HassleError::Win32Error)?;
 
     //let source = Rc::new(String::from(shader_text));
 
     let blob = library
         .create_blob_with_encoding_from_str(shader_text)
-        .map_err(|e| HassleError::Win32Error(e))?;
+        .map_err(HassleError::Win32Error)?;
 
     let result = compiler.compile(
         &blob,
@@ -115,15 +111,13 @@ pub fn compile_hlsl(
             let error_blob = result
                 .0
                 .get_error_buffer()
-                .map_err(|e| HassleError::Win32Error(e))?;
+                .map_err(HassleError::Win32Error)?;
             Err(HassleError::CompileError(
                 library.get_blob_as_string(&error_blob),
             ))
         }
         Ok(result) => {
-            let result_blob = result
-                .get_result()
-                .map_err(|e| HassleError::Win32Error(e))?;
+            let result_blob = result.get_result().map_err(HassleError::Win32Error)?;
 
             Ok(result_blob.to_vec())
         }
@@ -139,16 +133,12 @@ pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
     let dxc = Dxc::new();
     let dxil = Dxil::new();
 
-    let validator = dxil
-        .create_validator()
-        .map_err(|e| HassleError::Win32Error(e))?;
-    let library = dxc
-        .create_library()
-        .map_err(|e| HassleError::Win32Error(e))?;
+    let validator = dxil.create_validator().map_err(HassleError::Win32Error)?;
+    let library = dxc.create_library().map_err(HassleError::Win32Error)?;
 
     let blob_encoding = library
         .create_blob_with_encoding(&data)
-        .map_err(|e| HassleError::Win32Error(e))?;
+        .map_err(HassleError::Win32Error)?;
 
     match validator.validate(blob_encoding.into()) {
         Ok(blob) => Ok(blob.to_vec()),
@@ -156,7 +146,7 @@ pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
             let error_blob = result
                 .0
                 .get_error_buffer()
-                .map_err(|e| HassleError::Win32Error(e))?;
+                .map_err(HassleError::Win32Error)?;
             Err(HassleError::ValidationError(
                 library.get_blob_as_string(&error_blob),
             ))

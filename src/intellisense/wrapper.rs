@@ -64,7 +64,7 @@ pub struct DxcIndex {
 
 impl DxcIndex {
     fn new(inner: ComPtr<IDxcIndex>) -> Self {
-        return Self { inner };
+        Self { inner }
     }
 }
 
@@ -89,7 +89,7 @@ impl DxcIndex {
             let mut c_args: Vec<CString> = vec![];
             let mut cliargs = vec![];
 
-            for arg in args.into_iter() {
+            for arg in args.iter() {
                 let c_arg = CString::new(*arg).expect("Failed to convert `arg`");
                 cliargs.push(c_arg.as_ptr() as *const u8);
                 c_args.push(c_arg);
@@ -463,7 +463,7 @@ impl DxcCursor {
 
         let source_range = (start_offset as usize)..(end_offset as usize);
 
-        return Ok(&source[source_range]);
+        Ok(&source[source_range])
     }
 }
 
