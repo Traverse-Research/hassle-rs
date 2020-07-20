@@ -439,18 +439,6 @@ impl DxcLibrary {
         let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
         const CP_UTF8: u32 = 65001; // UTF-8 translation
 
-        /*return_hr!(
-            unsafe {
-                self.inner.create_blob_with_encoding_on_heap_copy(
-                    text.as_ptr() as *const c_void,
-                    text.len() as u32,
-                    CP_UTF8,
-                    blob.as_mut_ptr(),
-                )
-            },
-            DxcBlobEncoding::new(blob)
-        );*/
-
         return_hr!(
             unsafe {
                 self.inner.create_blob_with_encoding_from_pinned(
@@ -557,7 +545,7 @@ impl DxcValidator {
         };
 
         if result_hr != 0 {
-            return Err(result_hr as _);
+            return Err(result_hr);
         }
 
         let mut major = 0;

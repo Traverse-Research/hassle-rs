@@ -90,8 +90,6 @@ pub fn compile_hlsl(
     let compiler = dxc.create_compiler().map_err(HassleError::Win32Error)?;
     let library = dxc.create_library().map_err(HassleError::Win32Error)?;
 
-    //let source = Rc::new(String::from(shader_text));
-
     let blob = library
         .create_blob_with_encoding_from_str(shader_text)
         .map_err(HassleError::Win32Error)?;
