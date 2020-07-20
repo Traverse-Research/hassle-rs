@@ -39,11 +39,16 @@ fn main() {
     zero_digest(&mut dxil);
 
     let without_digest = get_digest(&dxil);
-
-    let validated_dxil = validate_dxil(&dxil).unwrap();
-
-    let with_digest = get_digest(&validated_dxil);
-
     println!("Before validation: {:?}", without_digest);
-    println!("After validation: {:?}", with_digest);
+
+    #[cfg(windows)]
+    {
+        let validated_dxil = validate_dxil(&dxil).unwrap();
+
+        let with_digest = get_digest(&validated_dxil);
+
+        println!("After validation: {:?}", with_digest);
+    }
+    #[cfg(not(windows))]
+    println!("Validation only available on Windows");
 }

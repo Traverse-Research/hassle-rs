@@ -131,8 +131,10 @@ pub fn compile_hlsl(
 }
 
 /// Helper function to validate a DXIL binary independant from the compilation process,
-/// this function expected `dxcompiler.dll` and `dxil.dll` to be available in the current
+/// this function expects `dxcompiler.dll` and `dxil.dll` to be available in the current
 /// execution environment.
+/// `dxil.dll` is currently not available on Linux.
+#[cfg(windows)]
 pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
     let dxc = Dxc::new();
     let dxil = Dxil::new();

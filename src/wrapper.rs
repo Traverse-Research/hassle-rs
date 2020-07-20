@@ -590,11 +590,13 @@ impl DxcValidator {
     }
 }
 
+#[cfg(windows)]
 #[derive(Debug)]
 pub struct Dxil {
     dxil_lib: Library,
 }
 
+#[cfg(windows)]
 impl Dxil {
     pub fn new() -> Self {
         let dxil_lib = Library::new("dxil.dll").expect("Failed to load dxil.dll");
