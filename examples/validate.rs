@@ -1,6 +1,7 @@
 use hassle_rs::*;
 
 #[repr(C)]
+#[repr(packed)]
 pub struct MinimalHeader {
     four_cc: u32,
     hash_digest: [u32; 4],
