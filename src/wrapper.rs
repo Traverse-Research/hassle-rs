@@ -1,12 +1,17 @@
+#![allow(
+    clippy::too_many_arguments,
+    clippy::new_without_default,
+    clippy::type_complexity
+)]
+
 use crate::ffi::*;
-use crate::utils::{from_wide, to_wide};
+use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
+use crate::utils::{from_wide, to_wide, HassleError};
 use com_rs::ComPtr;
 use libloading::{Library, Symbol};
 use std::convert::Into;
 use std::ffi::c_void;
 use std::rc::Rc;
-use winapi::shared::ntdef::{LPCWSTR, LPWSTR};
-use winapi::shared::winerror::HRESULT;
 
 #[macro_export]
 macro_rules! return_hr {
@@ -16,6 +21,17 @@ macro_rules! return_hr {
             return Ok($v);
         } else {
             return Err(hr);
+        }
+    };
+}
+
+macro_rules! return_hr_wrapped {
+    ($hr:expr, $v: expr) => {
+        let hr = $hr;
+        if hr == 0 {
+            return Ok($v);
+        } else {
+            return Err(HassleError::Win32Error(hr));
         }
     };
 }
@@ -105,8 +121,12 @@ struct DxcIncludeHandlerWrapperVtbl {
         &com_rs::IID,
         *mut *mut core::ffi::c_void,
     ) -> com_rs::HResult,
-    add_ref: extern "stdcall" fn(*const com_rs::IUnknown) -> u32,
-    release: extern "stdcall" fn(*const com_rs::IUnknown) -> u32,
+    add_ref: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
+    release: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
+    #[cfg(not(windows))]
+    complete_object_destructor: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
+    #[cfg(not(windows))]
+    deleting_destructor: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
     load_source:
         extern "stdcall" fn(*mut com_rs::IUnknown, LPCWSTR, *mut *mut IDxcBlob) -> com_rs::HResult,
 }
@@ -129,11 +149,7 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
         0 // dummy impl
     }
 
-    extern "stdcall" fn add_ref(_me: *const com_rs::IUnknown) -> u32 {
-        0 // dummy impl
-    }
-
-    extern "stdcall" fn release(_me: *const com_rs::IUnknown) -> u32 {
+    extern "stdcall" fn dummy(_me: *const com_rs::IUnknown) -> HRESULT {
         0 // dummy impl
     }
 
@@ -154,7 +170,7 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
             let mut blob = unsafe {
                 (*me)
                     .library
-                    .create_blob_with_encoding_from_str(Rc::clone(&pinned_source))
+                    .create_blob_with_encoding_from_str(&*pinned_source)
                     .unwrap()
             };
 
@@ -166,7 +182,7 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
 
             0
         } else {
-            -2147024894i32 // ERROR_FILE_NOT_FOUND / 0x80070002
+            -2_147_024_894 // ERROR_FILE_NOT_FOUND / 0x80070002
         }
     }
 }
@@ -184,7 +200,7 @@ impl DxcCompiler {
 
     fn prep_defines(
         defines: &[(&str, Option<&str>)],
-        wide_defines: &mut Vec<(Vec<u16>, Vec<u16>)>,
+        wide_defines: &mut Vec<(Vec<WCHAR>, Vec<WCHAR>)>,
         dxc_defines: &mut Vec<DxcDefine>,
     ) {
         for (name, value) in defines {
@@ -203,12 +219,12 @@ impl DxcCompiler {
         }
     }
 
-    fn prep_args(args: &[&str], wide_args: &mut Vec<Vec<u16>>, dxc_args: &mut Vec<LPCWSTR>) {
+    fn prep_args(args: &[&str], wide_args: &mut Vec<Vec<WCHAR>>, dxc_args: &mut Vec<LPCWSTR>) {
         for a in args {
             wide_args.push(to_wide(a));
         }
 
-        for ref a in wide_args {
+        for a in wide_args {
             dxc_args.push(a.as_ptr());
         }
     }
@@ -220,8 +236,12 @@ impl DxcCompiler {
         if let Some(include_handler) = include_handler {
             let vtable = DxcIncludeHandlerWrapperVtbl {
                 query_interface: DxcIncludeHandlerWrapper::query_interface,
-                add_ref: DxcIncludeHandlerWrapper::add_ref,
-                release: DxcIncludeHandlerWrapper::release,
+                add_ref: DxcIncludeHandlerWrapper::dummy,
+                release: DxcIncludeHandlerWrapper::dummy,
+                #[cfg(not(windows))]
+                complete_object_destructor: DxcIncludeHandlerWrapper::dummy,
+                #[cfg(not(windows))]
+                deleting_destructor: DxcIncludeHandlerWrapper::dummy,
                 load_source: DxcIncludeHandlerWrapper::load_source,
             };
 
@@ -425,7 +445,7 @@ impl DxcLibrary {
 
     pub fn create_blob_with_encoding_from_str(
         &self,
-        text: Rc<String>,
+        text: &str,
     ) -> Result<DxcBlobEncoding, HRESULT> {
         let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
         const CP_UTF8: u32 = 65001; // UTF-8 translation
@@ -467,33 +487,49 @@ pub struct Dxc {
     dxc_lib: Library,
 }
 
+#[cfg(windows)]
+fn dxcompiler_lib_name() -> &'static str {
+    "dxcompiler.dll"
+}
+
+#[cfg(not(windows))]
+fn dxcompiler_lib_name() -> &'static str {
+    "./libdxcompiler.so"
+}
+
 impl Dxc {
-    pub fn new() -> Self {
-        let dxc_lib = Library::new("dxcompiler.dll").expect("Failed to load dxcompiler.dll");
+    pub fn new() -> Result<Self, HassleError> {
+        let lib_name = dxcompiler_lib_name();
+        let dxc_lib = Library::new(lib_name).map_err(|e| HassleError::LoadLibraryError {
+            filename: lib_name.to_string(),
+            inner: e,
+        })?;
 
-        Self { dxc_lib }
+        Ok(Self { dxc_lib })
     }
 
-    pub(crate) fn get_dxc_create_instance(&self) -> Symbol<DxcCreateInstanceProc> {
-        unsafe { self.dxc_lib.get(b"DxcCreateInstance\0").unwrap() }
+    pub(crate) fn get_dxc_create_instance(
+        &self,
+    ) -> Result<Symbol<DxcCreateInstanceProc>, HassleError> {
+        Ok(unsafe { self.dxc_lib.get(b"DxcCreateInstance\0")? })
     }
 
-    pub fn create_compiler(&self) -> Result<DxcCompiler, HRESULT> {
+    pub fn create_compiler(&self) -> Result<DxcCompiler, HassleError> {
         let mut compiler: ComPtr<IDxcCompiler2> = ComPtr::new();
-        return_hr!(
-            self.get_dxc_create_instance()(
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
                 &CLSID_DxcCompiler,
                 &IID_IDxcCompiler2,
                 compiler.as_mut_ptr(),
             ),
-            DxcCompiler::new(compiler, self.create_library().unwrap())
+            DxcCompiler::new(compiler, self.create_library()?)
         );
     }
 
-    pub fn create_library(&self) -> Result<DxcLibrary, HRESULT> {
+    pub fn create_library(&self) -> Result<DxcLibrary, HassleError> {
         let mut library: ComPtr<IDxcLibrary> = ComPtr::new();
-        return_hr!(
-            self.get_dxc_create_instance()(
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
                 &CLSID_DxcLibrary,
                 &IID_IDxcLibrary,
                 library.as_mut_ptr(),
@@ -563,19 +599,33 @@ pub struct Dxil {
 }
 
 impl Dxil {
-    pub fn new() -> Self {
-        let dxil_lib = Library::new("dxil.dll").expect("Failed to load dxil.dll");
-        Self { dxil_lib }
+    pub fn new() -> Result<Self, HassleError> {
+        #[cfg(not(windows))]
+        {
+            Err(HassleError::WindowsOnly(
+                "DXIL Signing is only supported on windows at the moment".to_string(),
+            ))
+        }
+
+        #[cfg(windows)]
+        {
+            let dxil_lib = Library::new("dxil.dll").map_err(|e| HassleError::LoadLibraryError {
+                filename: "dxil".to_string(),
+                inner: e,
+            })?;
+
+            Ok(Self { dxil_lib })
+        }
     }
 
-    fn get_dxc_create_instance(&self) -> Symbol<DxcCreateInstanceProc> {
-        unsafe { self.dxil_lib.get(b"DxcCreateInstance\0").unwrap() }
+    fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>, HassleError> {
+        Ok(unsafe { self.dxil_lib.get(b"DxcCreateInstance\0")? })
     }
 
-    pub fn create_validator(&self) -> Result<DxcValidator, HRESULT> {
+    pub fn create_validator(&self) -> Result<DxcValidator, HassleError> {
         let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
-        return_hr!(
-            self.get_dxc_create_instance()(
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
                 &CLSID_DxcValidator,
                 &IID_IDxcValidator,
                 validator.as_mut_ptr(),

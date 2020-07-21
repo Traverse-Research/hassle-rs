@@ -1,5 +1,9 @@
 #![allow(dead_code)]
 #![allow(non_upper_case_globals)]
+#![allow(
+    clippy::transmute_ptr_to_ptr, // Introduced by com-rs
+    clippy::too_many_arguments, // We're wrapping and API outside of our control
+)]
 
 //! # Hassle
 //!
@@ -32,10 +36,10 @@
 //! );
 //! ```
 
-#[macro_use]
-extern crate bitflags;
+pub(crate) mod unknown;
 
 pub mod ffi;
+pub mod os;
 pub mod utils;
 
 #[macro_use]
@@ -44,5 +48,6 @@ pub mod wrapper;
 pub mod intellisense;
 
 pub use crate::ffi::*;
-pub use crate::utils::{compile_hlsl, validate_dxil};
+pub use crate::utils::compile_hlsl;
+pub use crate::utils::validate_dxil;
 pub use crate::wrapper::*;

@@ -1,6 +1,7 @@
 use hassle_rs::*;
 
 #[repr(C)]
+#[repr(packed)]
 pub struct MinimalHeader {
     four_cc: u32,
     hash_digest: [u32; 4],
@@ -8,7 +9,7 @@ pub struct MinimalHeader {
 
 // zero_digest & get_digest from https://github.com/gwihlidal/dxil-signing/blob/master/rust/src/main.rs
 
-fn zero_digest(buffer: &mut [u8]) -> () {
+fn zero_digest(buffer: &mut [u8]) {
     let buffer_ptr: *mut u8 = buffer.as_mut_ptr();
     let header_ptr: *mut MinimalHeader = buffer_ptr as *mut _;
     let header_mut: &mut MinimalHeader = unsafe { &mut *header_ptr };
@@ -39,11 +40,11 @@ fn main() {
     zero_digest(&mut dxil);
 
     let without_digest = get_digest(&dxil);
+    println!("Before validation: {:?}", without_digest);
 
     let validated_dxil = validate_dxil(&dxil).unwrap();
 
     let with_digest = get_digest(&validated_dxil);
 
-    println!("Before validation: {:?}", without_digest);
     println!("After validation: {:?}", with_digest);
 }

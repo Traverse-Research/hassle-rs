@@ -1,10 +1,9 @@
 use crate::intellisense::ffi::*;
+use crate::os::{BSTR, HRESULT, LPSTR};
+use crate::utils::HassleError;
 use crate::wrapper::Dxc;
 use com_rs::ComPtr;
 use std::ffi::CString;
-use winapi::shared::ntdef::LPSTR;
-use winapi::shared::winerror::HRESULT;
-use winapi::shared::wtypes::BSTR;
 
 #[derive(Debug)]
 pub struct DxcIntellisense {
@@ -66,7 +65,7 @@ pub struct DxcIndex {
 
 impl DxcIndex {
     fn new(inner: ComPtr<IDxcIndex>) -> Self {
-        return Self { inner };
+        Self { inner }
     }
 }
 
@@ -91,7 +90,7 @@ impl DxcIndex {
             let mut c_args: Vec<CString> = vec![];
             let mut cliargs = vec![];
 
-            for arg in args.into_iter() {
+            for arg in args.iter() {
                 let c_arg = CString::new(*arg).expect("Failed to convert `arg`");
                 cliargs.push(c_arg.as_ptr() as *const u8);
                 c_args.push(c_arg);
@@ -465,7 +464,7 @@ impl DxcCursor {
 
         let source_range = (start_offset as usize)..(end_offset as usize);
 
-        return Ok(&source[source_range]);
+        Ok(&source[source_range])
     }
 }
 
@@ -546,10 +545,10 @@ impl DxcFile {
 }
 
 impl Dxc {
-    pub fn create_intellisense(&self) -> Result<DxcIntellisense, HRESULT> {
+    pub fn create_intellisense(&self) -> Result<DxcIntellisense, HassleError> {
         let mut intellisense: ComPtr<IDxcIntelliSense> = ComPtr::new();
-        return_hr!(
-            self.get_dxc_create_instance()(
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
                 &CLSID_DxcIntelliSense,
                 &IID_IDxcIntelliSense,
                 intellisense.as_mut_ptr(),

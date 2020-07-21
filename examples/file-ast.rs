@@ -77,7 +77,7 @@ fn main() {
 
     let args = vec![];
 
-    let dxc = Dxc::new();
+    let dxc = Dxc::new().unwrap();
 
     let intellisense = dxc.create_intellisense().unwrap();
 
@@ -88,7 +88,7 @@ fn main() {
     let unsaved_file = intellisense.create_unsaved_file(name, source).unwrap();
 
     let translation_unit = index
-        .parse_translation_unit(name, &args, &vec![&unsaved_file], local_options)
+        .parse_translation_unit(name, &args, &[&unsaved_file], local_options)
         .unwrap();
 
     let cursor = translation_unit.get_cursor().unwrap();

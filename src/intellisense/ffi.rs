@@ -1,7 +1,7 @@
+use crate::os::{BSTR, HRESULT, LPCSTR, LPSTR};
+pub(crate) use crate::unknown::IDxcUnknownShim;
+use bitflags::bitflags;
 use com_rs::{com_interface, iid, IUnknown};
-use winapi::shared::ntdef::{LPCSTR, LPSTR};
-use winapi::shared::winerror::HRESULT;
-use winapi::shared::wtypes::BSTR;
 
 bitflags! {
     pub struct DxcGlobalOptions : u32 {
@@ -33,6 +33,63 @@ bitflags! {
         const COMMENT = 4;
         const UNKNOWN = 5;
         const BUILT_IN_TYPE = 6;
+    }
+}
+
+bitflags! {
+    pub struct DxcTypeKind : u32 {
+        const Invalid = 0; // Reprents an invalid type (e.g., where no type is available).
+        const Unexposed = 1; // A type whose specific kind is not exposed via this interface.
+        // Builtin types
+        const Void = 2;
+        const Bool = 3;
+        const Char_U = 4;
+        const UChar = 5;
+        const Char16 = 6;
+        const Char32 = 7;
+        const UShort = 8;
+        const UInt = 9;
+        const ULong = 10;
+        const ULongLong = 11;
+        const UInt128 = 12;
+        const Char_S = 13;
+        const SChar = 14;
+        const WChar = 15;
+        const Short = 16;
+        const Int = 17;
+        const Long = 18;
+        const LongLong = 19;
+        const Int128 = 20;
+        const Float = 21;
+        const Double = 22;
+        const LongDouble = 23;
+        const NullPtr = 24;
+        const Overload = 25;
+        const Dependent = 26;
+        const ObjCId = 27;
+        const ObjCClass = 28;
+        const ObjCSel = 29;
+        const FirstBuiltin = DxcTypeKind::Void.bits;
+        const LastBuiltin = DxcTypeKind::ObjCSel.bits;
+
+        const Complex = 100;
+        const Pointer = 101;
+        const BlockPointer = 102;
+        const LValueReference = 103;
+        const RValueReference = 104;
+        const Record = 105;
+        const Enum = 106;
+        const Typedef = 107;
+        const ObjCInterface = 108;
+        const ObjCObjectPointer = 109;
+        const FunctionNoProto = 110;
+        const FunctionProto = 111;
+        const ConstantArray = 112;
+        const Vector = 113;
+        const IncompleteArray = 114;
+        const VariableArray = 115;
+        const DependentSizedArray = 116;
+        const MemberPointer = 117;
     }
 }
 
@@ -302,7 +359,7 @@ bitflags! {
 
 iid!(pub IID_IDxcDiagnostic = 0x4f76b234, 0x3659, 0x4d33, 0x99, 0xb0, 0x3b, 0x0d, 0xb9, 0x94, 0xb5, 0x64);
 com_interface! {
-    interface IDxcDiagnostic: IUnknown{
+    interface IDxcDiagnostic: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcDiagnostic,
         vtable: IDxcDiagnosticVtbl,
         fn format_diagnostic(options: DxcDiagnosticDisplayOptions, result: *mut LPSTR) -> HRESULT;
@@ -319,7 +376,7 @@ com_interface! {
 
 iid!(pub IID_IDxcInclusion = 0x0c364d65, 0xdf44, 0x4412, 0x88, 0x8e, 0x4e, 0x55, 0x2f, 0xc5, 0xe3, 0xd6);
 com_interface! {
-    interface IDxcInclusion: IUnknown{
+    interface IDxcInclusion: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcInclusion,
         vtable: IDxcInclusionVtbl,
         fn get_included_file(result: *mut *mut IDxcFile) -> HRESULT;
@@ -330,7 +387,7 @@ com_interface! {
 
 iid!(pub IID_IDxcToken = 0x7f90b9ff, 0xa275, 0x4932, 0x97, 0xd8, 0x3c, 0xfd, 0x23, 0x44, 0x82, 0xa2);
 com_interface! {
-    interface IDxcToken: IUnknown{
+    interface IDxcToken: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcToken,
         vtable: IDxcTokenVtbl,
         fn get_kind(value: *mut DxcTokenKind) -> HRESULT;
@@ -342,29 +399,29 @@ com_interface! {
 
 iid!(pub IID_IDxcType = 0x2ec912fd, 0xb144, 0x4a15, 0xad, 0x0d, 0x1c, 0x54, 0x39, 0xc8, 0x1e, 0x46);
 com_interface! {
-    interface IDxcType: IUnknown{
+    interface IDxcType: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcType,
         vtable: IDxcTypeVtbl,
         fn get_spelling(result: *mut LPSTR) -> HRESULT;
         fn is_equal_to(other: *const IDxcType, result: *mut bool) -> HRESULT;
-        fn get_kind(result: *mut IDxcType) -> HRESULT;
+        fn get_kind(result: *mut DxcTypeKind) -> HRESULT;
     }
 }
 
 iid!(pub IID_IDxcSourceLocation = 0x8e7ddf1c, 0xd7d3, 0x4d69, 0xb2, 0x86, 0x85, 0xfc, 0xcb, 0xa1, 0xe0, 0xcf);
 com_interface! {
-    interface IDxcSourceLocation: IUnknown{
+    interface IDxcSourceLocation: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcSourceLocation,
         vtable: IDxcSourceLocationVtbl,
-        fn is_equal_to(other: *const IDxcSourceLocation, result: *mut bool) ->HRESULT;
-        fn get_spelling_location(file: *mut *mut IDxcFile, line: *mut u32, col: *mut u32, offset: *mut u32) ->HRESULT;
-        fn is_null(result: *mut bool) ->HRESULT;
+        fn is_equal_to(other: *const IDxcSourceLocation, result: *mut bool) -> HRESULT;
+        fn get_spelling_location(file: *mut *mut IDxcFile, line: *mut u32, col: *mut u32, offset: *mut u32) -> HRESULT;
+        fn is_null(result: *mut bool) -> HRESULT;
     }
 }
 
 iid!(pub IID_IDxcSourceRange = 0xf1359b36, 0xa53f, 0x4e81, 0xb5, 0x14, 0xb6, 0xb8, 0x41, 0x22, 0xa1, 0x3f);
 com_interface! {
-    interface IDxcSourceRange: IUnknown{
+    interface IDxcSourceRange: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcSourceRange,
         vtable: IDxcSourceRangeVtbl,
         fn is_null(value: *mut bool) -> HRESULT;
@@ -376,7 +433,7 @@ com_interface! {
 
 iid!(pub IID_IDxcCursor = 0x1467b985, 0x288d, 0x4d2a, 0x80, 0xc1, 0xef, 0x89, 0xc4, 0x2c, 0x40, 0xbc);
 com_interface! {
-    interface IDxcCursor: IUnknown{
+    interface IDxcCursor: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcCursor,
         vtable: IDxcCursorVtbl,
         fn get_extent(range: *mut *mut IDxcSourceRange) -> HRESULT;
@@ -405,7 +462,7 @@ com_interface! {
 
 iid!(pub IID_IDxcUnsavedFile = 0x8ec00f98, 0x07d0, 0x4e60, 0x9d, 0x7c, 0x5a, 0x50, 0xb5, 0xb0, 0x01, 0x7f);
 com_interface! {
-    interface IDxcUnsavedFile: IUnknown{
+    interface IDxcUnsavedFile: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcUnsavedFile,
         vtable: IDxcUnsavedFileVtbl,
         fn get_file_name(file_name: *mut LPSTR) -> HRESULT;
@@ -416,7 +473,7 @@ com_interface! {
 
 iid!(pub IID_IDxcFile = 0xbb2fca9e, 0x1478, 0x47ba, 0xb0, 0x8c, 0x2c, 0x50, 0x2a, 0xda, 0x48, 0x95);
 com_interface! {
-    interface IDxcFile: IUnknown{
+    interface IDxcFile: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcFile,
         vtable: IDxcFileVtbl,
         fn get_name(result: *mut LPSTR) -> HRESULT;
@@ -426,7 +483,7 @@ com_interface! {
 
 iid!(pub IID_IDxcTranslationUnit = 0x9677dee0, 0xc0e5, 0x46a1, 0x8b, 0x40, 0x3d, 0xb3, 0x16, 0x8b, 0xe6, 0x3d);
 com_interface! {
-    interface IDxcTranslationUnit: IUnknown{
+    interface IDxcTranslationUnit: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcTranslationUnit,
         vtable: IDxcTranslationUnitVtbl,
         fn get_cursor(cursor: *mut *mut IDxcCursor) -> HRESULT;
@@ -449,7 +506,7 @@ com_interface! {
 
 iid!(pub IID_IDxcIndex = 0x937824a0, 0x7f5a, 0x4815, 0x9b, 0xa, 0x7c, 0xc0, 0x42, 0x4f, 0x41, 0x73);
 com_interface! {
-    interface IDxcIndex: IUnknown{
+    interface IDxcIndex: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcIndex,
         vtable: IDxcIndexVtbl,
         fn set_global_options(options: DxcGlobalOptions) -> HRESULT;
@@ -467,7 +524,7 @@ com_interface! {
 
 iid!(pub IID_IDxcIntelliSense = 0xb1f99513, 0x46d6, 0x4112, 0x81, 0x69, 0xdd, 0x0d, 0x60, 0x53, 0xf1, 0x7d);
 com_interface! {
-    interface IDxcIntelliSense: IUnknown{
+    interface IDxcIntelliSense: IDxcUnknownShim, IUnknown {
         iid: IID_IDxcIntelliSense,
         vtable: IDxcIntelliSenseVtbl,
         fn create_index(index: *mut *mut IDxcIndex) -> HRESULT;
