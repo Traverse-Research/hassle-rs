@@ -1,6 +1,6 @@
 hassle-rs
 ========
-[![hassle on travis-ci.com](https://travis-ci.com/Traverse-Research/hassle-rs.svg?branch=master)](https://travis-ci.com/Traverse-Research/hassle-rs)
+[![Actions Status](https://github.com/Traverse-Research/hassle-rs/workflows/Continuous%20integration/badge.svg)](https://github.com/Traverse-Research/hassle-rs/actions)
 [![Latest version](https://img.shields.io/crates/v/hassle-rs.svg)](https://crates.io/crates/hassle-rs)
 [![Documentation](https://docs.rs/hassle-rs/badge.svg)](https://docs.rs/hassle-rs)
 [![Lines of code](https://tokei.rs/b1/github/Traverse-Research/hassle-rs)](https://github.com/Traverse-Research/hassle-rs)
