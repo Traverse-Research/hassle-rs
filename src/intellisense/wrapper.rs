@@ -1,5 +1,6 @@
 use crate::intellisense::ffi::*;
 use crate::os::{BSTR, HRESULT, LPSTR};
+use crate::utils::HassleError;
 use crate::wrapper::Dxc;
 use com_rs::ComPtr;
 use std::ffi::CString;
@@ -544,10 +545,10 @@ impl DxcFile {
 }
 
 impl Dxc {
-    pub fn create_intellisense(&self) -> Result<DxcIntellisense, HRESULT> {
+    pub fn create_intellisense(&self) -> Result<DxcIntellisense, HassleError> {
         let mut intellisense: ComPtr<IDxcIntelliSense> = ComPtr::new();
-        return_hr!(
-            self.get_dxc_create_instance()(
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
                 &CLSID_DxcIntelliSense,
                 &IID_IDxcIntelliSense,
                 intellisense.as_mut_ptr(),

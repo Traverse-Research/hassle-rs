@@ -69,6 +69,10 @@ pub enum HassleError {
     CompileError(String),
     #[error("Validation error: {0}")]
     ValidationError(String),
+    #[error("Error loading library")]
+    LoadLibraryError(#[from] libloading::Error),
+    #[error("Windows only")]
+    WindowsOnly(String),
 }
 
 /// Helper function to directly compile a HLSL shader to an intermediate language,
@@ -84,10 +88,10 @@ pub fn compile_hlsl(
     args: &[&str],
     defines: &[(&str, Option<&str>)],
 ) -> Result<Vec<u8>, HassleError> {
-    let dxc = Dxc::new();
+    let dxc = Dxc::new()?;
 
-    let compiler = dxc.create_compiler().map_err(HassleError::Win32Error)?;
-    let library = dxc.create_library().map_err(HassleError::Win32Error)?;
+    let compiler = dxc.create_compiler()?;
+    let library = dxc.create_library()?;
 
     let blob = library
         .create_blob_with_encoding_from_str(shader_text)
@@ -127,11 +131,11 @@ pub fn compile_hlsl(
 /// `dxil.dll` is currently not available on Linux.
 #[cfg(windows)]
 pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
-    let dxc = Dxc::new();
-    let dxil = Dxil::new();
+    let dxc = Dxc::new()?;
+    let dxil = Dxil::new()?;
 
-    let validator = dxil.create_validator().map_err(HassleError::Win32Error)?;
-    let library = dxc.create_library().map_err(HassleError::Win32Error)?;
+    let validator = dxil.create_validator()?;
+    let library = dxc.create_library()?;
 
     let blob_encoding = library
         .create_blob_with_encoding(&data)

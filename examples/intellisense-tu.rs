@@ -7,7 +7,7 @@ fn main() {
 
     let args = vec![];
 
-    let dxc = Dxc::new();
+    let dxc = Dxc::new().unwrap();
 
     let intellisense = dxc.create_intellisense().unwrap();
 

@@ -6,7 +6,7 @@
 
 use crate::ffi::*;
 use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
-use crate::utils::{from_wide, to_wide};
+use crate::utils::{from_wide, to_wide, HassleError};
 use com_rs::ComPtr;
 use libloading::{Library, Symbol};
 use std::convert::Into;
@@ -21,6 +21,17 @@ macro_rules! return_hr {
             return Ok($v);
         } else {
             return Err(hr);
+        }
+    };
+}
+
+macro_rules! return_hr_wrapped {
+    ($hr:expr, $v: expr) => {
+        let hr = $hr;
+        if hr == 0 {
+            return Ok($v);
+        } else {
+            return Err(HassleError::Win32Error(hr));
         }
     };
 }
@@ -487,34 +498,35 @@ fn dxcompiler_lib_name() -> &'static str {
 }
 
 impl Dxc {
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self, HassleError> {
         let lib_name = dxcompiler_lib_name();
-        let dxc_lib =
-            Library::new(lib_name).unwrap_or_else(|_| panic!("Failed to load {}", lib_name));
+        let dxc_lib = Library::new(lib_name)?;
 
-        Self { dxc_lib }
+        Ok(Self { dxc_lib })
     }
 
-    pub(crate) fn get_dxc_create_instance(&self) -> Symbol<DxcCreateInstanceProc> {
-        unsafe { self.dxc_lib.get(b"DxcCreateInstance\0").unwrap() }
+    pub(crate) fn get_dxc_create_instance(
+        &self,
+    ) -> Result<Symbol<DxcCreateInstanceProc>, HassleError> {
+        Ok(unsafe { self.dxc_lib.get(b"DxcCreateInstance\0")? })
     }
 
-    pub fn create_compiler(&self) -> Result<DxcCompiler, HRESULT> {
+    pub fn create_compiler(&self) -> Result<DxcCompiler, HassleError> {
         let mut compiler: ComPtr<IDxcCompiler2> = ComPtr::new();
-        return_hr!(
-            self.get_dxc_create_instance()(
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
                 &CLSID_DxcCompiler,
                 &IID_IDxcCompiler2,
                 compiler.as_mut_ptr(),
             ),
-            DxcCompiler::new(compiler, self.create_library().unwrap())
+            DxcCompiler::new(compiler, self.create_library()?)
         );
     }
 
-    pub fn create_library(&self) -> Result<DxcLibrary, HRESULT> {
+    pub fn create_library(&self) -> Result<DxcLibrary, HassleError> {
         let mut library: ComPtr<IDxcLibrary> = ComPtr::new();
-        return_hr!(
-            self.get_dxc_create_instance()(
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
                 &CLSID_DxcLibrary,
                 &IID_IDxcLibrary,
                 library.as_mut_ptr(),
@@ -578,27 +590,32 @@ impl DxcValidator {
     }
 }
 
-#[cfg(windows)]
 #[derive(Debug)]
 pub struct Dxil {
     dxil_lib: Library,
 }
 
-#[cfg(windows)]
 impl Dxil {
-    pub fn new() -> Self {
-        let dxil_lib = Library::new("dxil.dll").expect("Failed to load dxil.dll");
-        Self { dxil_lib }
+    pub fn new() -> Result<Self, HassleError> {
+        #[cfg(not(windows))]
+        {
+            return Err(HassleError::WindowsOnly(
+                "DXIL Signing is only supported on windows at the moment",
+            ));
+        }
+
+        let dxil_lib = Library::new("dxil.dll")?;
+        Ok(Self { dxil_lib })
     }
 
-    fn get_dxc_create_instance(&self) -> Symbol<DxcCreateInstanceProc> {
-        unsafe { self.dxil_lib.get(b"DxcCreateInstance\0").unwrap() }
+    fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>, HassleError> {
+        Ok(unsafe { self.dxil_lib.get(b"DxcCreateInstance\0")? })
     }
 
-    pub fn create_validator(&self) -> Result<DxcValidator, HRESULT> {
+    pub fn create_validator(&self) -> Result<DxcValidator, HassleError> {
         let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
-        return_hr!(
-            self.get_dxc_create_instance()(
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
                 &CLSID_DxcValidator,
                 &IID_IDxcValidator,
                 validator.as_mut_ptr(),
