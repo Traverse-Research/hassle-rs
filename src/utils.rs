@@ -24,8 +24,7 @@ pub(crate) fn from_bstr(string: BSTR) -> String {
         let slice: &[WCHAR] = ::std::slice::from_raw_parts(string, len as usize);
         let result = String::from_utf16(slice).unwrap();
         SysFreeString(string);
-
-        return result;
+        result
     }
 }
 
