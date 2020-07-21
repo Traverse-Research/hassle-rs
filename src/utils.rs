@@ -134,7 +134,6 @@ pub fn compile_hlsl(
 /// this function expects `dxcompiler.dll` and `dxil.dll` to be available in the current
 /// execution environment.
 /// `dxil.dll` is currently not available on Linux.
-#[cfg(windows)]
 pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
     let dxc = Dxc::new()?;
     let dxil = Dxil::new()?;
