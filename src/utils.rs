@@ -69,8 +69,13 @@ pub enum HassleError {
     CompileError(String),
     #[error("Validation error: {0}")]
     ValidationError(String),
-    #[error("Error loading library")]
-    LoadLibraryError(#[from] libloading::Error),
+    #[error("Error loading library {filename:?} / {inner:?}")]
+    LoadLibraryError {
+        filename: String,
+        inner: libloading::Error,
+    },
+    #[error("LibLoading error: {0:?}")]
+    LibLoadingError(#[from] libloading::Error),
     #[error("Windows only")]
     WindowsOnly(String),
 }

@@ -500,7 +500,10 @@ fn dxcompiler_lib_name() -> &'static str {
 impl Dxc {
     pub fn new() -> Result<Self, HassleError> {
         let lib_name = dxcompiler_lib_name();
-        let dxc_lib = Library::new(lib_name)?;
+        let dxc_lib = Library::new(lib_name).map_err(|e| HassleError::LoadLibraryError {
+            filename: lib_name.to_string(),
+            inner: e,
+        })?;
 
         Ok(Self { dxc_lib })
     }
@@ -604,7 +607,11 @@ impl Dxil {
             ));
         }
 
-        let dxil_lib = Library::new("dxil.dll")?;
+        let dxil_lib = Library::new("dxil.dll").map_err(|e| HassleError::LoadLibraryError {
+            filename: "dxil".to_string(),
+            inner: e,
+        })?;
+
         Ok(Self { dxil_lib })
     }
 
