@@ -1,9 +1,9 @@
 hassle-rs
 ========
-[![hassle on travis-ci.com](https://travis-ci.com/Jasper-Bekkers/hassle-rs.svg?branch=master)](https://travis-ci.com/Jasper-Bekkers/hassle-rs)
+[![hassle on travis-ci.com](https://travis-ci.com/Traverse-Research/hassle-rs.svg?branch=master)](https://travis-ci.com/Traverse-Research/hassle-rs)
 [![Latest version](https://img.shields.io/crates/v/hassle-rs.svg)](https://crates.io/crates/hassle-rs)
 [![Documentation](https://docs.rs/hassle-rs/badge.svg)](https://docs.rs/hassle-rs)
-[![Lines of code](https://tokei.rs/b1/github/Jasper-Bekkers/hassle-rs)](https://github.com/Jasper-Bekkers/hassle-rs)
+[![Lines of code](https://tokei.rs/b1/github/Traverse-Research/hassle-rs)](https://github.com/Traverse-Research/hassle-rs)
 ![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 
 This crate provides an FFI layer and idiomatic rust wrappers for the new [DirectXShaderCompiler](https://github.com/Microsoft/DirectXShaderCompiler) library.
@@ -16,7 +16,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hassle-rs = "0.3.0"
+hassle-rs = "0.4.0"
 ```
 
 and add this to your crate root:
@@ -38,10 +38,12 @@ Licensed under MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses
 
  - Graham Wihlidal
  - Tiago Carvalho
+ - Marijn Suijten
+ - Tomasz Stachowiak
 
 ## Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in this crate by you, shall be licensed as above, without any additional terms or conditions.
 
-Contributions are always welcome; please look at the [issue tracker](https://github.com/Jasper-Bekkers/hassle-rs/issues) to see what known improvements are documented.
+Contributions are always welcome; please look at the [issue tracker](https://github.com/Traverse-Research/hassle-rs/issues) to see what known improvements are documented.
