@@ -487,12 +487,12 @@ pub struct Dxc {
     dxc_lib: Library,
 }
 
-#[cfg(windows)]
+#[cfg(target_os = "windows")]
 fn dxcompiler_lib_name() -> &'static str {
     "dxcompiler.dll"
 }
 
-#[cfg(linux)]
+#[cfg(target_os = "linux")]
 fn dxcompiler_lib_name() -> &'static str {
     "./libdxcompiler.so"
 }
