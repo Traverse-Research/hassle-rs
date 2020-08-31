@@ -492,9 +492,14 @@ fn dxcompiler_lib_name() -> &'static str {
     "dxcompiler.dll"
 }
 
-#[cfg(not(windows))]
+#[cfg(linux)]
 fn dxcompiler_lib_name() -> &'static str {
     "./libdxcompiler.so"
+}
+
+#[cfg(target_os = "macos")]
+fn dxcompiler_lib_name() -> &'static str {
+    "./libdxcompiler.dynlib"
 }
 
 impl Dxc {
