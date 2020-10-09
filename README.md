@@ -54,6 +54,10 @@ if let Some(err) = result.err() {
 }
 ```
 
+## macOS support
+
+Currently macOS support is quite early, however, one can build a libdxcompiler.dynlib from source by building this commit: https://github.com/microsoft/DirectXShaderCompiler/pull/3062/commits/9527fe6346391ac9a31799d730c7744b482e2386 and following these steps: https://github.com/microsoft/DirectXShaderCompiler/blob/master/docs/DxcOnUnix.rst#building-dxc
+
 ## License
 
 Licensed under MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses/MIT)

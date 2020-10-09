@@ -63,7 +63,7 @@ impl DxcIncludeHandler for DefaultIncludeHandler {
 
 #[derive(Error, Debug)]
 pub enum HassleError {
-    #[error("Win32 error: {0}")]
+    #[error("Win32 error: {0:X}")]
     Win32Error(HRESULT),
     #[error("Compile error: {0}")]
     CompileError(String),
