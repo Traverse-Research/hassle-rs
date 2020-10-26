@@ -12,7 +12,6 @@ use libloading::{Library, Symbol};
 use std::convert::Into;
 use std::ffi::c_void;
 use std::rc::Rc;
-use winapi::um::d3d12shader::*;
 
 #[macro_export]
 macro_rules! return_hr {
@@ -484,38 +483,48 @@ impl DxcLibrary {
 }
 
 #[derive(Debug)]
-pub struct DxcContainerReflection {
+pub struct DxilContainerReflection {
     inner: ComPtr<IDxcContainerReflection>,
 }
 
-impl DxcContainerReflection {
+impl DxilContainerReflection {
     pub fn new(inner: ComPtr<IDxcContainerReflection>) -> Self {
         Self { inner }
     }
 
-    pub fn load(&self, pDxcBlob: &IDxcBlob) {
-        self.inner.load(pDxcBlob);
+    pub fn load(&self, p_dxc_blob: &IDxcBlob) {
+        unsafe {
+            self.inner.load(p_dxc_blob);
+        }
     }
 
     pub fn find_first_part_kind(&self) -> u32 {
-        let mut shaderIdx = 0u32;
-        self.inner.find_first_part_kind(
-            Self::four_cc('D' as u32, 'X' as u32, 'I' as u32, 'L' as u32),
-            &mut shaderIdx,
-        );
-        shaderIdx
+        let mut shader_idx = 0u32;
+        unsafe {
+            self.inner.find_first_part_kind(
+                Self::four_cc('D' as u32, 'X' as u32, 'I' as u32, 'L' as u32),
+                &mut shader_idx,
+            );
+        }
+        shader_idx
     }
 
     fn four_cc(ch0: u32, ch1: u32, ch2: u32, ch3: u32) -> u32 {
         0u32 | ch0 | ch1 << 8 | ch2 << 16 | ch3 << 24
     }
 
-    pub fn get_part_reflection(&self, pReflection: &mut ID3D12ShaderReflection) -> HassleError {
-        self.inner.get_part_reflection(
-            Self::four_cc('D' as _, 'X' as _, 'I' as _, 'L' as _),
-            &IID_ID3D12ShaderReflection,
-            pReflection as *mut _ as *mut _,
-        );
+    pub fn get_part_reflection(
+        &self,
+        idx: u32,
+        p_reflection: &mut ID3D12ShaderReflection,
+    ) -> HRESULT {
+        unsafe {
+            self.inner.get_part_reflection(
+                idx,
+                &IID_ID3D12ShaderReflection,
+                p_reflection as *mut _ as *mut _,
+            )
+        }
     }
 }
 
@@ -580,7 +589,7 @@ impl Dxc {
         );
     }
 
-    pub fn create_container_reflection(&self) -> Result<DxcContainerReflection, HassleError> {
+    pub fn create_container_reflection(&self) -> Result<DxilContainerReflection, HassleError> {
         let mut reflection: ComPtr<IDxcContainerReflection> = ComPtr::new();
         return_hr_wrapped!(
             self.get_dxc_create_instance()?(
@@ -588,7 +597,7 @@ impl Dxc {
                 &IID_IDxcContainerReflection,
                 reflection.as_mut_ptr(),
             ),
-            DxcContainerReflection::new(reflection)
+            DxilContainerReflection::new(reflection)
         );
     }
 }
