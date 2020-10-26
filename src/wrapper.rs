@@ -516,13 +516,13 @@ impl DxilContainerReflection {
     pub fn get_part_reflection(
         &self,
         idx: u32,
-        p_reflection: &mut ID3D12ShaderReflection,
+        p_reflection: *mut *mut ID3D12ShaderReflection,
     ) -> HRESULT {
         unsafe {
             self.inner.get_part_reflection(
                 idx,
                 &IID_ID3D12ShaderReflection,
-                p_reflection as *mut _ as *mut _,
+                p_reflection as _,
             )
         }
     }
@@ -586,18 +586,6 @@ impl Dxc {
                 library.as_mut_ptr(),
             ),
             DxcLibrary::new(library)
-        );
-    }
-
-    pub fn create_container_reflection(&self) -> Result<DxilContainerReflection, HassleError> {
-        let mut reflection: ComPtr<IDxcContainerReflection> = ComPtr::new();
-        return_hr_wrapped!(
-            self.get_dxc_create_instance()?(
-                &CLSID_DxcContainerReflection,
-                &IID_IDxcContainerReflection,
-                reflection.as_mut_ptr(),
-            ),
-            DxilContainerReflection::new(reflection)
         );
     }
 }
@@ -694,6 +682,18 @@ impl Dxil {
                 validator.as_mut_ptr(),
             ),
             DxcValidator::new(validator)
+        );
+    }
+
+    pub fn create_container_reflection(&self) -> Result<DxilContainerReflection, HassleError> {
+        let mut reflection: ComPtr<IDxcContainerReflection> = ComPtr::new();
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
+                &CLSID_DxcContainerReflection,
+                &IID_IDxcContainerReflection,
+                reflection.as_mut_ptr(),
+            ),
+            DxilContainerReflection::new(reflection)
         );
     }
 }
