@@ -129,4 +129,3 @@ pub fn compile_hlsl(
         }
     }
 }
-

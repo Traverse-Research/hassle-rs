@@ -55,4 +55,3 @@ pub use crate::dxil::validate_dxil;
 pub use crate::ffi::*;
 pub use crate::utils::compile_hlsl;
 pub use crate::wrapper::*;
-
