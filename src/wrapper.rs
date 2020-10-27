@@ -483,52 +483,6 @@ impl DxcLibrary {
 }
 
 #[derive(Debug)]
-pub struct DxilContainerReflection {
-    inner: ComPtr<IDxcContainerReflection>,
-}
-
-impl DxilContainerReflection {
-    pub fn new(inner: ComPtr<IDxcContainerReflection>) -> Self {
-        Self { inner }
-    }
-
-    pub fn load(&self, p_dxc_blob: &IDxcBlob) {
-        unsafe {
-            self.inner.load(p_dxc_blob);
-        }
-    }
-
-    pub fn find_first_part_kind(&self) -> u32 {
-        let mut shader_idx = 0u32;
-        unsafe {
-            self.inner.find_first_part_kind(
-                Self::four_cc('D' as u32, 'X' as u32, 'I' as u32, 'L' as u32),
-                &mut shader_idx,
-            );
-        }
-        shader_idx
-    }
-
-    fn four_cc(ch0: u32, ch1: u32, ch2: u32, ch3: u32) -> u32 {
-        0u32 | ch0 | ch1 << 8 | ch2 << 16 | ch3 << 24
-    }
-
-    pub fn get_part_reflection(
-        &self,
-        idx: u32,
-        p_reflection: *mut *mut ID3D12ShaderReflection,
-    ) -> HRESULT {
-        unsafe {
-            self.inner.get_part_reflection(
-                idx,
-                &IID_ID3D12ShaderReflection,
-                p_reflection as _,
-            )
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct Dxc {
     dxc_lib: Library,
 }
@@ -588,6 +542,18 @@ impl Dxc {
             DxcLibrary::new(library)
         );
     }
+
+    pub fn create_validator(&self) -> Result<DxcValidator, HassleError> {
+        let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
+                &CLSID_DxcValidator,
+                &IID_IDxcValidator,
+                validator.as_mut_ptr(),
+            ),
+            DxcValidator::new(validator)
+        );
+    }
 }
 
 #[derive(Debug)]
@@ -641,59 +607,5 @@ impl DxcValidator {
         } else {
             Err((DxcOperationResult::new(result), result_hr))
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct Dxil {
-    dxil_lib: Library,
-}
-
-impl Dxil {
-    pub fn new() -> Result<Self, HassleError> {
-        #[cfg(not(windows))]
-        {
-            Err(HassleError::WindowsOnly(
-                "DXIL Signing is only supported on windows at the moment".to_string(),
-            ))
-        }
-
-        #[cfg(windows)]
-        {
-            let dxil_lib = Library::new("dxil.dll").map_err(|e| HassleError::LoadLibraryError {
-                filename: "dxil".to_string(),
-                inner: e,
-            })?;
-
-            Ok(Self { dxil_lib })
-        }
-    }
-
-    fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>, HassleError> {
-        Ok(unsafe { self.dxil_lib.get(b"DxcCreateInstance\0")? })
-    }
-
-    pub fn create_validator(&self) -> Result<DxcValidator, HassleError> {
-        let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
-        return_hr_wrapped!(
-            self.get_dxc_create_instance()?(
-                &CLSID_DxcValidator,
-                &IID_IDxcValidator,
-                validator.as_mut_ptr(),
-            ),
-            DxcValidator::new(validator)
-        );
-    }
-
-    pub fn create_container_reflection(&self) -> Result<DxilContainerReflection, HassleError> {
-        let mut reflection: ComPtr<IDxcContainerReflection> = ComPtr::new();
-        return_hr_wrapped!(
-            self.get_dxc_create_instance()?(
-                &CLSID_DxcContainerReflection,
-                &IID_IDxcContainerReflection,
-                reflection.as_mut_ptr(),
-            ),
-            DxilContainerReflection::new(reflection)
-        );
     }
 }
