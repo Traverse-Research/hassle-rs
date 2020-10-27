@@ -136,9 +136,8 @@ pub fn compile_hlsl(
 /// `dxil.dll` is currently not available on Linux.
 pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
     let dxc = Dxc::new()?;
-    let dxil = Dxil::new()?;
 
-    let validator = dxil.create_validator()?;
+    let validator = dxc.create_validator()?;
     let library = dxc.create_library()?;
 
     let blob_encoding = library

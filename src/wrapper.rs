@@ -542,6 +542,18 @@ impl Dxc {
             DxcLibrary::new(library)
         );
     }
+
+    pub fn create_validator(&self) -> Result<DxcValidator, HassleError> {
+        let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
+                &CLSID_DxcValidator,
+                &IID_IDxcValidator,
+                validator.as_mut_ptr(),
+            ),
+            DxcValidator::new(validator)
+        );
+    }
 }
 
 #[derive(Debug)]
@@ -595,47 +607,5 @@ impl DxcValidator {
         } else {
             Err((DxcOperationResult::new(result), result_hr))
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct Dxil {
-    dxil_lib: Library,
-}
-
-impl Dxil {
-    pub fn new() -> Result<Self, HassleError> {
-        #[cfg(not(windows))]
-        {
-            Err(HassleError::WindowsOnly(
-                "DXIL Signing is only supported on windows at the moment".to_string(),
-            ))
-        }
-
-        #[cfg(windows)]
-        {
-            let dxil_lib = Library::new("dxil.dll").map_err(|e| HassleError::LoadLibraryError {
-                filename: "dxil".to_string(),
-                inner: e,
-            })?;
-
-            Ok(Self { dxil_lib })
-        }
-    }
-
-    fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>, HassleError> {
-        Ok(unsafe { self.dxil_lib.get(b"DxcCreateInstance\0")? })
-    }
-
-    pub fn create_validator(&self) -> Result<DxcValidator, HassleError> {
-        let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
-        return_hr_wrapped!(
-            self.get_dxc_create_instance()?(
-                &CLSID_DxcValidator,
-                &IID_IDxcValidator,
-                validator.as_mut_ptr(),
-            ),
-            DxcValidator::new(validator)
-        );
     }
 }
