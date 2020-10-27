@@ -76,8 +76,6 @@ pub enum HassleError {
     },
     #[error("LibLoading error: {0:?}")]
     LibLoadingError(#[from] libloading::Error),
-    #[error("Windows only")]
-    WindowsOnly(String),
 }
 
 /// Helper function to directly compile a HLSL shader to an intermediate language,
