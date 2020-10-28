@@ -76,6 +76,8 @@ pub enum HassleError {
     },
     #[error("LibLoading error: {0:?}")]
     LibLoadingError(#[from] libloading::Error),
+    #[error("Utf8 error: {0:?}")]
+    Utf8Error(#[from] std::str::Utf8Error),
 }
 
 /// Helper function to directly compile a HLSL shader to an intermediate language,

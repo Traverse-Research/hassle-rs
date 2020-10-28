@@ -6,10 +6,11 @@
 
 use crate::dxil::ffi::*;
 use crate::ffi::*;
-use crate::os::{HRESULT, LPCSTR};
+use crate::os::HRESULT;
 use crate::utils::HassleError;
 use com_rs::ComPtr;
 use libloading::{Library, Symbol};
+use std::ffi::CStr;
 use winapi::um::{d3d12shader, d3dcommon};
 
 #[derive(Debug)]
@@ -78,10 +79,7 @@ impl DxcContainerReflection {
             | (chars[3] as u32) << 24
     }
 
-    pub fn get_part_reflection(
-        &self,
-        idx: u32,
-    ) -> Result<ComPtr<ID3D12ShaderReflection>, HassleError> {
+    pub fn get_part_reflection(&self, idx: u32) -> Result<D3D12ShaderReflection, HassleError> {
         let mut p_reflection: ComPtr<ID3D12ShaderReflection> = ComPtr::new();
         return_hr_wrapped!(
             unsafe {
@@ -91,7 +89,7 @@ impl DxcContainerReflection {
                     p_reflection.as_mut_ptr(),
                 )
             },
-            p_reflection
+            D3D12ShaderReflection::new(p_reflection)
         );
     }
 }
@@ -153,9 +151,12 @@ impl D3D12FunctionReflection {
         }
     }
 
-    pub fn get_constant_buffer_by_name(&self, name: LPCSTR) -> D3D12ShaderReflectionConstantBuffer {
+    pub fn get_constant_buffer_by_name(&self, name: &CStr) -> D3D12ShaderReflectionConstantBuffer {
         unsafe {
-            D3D12ShaderReflectionConstantBuffer::new(self.inner.get_constant_buffer_by_name(name))
+            D3D12ShaderReflectionConstantBuffer::new(
+                self.inner
+                    .get_constant_buffer_by_name(name.as_ptr() as *const i8),
+            )
         }
     }
 
@@ -188,20 +189,26 @@ impl D3D12FunctionReflection {
 
     pub fn get_resource_binding_desc_by_name(
         &self,
-        name: LPCSTR,
+        name: &CStr,
     ) -> Result<d3d12shader::D3D12_SHADER_INPUT_BIND_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_SHADER_INPUT_BIND_DESC::default();
         return_hr_wrapped!(
             unsafe {
-                self.inner
-                    .get_resource_binding_desc_by_name(name, &mut desc as *mut _)
+                self.inner.get_resource_binding_desc_by_name(
+                    name.as_ptr() as *const i8,
+                    &mut desc as *mut _,
+                )
             },
             desc
         );
     }
 
-    pub fn get_variable_by_name(&self, name: LPCSTR) -> D3D12ShaderReflectionVariable {
-        unsafe { D3D12ShaderReflectionVariable::new(self.inner.get_variable_by_name(name)) }
+    pub fn get_variable_by_name(&self, name: &CStr) -> D3D12ShaderReflectionVariable {
+        unsafe {
+            D3D12ShaderReflectionVariable::new(
+                self.inner.get_variable_by_name(name.as_ptr() as *const i8),
+            )
+        }
     }
 }
 
@@ -232,12 +239,21 @@ impl D3D12ShaderReflectionType {
         unsafe { D3D12ShaderReflectionType::new(self.inner.get_member_type_by_index(index)) }
     }
 
-    pub fn get_member_type_by_name(&self, name: LPCSTR) -> D3D12ShaderReflectionType {
-        unsafe { D3D12ShaderReflectionType::new(self.inner.get_member_type_by_name(name)) }
+    pub fn get_member_type_by_name(&self, name: &CStr) -> D3D12ShaderReflectionType {
+        unsafe {
+            D3D12ShaderReflectionType::new(
+                self.inner
+                    .get_member_type_by_name(name.as_ptr() as *const i8),
+            )
+        }
     }
 
-    pub fn get_member_type_name(&self, index: u32) -> LPCSTR {
-        unsafe { self.inner.get_member_type_name(index) }
+    pub fn get_member_type_name(&self, index: u32) -> Result<&str, HassleError> {
+        unsafe {
+            CStr::from_ptr(self.inner.get_member_type_name(index))
+                .to_str()
+                .map_err(HassleError::Utf8Error)
+        }
     }
 
     pub fn get_num_interfaces(&self) -> u32 {
@@ -310,8 +326,12 @@ impl D3D12ShaderReflectionConstantBuffer {
         unsafe { D3D12ShaderReflectionVariable::new(self.inner.get_variable_by_index(index)) }
     }
 
-    pub fn get_variable_by_name(&self, name: LPCSTR) -> D3D12ShaderReflectionVariable {
-        unsafe { D3D12ShaderReflectionVariable::new(self.inner.get_variable_by_name(name)) }
+    pub fn get_variable_by_name(&self, name: &CStr) -> D3D12ShaderReflectionVariable {
+        unsafe {
+            D3D12ShaderReflectionVariable::new(
+                self.inner.get_variable_by_name(name.as_ptr() as *const i8),
+            )
+        }
     }
 }
 
@@ -321,6 +341,10 @@ pub struct D3D12ShaderReflection {
 }
 
 impl D3D12ShaderReflection {
+    fn new(inner: ComPtr<ID3D12ShaderReflection>) -> Self {
+        Self { inner }
+    }
+
     pub fn get_bitwise_count(&self) -> u32 {
         unsafe { self.inner.get_bitwise_instruction_count() }
     }
@@ -331,9 +355,12 @@ impl D3D12ShaderReflection {
         }
     }
 
-    pub fn get_constant_buffer_by_name(&self, name: LPCSTR) -> D3D12ShaderReflectionConstantBuffer {
+    pub fn get_constant_buffer_by_name(&self, name: &CStr) -> D3D12ShaderReflectionConstantBuffer {
         unsafe {
-            D3D12ShaderReflectionConstantBuffer::new(self.inner.get_constant_buffer_by_name(name))
+            D3D12ShaderReflectionConstantBuffer::new(
+                self.inner
+                    .get_constant_buffer_by_name(name.as_ptr() as *const _),
+            )
         }
     }
 
@@ -421,13 +448,15 @@ impl D3D12ShaderReflection {
 
     pub fn get_resource_binding_desc_by_name(
         &self,
-        name: LPCSTR,
+        name: &CStr,
     ) -> Result<d3d12shader::D3D12_SHADER_INPUT_BIND_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_SHADER_INPUT_BIND_DESC::default();
         return_hr_wrapped!(
             unsafe {
-                self.inner
-                    .get_resource_binding_desc_by_name(name, &mut desc as *mut _)
+                self.inner.get_resource_binding_desc_by_name(
+                    name.as_ptr() as *const i8,
+                    &mut desc as *mut _,
+                )
             },
             desc
         );
@@ -441,7 +470,11 @@ impl D3D12ShaderReflection {
         (x, y, z, total_size)
     }
 
-    pub fn get_variable_by_name(&self, name: LPCSTR) -> D3D12ShaderReflectionVariable {
-        unsafe { D3D12ShaderReflectionVariable::new(self.inner.get_variable_by_name(name)) }
+    pub fn get_variable_by_name(&self, name: &CStr) -> D3D12ShaderReflectionVariable {
+        unsafe {
+            D3D12ShaderReflectionVariable::new(
+                self.inner.get_variable_by_name(name.as_ptr() as *const i8),
+            )
+        }
     }
 }
