@@ -69,9 +69,10 @@ pub enum HassleError {
     CompileError(String),
     #[error("Validation error: {0}")]
     ValidationError(String),
-    #[error("Error loading library {filename:?} / {inner:?}")]
+    #[error("Failed to load library {filename:?}: {inner:?}")]
     LoadLibraryError {
         filename: String,
+        #[source]
         inner: libloading::Error,
     },
     #[error("LibLoading error: {0:?}")]
