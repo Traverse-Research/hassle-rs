@@ -177,64 +177,33 @@ impl DxcCursor {
             let mut result: *mut *mut IDxcCursor = std::ptr::null_mut();
             let mut result_length: u32 = 0;
 
-            let mut children = vec![];
             return_hr!(
                 self.inner
                     .get_children(skip, max_count, &mut result_length, &mut result),
-                {
-                    for i in 0..result_length {
+                // get_children allocates a buffer to pass the result in.  Vec will
+                // free it on Drop.
+                Vec::from_raw_parts(result, result_length as usize, result_length as usize)
+                    .into_iter()
+                    .map(|ptr| {
                         let mut childcursor = ComPtr::<IDxcCursor>::new();
-
-                        let ptr: *mut *mut IDxcCursor = childcursor.as_mut_ptr();
-
-                        *ptr = (*result).offset(i as isize);
-
-                        children.push(DxcCursor::new(childcursor));
-                    }
-                    children
-                }
+                        *childcursor.as_mut_ptr() = ptr;
+                        DxcCursor::new(childcursor)
+                    })
+                    .collect::<Vec<_>>()
             );
         }
     }
 
     pub fn get_all_children(&self) -> Result<Vec<DxcCursor>, HRESULT> {
-        let max_children_count = 10;
-        let mut current_children_count = 0;
+        const MAX_CHILDREN_PER_CHUNK: u32 = 10;
         let mut children = vec![];
 
-        unsafe {
-            let mut result: *mut *mut IDxcCursor = std::ptr::null_mut();
-            let mut result_length: u32 = 0;
-
-            loop {
-                let hr = self.inner.get_children(
-                    current_children_count,
-                    max_children_count,
-                    &mut result_length,
-                    &mut result,
-                );
-
-                if hr != 0 {
-                    return Err(hr);
-                }
-
-                for i in 0..result_length {
-                    let mut childcursor = ComPtr::<IDxcCursor>::new();
-
-                    let ptr: &mut *mut IDxcCursor = childcursor.as_mut_ptr();
-
-                    *ptr = *(result.offset(i as isize));
-
-                    let dxc_cursor = DxcCursor::new(childcursor);
-
-                    children.push(dxc_cursor);
-                }
-
-                if result_length < max_children_count {
-                    return Ok(children);
-                }
-
-                current_children_count += result_length;
+        loop {
+            let res = self.get_children(children.len() as u32, MAX_CHILDREN_PER_CHUNK)?;
+            let res_len = res.len();
+            children.extend(res);
+            if res_len < MAX_CHILDREN_PER_CHUNK as usize {
+                break Ok(children);
             }
         }
     }
@@ -384,7 +353,6 @@ impl DxcCursor {
             let mut result: *mut *mut IDxcCursor = std::ptr::null_mut();
             let mut result_length: u32 = 0;
 
-            let mut children = vec![];
             return_hr!(
                 self.inner.find_references_in_file(
                     file.inner.as_ptr(),
@@ -393,18 +361,16 @@ impl DxcCursor {
                     &mut result_length,
                     &mut result
                 ),
-                {
-                    for i in 0..result_length {
+                // find_references_in_file allocates a buffer to pass the result in.
+                // Vec will free it on Drop.
+                Vec::from_raw_parts(result, result_length as usize, result_length as usize)
+                    .into_iter()
+                    .map(|ptr| {
                         let mut childcursor = ComPtr::<IDxcCursor>::new();
-
-                        let ptr: *mut *mut IDxcCursor = childcursor.as_mut_ptr();
-
-                        *ptr = (*result).offset(i as isize);
-
-                        children.push(DxcCursor::new(childcursor));
-                    }
-                    children
-                }
+                        *childcursor.as_mut_ptr() = ptr;
+                        DxcCursor::new(childcursor)
+                    })
+                    .collect::<Vec<_>>()
             );
         }
     }
