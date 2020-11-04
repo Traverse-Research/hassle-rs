@@ -146,8 +146,8 @@ impl D3D12LibraryReflection {
     }
 
     pub fn get_function_by_index(&self, function_index: i32) -> D3D12FunctionReflection {
-        let ptr: ComPtr<ID3D12FunctionReflection> =
-            unsafe { std::mem::transmute(self.inner.get_function_by_index(function_index)) };
+        let mut ptr: ComPtr<ID3D12FunctionReflection> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_function_by_index(function_index) };
         D3D12FunctionReflection::new(ptr)
     }
 }
@@ -182,17 +182,17 @@ impl D3D12FunctionReflection {
         &self,
         buffer_index: u32,
     ) -> D3D12ShaderReflectionConstantBuffer {
-        let ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> =
-            unsafe { std::mem::transmute(self.inner.get_constant_buffer_by_index(buffer_index)) };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_constant_buffer_by_index(buffer_index) };
         D3D12ShaderReflectionConstantBuffer::new(ptr)
     }
 
     pub fn get_constant_buffer_by_name(&self, name: &CStr) -> D3D12ShaderReflectionConstantBuffer {
-        let ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> = unsafe {
-            std::mem::transmute(
-                self.inner
-                    .get_constant_buffer_by_name(name.as_ptr() as *const i8),
-            )
+        let mut ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> = ComPtr::new();
+        unsafe {
+            *ptr.as_mut_ptr() = self
+                .inner
+                .get_constant_buffer_by_name(name.as_ptr() as *const i8)
         };
         D3D12ShaderReflectionConstantBuffer::new(ptr)
     }
@@ -203,8 +203,8 @@ impl D3D12FunctionReflection {
     }
 
     pub fn get_function_parameter(&self, parameter_index: i32) -> D3D12FunctionParameterReflection {
-        let ptr: ComPtr<ID3D12FunctionParameterReflection> =
-            unsafe { std::mem::transmute(self.inner.get_function_parameter(parameter_index)) };
+        let mut ptr: ComPtr<ID3D12FunctionParameterReflection> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_function_parameter(parameter_index) };
 
         D3D12FunctionParameterReflection::new(ptr)
     }
@@ -240,9 +240,8 @@ impl D3D12FunctionReflection {
     }
 
     pub fn get_variable_by_name(&self, name: &CStr) -> D3D12ShaderReflectionVariable {
-        let ptr: ComPtr<ID3D12ShaderReflectionVariable> = unsafe {
-            std::mem::transmute(self.inner.get_variable_by_name(name.as_ptr() as *const i8))
-        };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionVariable> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_variable_by_name(name.as_ptr() as *const i8) };
         D3D12ShaderReflectionVariable::new(ptr)
     }
 }
@@ -258,8 +257,8 @@ impl D3D12ShaderReflectionType {
     }
 
     pub fn get_base_class(&self) -> D3D12ShaderReflectionType {
-        let ptr: ComPtr<ID3D12ShaderReflectionType> =
-            unsafe { std::mem::transmute(self.inner.get_base_class()) };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionType> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_base_class() };
         D3D12ShaderReflectionType::new(ptr)
     }
 
@@ -269,23 +268,23 @@ impl D3D12ShaderReflectionType {
     }
 
     pub fn get_inferface_by_index(&self, index: u32) -> D3D12ShaderReflectionType {
-        let ptr: ComPtr<ID3D12ShaderReflectionType> =
-            unsafe { std::mem::transmute(self.inner.get_interface_by_index(index)) };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionType> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_interface_by_index(index) };
         D3D12ShaderReflectionType::new(ptr)
     }
 
     pub fn get_member_type_by_index(&self, index: u32) -> D3D12ShaderReflectionType {
-        let ptr: ComPtr<ID3D12ShaderReflectionType> =
-            unsafe { std::mem::transmute(self.inner.get_member_type_by_index(index)) };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionType> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_member_type_by_index(index) };
         D3D12ShaderReflectionType::new(ptr)
     }
 
     pub fn get_member_type_by_name(&self, name: &CStr) -> D3D12ShaderReflectionType {
-        let ptr: ComPtr<ID3D12ShaderReflectionType> = unsafe {
-            std::mem::transmute(
-                self.inner
-                    .get_member_type_by_name(name.as_ptr() as *const i8),
-            )
+        let mut ptr: ComPtr<ID3D12ShaderReflectionType> = ComPtr::new();
+        unsafe {
+            *ptr.as_mut_ptr() = self
+                .inner
+                .get_member_type_by_name(name.as_ptr() as *const i8)
         };
         D3D12ShaderReflectionType::new(ptr)
     }
@@ -303,27 +302,24 @@ impl D3D12ShaderReflectionType {
     }
 
     pub fn get_sub_type(&self) -> D3D12ShaderReflectionType {
-        let ptr: ComPtr<ID3D12ShaderReflectionType> =
-            unsafe { std::mem::transmute(self.inner.get_sub_type()) };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionType> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_sub_type() };
         D3D12ShaderReflectionType::new(ptr)
     }
 
     pub fn implements_interface(&self, base: &D3D12ShaderReflectionType) -> HRESULT {
         unsafe {
             self.inner
-                .implements_interface(std::mem::transmute(base.inner.clone()))
+                .implements_interface(*base.inner.clone().as_mut_ptr())
         }
     }
 
     pub fn is_equal(&self, desc: &D3D12ShaderReflectionType) -> HRESULT {
-        unsafe { self.inner.is_equal(std::mem::transmute(desc.inner.clone())) }
+        unsafe { self.inner.is_equal(*desc.inner.clone().as_mut_ptr()) }
     }
 
     pub fn is_of_type(&self, desc: &D3D12ShaderReflectionType) -> HRESULT {
-        unsafe {
-            self.inner
-                .is_of_type(std::mem::transmute(desc.inner.clone()))
-        }
+        unsafe { self.inner.is_of_type(*desc.inner.clone().as_mut_ptr()) }
     }
 }
 
@@ -338,8 +334,8 @@ impl D3D12ShaderReflectionVariable {
     }
 
     pub fn get_buffer(&self) -> D3D12ShaderReflectionConstantBuffer {
-        let ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> =
-            unsafe { std::mem::transmute(self.inner.get_buffer()) };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_buffer() };
         D3D12ShaderReflectionConstantBuffer::new(ptr)
     }
 
@@ -353,8 +349,8 @@ impl D3D12ShaderReflectionVariable {
     }
 
     pub fn get_type(&self) -> D3D12ShaderReflectionType {
-        let ptr: ComPtr<ID3D12ShaderReflectionType> =
-            unsafe { std::mem::transmute(self.inner.get_type()) };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionType> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_type() };
         D3D12ShaderReflectionType::new(ptr)
     }
 }
@@ -377,15 +373,14 @@ impl D3D12ShaderReflectionConstantBuffer {
     }
 
     pub fn get_variable_by_index(&self, index: u32) -> D3D12ShaderReflectionVariable {
-        let ptr: ComPtr<ID3D12ShaderReflectionVariable> =
-            unsafe { std::mem::transmute(self.inner.get_variable_by_index(index)) };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionVariable> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_variable_by_index(index) };
         D3D12ShaderReflectionVariable::new(ptr)
     }
 
     pub fn get_variable_by_name(&self, name: &CStr) -> D3D12ShaderReflectionVariable {
-        let ptr: ComPtr<ID3D12ShaderReflectionVariable> = unsafe {
-            std::mem::transmute(self.inner.get_variable_by_name(name.as_ptr() as *const i8))
-        };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionVariable> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_variable_by_name(name.as_ptr() as *const i8) };
         D3D12ShaderReflectionVariable::new(ptr)
     }
 }
@@ -405,17 +400,17 @@ impl D3D12ShaderReflection {
     }
 
     pub fn get_constant_buffer_by_index(&self, index: u32) -> D3D12ShaderReflectionConstantBuffer {
-        let ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> =
-            unsafe { std::mem::transmute(self.inner.get_constant_buffer_by_index(index)) };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_constant_buffer_by_index(index) };
         D3D12ShaderReflectionConstantBuffer::new(ptr)
     }
 
     pub fn get_constant_buffer_by_name(&self, name: &CStr) -> D3D12ShaderReflectionConstantBuffer {
-        let ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> = unsafe {
-            std::mem::transmute(
-                self.inner
-                    .get_constant_buffer_by_name(name.as_ptr() as *const _),
-            )
+        let mut ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> = ComPtr::new();
+        unsafe {
+            *ptr.as_mut_ptr() = self
+                .inner
+                .get_constant_buffer_by_name(name.as_ptr() as *const _)
         };
         D3D12ShaderReflectionConstantBuffer::new(ptr)
     }
@@ -527,9 +522,8 @@ impl D3D12ShaderReflection {
     }
 
     pub fn get_variable_by_name(&self, name: &CStr) -> D3D12ShaderReflectionVariable {
-        let ptr: ComPtr<ID3D12ShaderReflectionVariable> = unsafe {
-            std::mem::transmute(self.inner.get_variable_by_name(name.as_ptr() as *const i8))
-        };
+        let mut ptr: ComPtr<ID3D12ShaderReflectionVariable> = ComPtr::new();
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_variable_by_name(name.as_ptr() as *const i8) };
         D3D12ShaderReflectionVariable::new(ptr)
     }
 }

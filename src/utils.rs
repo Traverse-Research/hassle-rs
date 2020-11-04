@@ -1,5 +1,8 @@
-use crate::{dxil::Dxil, os::{BSTR, HRESULT, LPSTR, LPWSTR, WCHAR}};
 use crate::wrapper::*;
+use crate::{
+    dxil::Dxil,
+    os::{BSTR, HRESULT, LPSTR, LPWSTR, WCHAR},
+};
 use thiserror::Error;
 
 #[cfg(windows)]

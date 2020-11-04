@@ -11,10 +11,10 @@ com_interface! {
         iid: IID_ID3D12ShaderReflectionVariable,
         vtable: ID3D12ShaderReflectionVariableVtbl,
 
-        fn get_buffer() -> ID3D12ShaderReflectionConstantBuffer;
+        fn get_buffer() -> *mut ID3D12ShaderReflectionConstantBuffer;
         fn get_desc(p_desc: *mut d3d12shader::D3D12_SHADER_VARIABLE_DESC) -> HRESULT;
         fn get_interface_slot(array_index: u32) -> u32;
-        fn get_type() -> ID3D12ShaderReflectionType;
+        fn get_type() -> *mut ID3D12ShaderReflectionType;
     }
 }
 
@@ -25,8 +25,8 @@ com_interface! {
         vtable: ID3D12ShaderReflectionConstantBufferVtbl,
 
         fn get_desc(p_desc: *mut d3d12shader::D3D12_SHADER_BUFFER_DESC) -> HRESULT;
-        fn get_variable_by_index(index: u32) -> ID3D12ShaderReflectionVariable;
-        fn get_variable_by_name(name: LPCSTR) -> ID3D12ShaderReflectionVariable;
+        fn get_variable_by_index(index: u32) -> *mut ID3D12ShaderReflectionVariable;
+        fn get_variable_by_name(name: LPCSTR) -> *mut ID3D12ShaderReflectionVariable;
     }
 }
 
@@ -37,7 +37,7 @@ com_interface! {
         vtable: ID3D12LibraryReflectionVtbl,
 
         fn get_desc(p_desc: *mut d3d12shader::D3D12_LIBRARY_DESC) -> HRESULT;
-        fn get_function_by_index(function_index: i32) -> ID3D12FunctionReflection;
+        fn get_function_by_index(function_index: i32) -> *mut ID3D12FunctionReflection;
     }
 }
 
@@ -47,13 +47,13 @@ com_interface! {
         iid: IID_ID3D12FunctionReflection,
         vtable: ID3D12FunctionReflectionVtbl,
 
-        fn get_constant_buffer_by_index(buffer_index: u32) -> ID3D12ShaderReflectionConstantBuffer;
-        fn get_constant_buffer_by_name(name: LPCSTR) -> ID3D12ShaderReflectionConstantBuffer;
+        fn get_constant_buffer_by_index(buffer_index: u32) -> *mut ID3D12ShaderReflectionConstantBuffer;
+        fn get_constant_buffer_by_name(name: LPCSTR) -> *mut ID3D12ShaderReflectionConstantBuffer;
         fn get_desc(p_desc: *mut d3d12shader::D3D12_FUNCTION_DESC) -> HRESULT;
-        fn get_function_parameter(parameter_index: i32) -> ID3D12FunctionParameterReflection;
+        fn get_function_parameter(parameter_index: i32) -> *mut ID3D12FunctionParameterReflection;
         fn get_resource_binding_desc(resource_index: u32, p_desc: *mut d3d12shader::D3D12_SHADER_INPUT_BIND_DESC) -> HRESULT;
         fn get_resource_binding_desc_by_name(name: LPCSTR, p_desc: *mut d3d12shader::D3D12_SHADER_INPUT_BIND_DESC) -> HRESULT;
-        fn get_variable_by_name(name: LPCSTR) -> ID3D12ShaderReflectionVariable;
+        fn get_variable_by_name(name: LPCSTR) -> *mut ID3D12ShaderReflectionVariable;
     }
 }
 
@@ -73,17 +73,17 @@ com_interface! {
         iid: IID_ID3D12ShaderReflectionType,
         vtable: ID3D12ShaderReflectionTypeVtbl,
 
-        fn get_base_class() -> ID3D12ShaderReflectionType;
+        fn get_base_class() -> *mut ID3D12ShaderReflectionType;
         fn get_desc(p_desc: *mut d3d12shader::D3D12_SHADER_TYPE_DESC) -> HRESULT;
-        fn get_interface_by_index(index: u32) -> ID3D12ShaderReflectionType;
-        fn get_member_type_by_index(index: u32) -> ID3D12ShaderReflectionType;
-        fn get_member_type_by_name(name: LPCSTR) -> ID3D12ShaderReflectionType;
+        fn get_interface_by_index(index: u32) -> *mut ID3D12ShaderReflectionType;
+        fn get_member_type_by_index(index: u32) -> *mut ID3D12ShaderReflectionType;
+        fn get_member_type_by_name(name: LPCSTR) -> *mut ID3D12ShaderReflectionType;
         fn get_member_type_name(index: u32) -> LPCSTR;
         fn get_num_interfaces() -> u32;
-        fn get_sub_type() -> ID3D12ShaderReflectionType;
-        fn implements_interface(p_base: ID3D12ShaderReflectionType) -> HRESULT;
-        fn is_equal(p_desc: ID3D12ShaderReflectionType) -> HRESULT;
-        fn is_of_type(p_desc: ID3D12ShaderReflectionType) -> HRESULT;
+        fn get_sub_type() -> *mut ID3D12ShaderReflectionType;
+        fn implements_interface(p_base: *mut ID3D12ShaderReflectionType) -> HRESULT;
+        fn is_equal(p_desc: *mut ID3D12ShaderReflectionType) -> HRESULT;
+        fn is_of_type(p_desc: *mut ID3D12ShaderReflectionType) -> HRESULT;
     }
 }
 
@@ -94,8 +94,8 @@ com_interface! {
         vtable: ID3D12ShaderReflectionVtbl,
 
         fn get_bitwise_instruction_count() -> u32;
-        fn get_constant_buffer_by_index(index: u32) -> ID3D12ShaderReflectionConstantBuffer;
-        fn get_constant_buffer_by_name(name: LPCSTR) -> ID3D12ShaderReflectionConstantBuffer;
+        fn get_constant_buffer_by_index(index: u32) -> *mut ID3D12ShaderReflectionConstantBuffer;
+        fn get_constant_buffer_by_name(name: LPCSTR) -> *mut ID3D12ShaderReflectionConstantBuffer;
         fn get_conversion_instruction_count() -> u32;
         fn get_desc(p_desc: *mut d3d12shader::D3D12_SHADER_DESC) -> HRESULT;
         fn get_gs_input_primitive() -> d3dcommon::D3D_PRIMITIVE;
@@ -109,7 +109,7 @@ com_interface! {
         fn get_resource_binding_desc(resource_index: u32, p_desc: *mut d3d12shader::D3D12_SHADER_INPUT_BIND_DESC) -> HRESULT;
         fn get_resource_binding_desc_by_name(name: LPCSTR, p_desc: *mut d3d12shader::D3D12_SHADER_INPUT_BIND_DESC) -> HRESULT;
         fn get_thread_group_size(size_x: *mut u32, size_y: *mut u32, size_z: *mut u32) -> u32;
-        fn get_variable_by_name(name: LPCSTR) -> ID3D12ShaderReflectionVariable;
+        fn get_variable_by_name(name: LPCSTR) -> *mut ID3D12ShaderReflectionVariable;
         fn is_sample_frequency_shader() -> bool;
     }
 }
