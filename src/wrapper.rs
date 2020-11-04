@@ -36,13 +36,13 @@ macro_rules! return_hr_wrapped {
     };
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DxcBlob {
-    inner: ComPtr<IDxcBlob>,
+    pub(crate) inner: ComPtr<IDxcBlob>,
 }
 
 impl DxcBlob {
-    fn new(inner: ComPtr<IDxcBlob>) -> Self {
+    pub(crate) fn new(inner: ComPtr<IDxcBlob>) -> Self {
         Self { inner }
     }
 

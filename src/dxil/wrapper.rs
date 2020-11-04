@@ -4,10 +4,10 @@
     clippy::type_complexity
 )]
 
-use crate::dxil::ffi::*;
 use crate::ffi::*;
 use crate::os::HRESULT;
 use crate::utils::HassleError;
+use crate::{dxil::ffi::*, DxcBlob};
 use com_rs::ComPtr;
 use libloading::{Library, Symbol};
 use std::ffi::CStr;
@@ -55,9 +55,9 @@ impl DxcContainerReflection {
         Self { inner }
     }
 
-    pub fn load(&self, p_dxc_blob: &IDxcBlob) {
+    pub fn load(&self, p_dxc_blob: &DxcBlob) {
         unsafe {
-            self.inner.load(p_dxc_blob);
+            self.inner.load(p_dxc_blob.inner.as_ptr());
         }
     }
 
@@ -90,6 +90,30 @@ impl DxcContainerReflection {
                 )
             },
             D3D12ShaderReflection::new(p_reflection)
+        );
+    }
+
+    pub fn get_part_kind(&self, index: u32) -> Result<u32, HassleError> {
+        let mut kind = 0u32;
+        return_hr_wrapped!(
+            unsafe { self.inner.get_part_kind(index, &mut kind as *mut _) },
+            kind
+        );
+    }
+
+    pub fn get_part_count(&self) -> Result<u32, HassleError> {
+        let mut count = 0u32;
+        return_hr_wrapped!(
+            unsafe { self.inner.get_part_count(&mut count as *mut _) },
+            count
+        );
+    }
+
+    pub fn get_part_content(&self, index: u32) -> Result<DxcBlob, HassleError> {
+        let mut content: ComPtr<IDxcBlob> = ComPtr::new();
+        return_hr_wrapped!(
+            unsafe { self.inner.get_part_content(index, content.as_mut_ptr()) },
+            DxcBlob::new(content)
         );
     }
 }
