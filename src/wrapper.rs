@@ -564,7 +564,7 @@ pub struct DxcValidator {
 pub type DxcValidatorVersion = (u32, u32);
 
 impl DxcValidator {
-    fn new(inner: ComPtr<IDxcValidator>) -> Self {
+    pub(crate) fn new(inner: ComPtr<IDxcValidator>) -> Self {
         Self { inner }
     }
 

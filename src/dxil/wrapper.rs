@@ -4,10 +4,10 @@
     clippy::type_complexity
 )]
 
-use crate::ffi::*;
 use crate::os::HRESULT;
 use crate::utils::HassleError;
 use crate::{dxil::ffi::*, DxcBlob};
+use crate::{ffi::*, DxcValidator};
 use com_rs::ComPtr;
 use libloading::{Library, Symbol};
 use std::ffi::CStr;
@@ -41,6 +41,18 @@ impl Dxil {
                 reflection.as_mut_ptr(),
             ),
             DxcContainerReflection::new(reflection)
+        );
+    }
+
+    pub fn create_validator(&self) -> Result<DxcValidator, HassleError> {
+        let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
+                &CLSID_DxcValidator,
+                &IID_IDxcValidator,
+                validator.as_mut_ptr(),
+            ),
+            DxcValidator::new(validator)
         );
     }
 }

@@ -50,6 +50,9 @@ pub mod intellisense;
 #[cfg(windows)]
 pub mod dxil;
 
+#[cfg(windows)]
+pub use crate::utils::validate_dxil;
+
 pub use crate::ffi::*;
 pub use crate::utils::compile_hlsl;
 pub use crate::wrapper::*;
