@@ -32,18 +32,6 @@ impl Dxil {
         Ok(unsafe { self.dxil_lib.get(b"DxcCreateInstance\0")? })
     }
 
-    pub fn create_container_reflection(&self) -> Result<DxcContainerReflection, HassleError> {
-        let mut reflection: ComPtr<IDxcContainerReflection> = ComPtr::new();
-        return_hr_wrapped!(
-            self.get_dxc_create_instance()?(
-                &CLSID_DxcContainerReflection,
-                &IID_IDxcContainerReflection,
-                reflection.as_mut_ptr(),
-            ),
-            DxcContainerReflection::new(reflection)
-        );
-    }
-
     pub fn create_validator(&self) -> Result<DxcValidator, HassleError> {
         let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
         return_hr_wrapped!(
@@ -63,7 +51,7 @@ pub struct DxcContainerReflection {
 }
 
 impl DxcContainerReflection {
-    fn new(inner: ComPtr<IDxcContainerReflection>) -> Self {
+    pub(crate) fn new(inner: ComPtr<IDxcContainerReflection>) -> Self {
         Self { inner }
     }
 

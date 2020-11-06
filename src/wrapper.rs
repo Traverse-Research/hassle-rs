@@ -4,6 +4,7 @@
     clippy::type_complexity
 )]
 
+use crate::dxil::*;
 use crate::ffi::*;
 use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
 use crate::utils::{from_wide, to_wide, HassleError};
@@ -43,7 +44,29 @@ pub struct DxcBlob {
 
 impl DxcBlob {
     pub(crate) fn new(inner: ComPtr<IDxcBlob>) -> Self {
+        unsafe {
+            inner.add_ref();
+        }
         Self { inner }
+    }
+
+    pub fn from_slice(slice: &[u8]) -> Self {
+        let mut blob = ComPtr::<IDxcBlob>::new();
+
+        // This weird pointer cast from IDxcBlob to ID3DBlob is safe:
+        // See https://github.com/microsoft/DirectXShaderCompiler/blob/285490211f2cbb44444a23d5f1c329881b96a43b/docs/HLSLChanges.rst
+        // `The HLSL compiler avoids pulling in DirectX headers and defines an
+        // IDxcBlob interface that has the same layout and interface identifier (IID).`
+        let blob_ptr: *mut *mut IDxcBlob = blob.as_mut_ptr::<IDxcBlob>();
+        unsafe {
+            winapi::um::d3dcompiler::D3DCreateBlob(slice.len(), blob_ptr as *mut *mut _);
+            std::ptr::copy_nonoverlapping(
+                slice.as_ptr(),
+                blob.get_buffer_pointer() as *mut u8,
+                slice.len(),
+            );
+        }
+        Self { inner: blob }
     }
 
     pub fn to_vec<T>(&self) -> Vec<T>
@@ -540,6 +563,18 @@ impl Dxc {
                 library.as_mut_ptr(),
             ),
             DxcLibrary::new(library)
+        );
+    }
+
+    pub fn create_container_reflection(&self) -> Result<DxcContainerReflection, HassleError> {
+        let mut reflection: ComPtr<IDxcContainerReflection> = ComPtr::new();
+        return_hr_wrapped!(
+            self.get_dxc_create_instance()?(
+                &CLSID_DxcContainerReflection,
+                &IID_IDxcContainerReflection,
+                reflection.as_mut_ptr(),
+            ),
+            DxcContainerReflection::new(reflection)
         );
     }
 

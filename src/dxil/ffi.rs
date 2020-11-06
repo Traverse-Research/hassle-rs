@@ -92,24 +92,24 @@ com_interface! {
     interface ID3D12ShaderReflection: IUnknown {
         iid: IID_ID3D12ShaderReflection,
         vtable: ID3D12ShaderReflectionVtbl,
-
-        fn get_bitwise_instruction_count() -> u32;
+        fn get_desc(p_desc: *mut d3d12shader::D3D12_SHADER_DESC) -> HRESULT;
         fn get_constant_buffer_by_index(index: u32) -> *mut ID3D12ShaderReflectionConstantBuffer;
         fn get_constant_buffer_by_name(name: LPCSTR) -> *mut ID3D12ShaderReflectionConstantBuffer;
-        fn get_conversion_instruction_count() -> u32;
-        fn get_desc(p_desc: *mut d3d12shader::D3D12_SHADER_DESC) -> HRESULT;
-        fn get_gs_input_primitive() -> d3dcommon::D3D_PRIMITIVE;
-        fn get_min_feature_level(p_level: *mut d3dcommon::D3D_FEATURE_LEVEL) -> HRESULT;
-        fn get_movc_instruction_count() -> u32;
-        fn get_mov_instruction_count() -> u32;
-        fn get_num_interface_slots() -> u32;
+        fn get_resource_binding_desc(resource_index: u32, p_desc: *mut d3d12shader::D3D12_SHADER_INPUT_BIND_DESC) -> HRESULT;
+        fn get_input_parameter_desc(parameter_index: u32, p_desc: *mut d3d12shader::D3D12_SIGNATURE_PARAMETER_DESC) -> HRESULT;
         fn get_output_parameter_desc(parameter_index: u32, p_desc: *mut d3d12shader::D3D12_SIGNATURE_PARAMETER_DESC) -> HRESULT;
         fn get_patch_constant_parameter_desc(parameter_index: u32, p_desc: *mut d3d12shader::D3D12_SIGNATURE_PARAMETER_DESC) -> HRESULT;
-        fn get_requires_flags() -> u64;
-        fn get_resource_binding_desc(resource_index: u32, p_desc: *mut d3d12shader::D3D12_SHADER_INPUT_BIND_DESC) -> HRESULT;
-        fn get_resource_binding_desc_by_name(name: LPCSTR, p_desc: *mut d3d12shader::D3D12_SHADER_INPUT_BIND_DESC) -> HRESULT;
-        fn get_thread_group_size(size_x: *mut u32, size_y: *mut u32, size_z: *mut u32) -> u32;
         fn get_variable_by_name(name: LPCSTR) -> *mut ID3D12ShaderReflectionVariable;
+        fn get_resource_binding_desc_by_name(name: LPCSTR, p_desc: *mut d3d12shader::D3D12_SHADER_INPUT_BIND_DESC) -> HRESULT;
+        fn get_mov_instruction_count() -> u32;
+        fn get_movc_instruction_count() -> u32;
+        fn get_conversion_instruction_count() -> u32;
+        fn get_bitwise_instruction_count() -> u32;
+        fn get_gs_input_primitive() -> d3dcommon::D3D_PRIMITIVE;
         fn is_sample_frequency_shader() -> bool;
+        fn get_num_interface_slots() -> u32;
+        fn get_min_feature_level(p_level: *mut d3dcommon::D3D_FEATURE_LEVEL) -> HRESULT;
+        fn get_thread_group_size(size_x: *mut u32, size_y: *mut u32, size_z: *mut u32) -> u32;
+        fn get_requires_flags() -> u64;
     }
 }
