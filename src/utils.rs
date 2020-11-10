@@ -1,9 +1,9 @@
-use crate::os::{BSTR, HRESULT, LPSTR, LPWSTR, WCHAR};
+use crate::os::{SysFreeString, BSTR, HRESULT, LPSTR, LPWSTR, WCHAR};
 use crate::wrapper::*;
 use thiserror::Error;
 
 #[cfg(windows)]
-use winapi::um::oleauto::{SysFreeString, SysStringLen};
+use winapi::um::oleauto::SysStringLen;
 
 pub(crate) fn to_wide(msg: &str) -> Vec<WCHAR> {
     widestring::WideCString::from_str(msg).unwrap().into_vec()
@@ -33,7 +33,9 @@ pub(crate) fn from_bstr(string: BSTR) -> String {
     // TODO (Marijn): This does NOT cover embedded NULLs:
     // https://docs.microsoft.com/en-us/windows/win32/api/oleauto/nf-oleauto-sysstringlen#remarks
     // Fortunately BSTRs are only used in names currently, which _likely_ don't include NULL characters (like binary data)
-    from_lpstr(string as LPSTR)
+    let result = from_lpstr(string as LPSTR);
+    unsafe { SysFreeString(string) };
+    result
 }
 
 pub(crate) fn from_lpstr(string: LPSTR) -> String {
