@@ -13,16 +13,19 @@ pub(crate) fn from_wide(wide: LPWSTR) -> String {
     unsafe {
         widestring::WideCStr::from_ptr_str(wide)
             .to_string()
-            .expect("utf16 decode failed")
+            .expect("widestring decode failed")
     }
 }
 
 #[cfg(windows)]
 pub(crate) fn from_bstr(string: BSTR) -> String {
     unsafe {
-        let len = SysStringLen(string);
-        let slice: &[WCHAR] = ::std::slice::from_raw_parts(string, len as usize);
-        let result = String::from_utf16(slice).unwrap();
+        let len = SysStringLen(string) as usize;
+
+        let result = widestring::WideCStr::from_ptr_with_nul(string, len)
+            .to_string()
+            .expect("widestring decode failed");
+
         SysFreeString(string);
         result
     }
@@ -30,10 +33,14 @@ pub(crate) fn from_bstr(string: BSTR) -> String {
 
 #[cfg(not(windows))]
 pub(crate) fn from_bstr(string: BSTR) -> String {
-    // TODO (Marijn): This does NOT cover embedded NULLs:
-    // https://docs.microsoft.com/en-us/windows/win32/api/oleauto/nf-oleauto-sysstringlen#remarks
-    // Fortunately BSTRs are only used in names currently, which _likely_ don't include NULL characters (like binary data)
-    let result = from_lpstr(string as LPSTR);
+    // TODO (Marijn): This does NOT cover embedded NULLs
+
+    // BSTR contains its size in the four bytes preceding the pointer, in order to contain NULL bytes:
+    // https://docs.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr
+    // DXC on non-Windows does not adhere to that and simply allocates a buffer without prepending the size:
+    // https://github.com/microsoft/DirectXShaderCompiler/blob/a8d9780046cb64a1cea842fa6fc28a250e3e2c09/include/dxc/Support/WinAdapter.h#L49-L50
+    let result = from_wide(string as LPWSTR);
+
     unsafe { SysFreeString(string) };
     result
 }
