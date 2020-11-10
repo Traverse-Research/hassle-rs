@@ -135,7 +135,6 @@ struct DxcIncludeHandlerWrapperVtbl {
 struct DxcIncludeHandlerWrapper<'a> {
     vtable: Box<DxcIncludeHandlerWrapperVtbl>,
     handler: Box<dyn DxcIncludeHandler>,
-    blobs: Vec<DxcBlobEncoding>,
     pinned: Vec<Rc<String>>,
     library: &'a DxcLibrary,
 }
@@ -162,22 +161,22 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
 
         let filename = crate::utils::from_wide(filename as *mut _);
 
-        let source = unsafe { &(*me).handler.load_source(filename) };
+        let source = unsafe { (*me).handler.load_source(filename) };
 
         if let Some(source) = source {
-            let pinned_source = Rc::new(source.clone());
+            let pinned_source = Rc::new(source);
 
             let mut blob = unsafe {
                 (*me)
                     .library
-                    .create_blob_with_encoding_from_str(&*pinned_source)
+                    .create_blob_with_encoding_from_str(pinned_source.as_str())
                     .unwrap()
             };
 
             unsafe {
+                blob.inner.add_ref();
                 *include_source = *blob.inner.as_mut_ptr();
-                (*me).blobs.push(blob);
-                (*me).pinned.push(Rc::clone(&pinned_source));
+                (*me).pinned.push(pinned_source);
             }
 
             0
@@ -248,7 +247,6 @@ impl DxcCompiler {
             Some(Box::new(DxcIncludeHandlerWrapper {
                 vtable: Box::new(vtable),
                 handler: include_handler,
-                blobs: vec![],
                 library,
                 pinned: vec![],
             }))
@@ -288,7 +286,9 @@ impl DxcCompiler {
                 dxc_args.len() as u32,
                 dxc_defines.as_ptr(),
                 dxc_defines.len() as u32,
-                handler_wrapper.map_or(std::ptr::null(), |v| Box::into_raw(v) as _),
+                handler_wrapper
+                    .as_ref()
+                    .map_or(std::ptr::null(), |v| &**v as *const _ as *const _),
                 result.as_mut_ptr(),
             )
         };
@@ -339,7 +339,9 @@ impl DxcCompiler {
                 dxc_args.len() as u32,
                 dxc_defines.as_ptr(),
                 dxc_defines.len() as u32,
-                handler_wrapper.map_or(std::ptr::null(), |v| Box::into_raw(v) as _),
+                handler_wrapper
+                    .as_ref()
+                    .map_or(std::ptr::null(), |v| &**v as *const _ as *const _),
                 result.as_mut_ptr(),
                 &mut debug_filename,
                 debug_blob.as_mut_ptr(),
@@ -389,7 +391,9 @@ impl DxcCompiler {
                 dxc_args.len() as u32,
                 dxc_defines.as_ptr(),
                 dxc_defines.len() as u32,
-                handler_wrapper.map_or(std::ptr::null(), |v| Box::into_raw(v) as _),
+                handler_wrapper
+                    .as_ref()
+                    .map_or(std::ptr::null(), |v| &**v as *const _ as *const _),
                 result.as_mut_ptr(),
             )
         };
