@@ -1,11 +1,8 @@
 use std::path::PathBuf;
 
-use crate::os::{SysFreeString, BSTR, HRESULT, LPSTR, LPWSTR, WCHAR};
+use crate::os::{SysFreeString, SysStringLen, BSTR, HRESULT, LPSTR, LPWSTR, WCHAR};
 use crate::wrapper::*;
 use thiserror::Error;
-
-#[cfg(windows)]
-use winapi::um::oleauto::SysStringLen;
 
 pub(crate) fn to_wide(msg: &str) -> Vec<WCHAR> {
     widestring::WideCString::from_str(msg)
@@ -21,7 +18,6 @@ pub(crate) fn from_wide(wide: LPWSTR) -> String {
     }
 }
 
-#[cfg(windows)]
 pub(crate) fn from_bstr(string: BSTR) -> String {
     unsafe {
         let len = SysStringLen(string) as usize;
@@ -33,20 +29,6 @@ pub(crate) fn from_bstr(string: BSTR) -> String {
         SysFreeString(string);
         result
     }
-}
-
-#[cfg(not(windows))]
-pub(crate) fn from_bstr(string: BSTR) -> String {
-    // TODO (Marijn): This does NOT cover embedded NULLs
-
-    // BSTR contains its size in the four bytes preceding the pointer, in order to contain NULL bytes:
-    // https://docs.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr
-    // DXC on non-Windows does not adhere to that and simply allocates a buffer without prepending the size:
-    // https://github.com/microsoft/DirectXShaderCompiler/blob/a8d9780046cb64a1cea842fa6fc28a250e3e2c09/include/dxc/Support/WinAdapter.h#L49-L50
-    let result = from_wide(string as LPWSTR);
-
-    unsafe { SysFreeString(string) };
-    result
 }
 
 pub(crate) fn from_lpstr(string: LPSTR) -> String {
