@@ -1,5 +1,5 @@
 use crate::intellisense::ffi::*;
-use crate::os::{BSTR, HRESULT, LPSTR};
+use crate::os::{CoTaskMemFree, BSTR, HRESULT, LPSTR};
 use crate::utils::HassleError;
 use crate::wrapper::Dxc;
 use com_rs::ComPtr;
@@ -178,16 +178,19 @@ impl DxcCursor {
             check_hr!(
                 self.inner
                     .get_children(skip, max_count, &mut result_length, &mut result),
-                // get_children allocates a buffer to pass the result in.  Vec will
-                // free it on Drop.
-                Vec::from_raw_parts(result, result_length as usize, result_length as usize)
-                    .into_iter()
-                    .map(|ptr| {
-                        let mut childcursor = ComPtr::<IDxcCursor>::new();
-                        *childcursor.as_mut_ptr() = ptr;
-                        DxcCursor::new(childcursor)
-                    })
-                    .collect::<Vec<_>>()
+                {
+                    // get_children allocates a buffer to pass the result in.
+                    let child_cursors = std::slice::from_raw_parts(result, result_length as usize)
+                        .iter()
+                        .map(|&ptr| {
+                            let mut childcursor = ComPtr::<IDxcCursor>::new();
+                            *childcursor.as_mut_ptr() = ptr;
+                            DxcCursor::new(childcursor)
+                        })
+                        .collect::<Vec<_>>();
+                    CoTaskMemFree(result as *mut _);
+                    child_cursors
+                }
             )
         }
     }
@@ -359,16 +362,19 @@ impl DxcCursor {
                     &mut result_length,
                     &mut result
                 ),
-                // find_references_in_file allocates a buffer to pass the result in.
-                // Vec will free it on Drop.
-                Vec::from_raw_parts(result, result_length as usize, result_length as usize)
-                    .into_iter()
-                    .map(|ptr| {
-                        let mut childcursor = ComPtr::<IDxcCursor>::new();
-                        *childcursor.as_mut_ptr() = ptr;
-                        DxcCursor::new(childcursor)
-                    })
-                    .collect::<Vec<_>>()
+                {
+                    // find_references_in_file allocates a buffer to pass the result in.
+                    let child_cursors = std::slice::from_raw_parts(result, result_length as usize)
+                        .iter()
+                        .map(|&ptr| {
+                            let mut childcursor = ComPtr::<IDxcCursor>::new();
+                            *childcursor.as_mut_ptr() = ptr;
+                            DxcCursor::new(childcursor)
+                        })
+                        .collect::<Vec<_>>();
+                    CoTaskMemFree(result as *mut _);
+                    child_cursors
+                }
             )
         }
     }

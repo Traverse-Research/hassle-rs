@@ -31,7 +31,10 @@ widestring = "0.4.2"
 thiserror = "1.0"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3.9", features = ["wtypes", "oleauto"] }
+winapi = { version = "0.3.9", features = ["wtypes", "oleauto", "combaseapi"] }
+
+[target.'cfg(not(windows))'.dependencies]
+libc = "0.2"
 
 [dev-dependencies]
 rspirv = "0.6.0"
