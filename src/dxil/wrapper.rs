@@ -55,10 +55,8 @@ impl DxcContainerReflection {
         Self { inner }
     }
 
-    pub fn load(&self, p_dxc_blob: &DxcBlob) {
-        unsafe {
-            self.inner.load(p_dxc_blob.inner.as_ptr());
-        }
+    pub fn load(&self, p_dxc_blob: &DxcBlob) -> HassleError {
+        unsafe { HassleError::Win32Error(self.inner.load(p_dxc_blob.inner.as_ptr())) }
     }
 
     pub fn find_first_part_kind(&self) -> Result<u32, HassleError> {

@@ -50,7 +50,7 @@ impl DxcBlob {
         Self { inner }
     }
 
-    pub fn from_slice(slice: &[u8]) -> Self {
+    pub fn from_slice(slice: &[u8]) -> Result<Self, HassleError> {
         let mut blob = ComPtr::<IDxcBlob>::new();
 
         // This weird pointer cast from IDxcBlob to ID3DBlob is safe:
@@ -58,15 +58,19 @@ impl DxcBlob {
         // `The HLSL compiler avoids pulling in DirectX headers and defines an
         // IDxcBlob interface that has the same layout and interface identifier (IID).`
         let blob_ptr: *mut *mut IDxcBlob = blob.as_mut_ptr::<IDxcBlob>();
-        unsafe {
-            winapi::um::d3dcompiler::D3DCreateBlob(slice.len(), blob_ptr as *mut *mut _);
-            std::ptr::copy_nonoverlapping(
-                slice.as_ptr(),
-                blob.get_buffer_pointer() as *mut u8,
-                slice.len(),
-            );
-        }
-        Self { inner: blob }
+        return_hr_wrapped!(
+            unsafe {
+                let hr =
+                    winapi::um::d3dcompiler::D3DCreateBlob(slice.len(), blob_ptr as *mut *mut _);
+                std::ptr::copy_nonoverlapping(
+                    slice.as_ptr(),
+                    blob.get_buffer_pointer() as *mut u8,
+                    slice.len(),
+                );
+                hr
+            },
+            Self { inner: blob }
+        );
     }
 
     pub fn to_vec<T>(&self) -> Vec<T>
