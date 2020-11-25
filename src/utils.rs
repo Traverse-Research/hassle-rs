@@ -12,7 +12,11 @@ pub(crate) fn to_wide(msg: &str) -> Vec<WCHAR> {
 
 pub(crate) fn from_wide(wide: LPWSTR) -> String {
     unsafe {
-        widestring::WideCStr::from_ptr_str(wide)
+        let len = libc::wmemchr(wide as *const _, 0, std::usize::MAX);
+        let len = (len as usize - wide as usize) / std::mem::size_of::<WCHAR>();
+        dbg!(len);
+
+        widestring::WideCStr::from_ptr_with_nul(wide, len)
             .to_string()
             .expect("widestring decode failed")
     }
@@ -33,7 +37,10 @@ pub(crate) fn from_bstr(string: BSTR) -> String {
 
 pub(crate) fn from_lpstr(string: LPSTR) -> String {
     unsafe {
-        let len = (0..).take_while(|&i| *string.offset(i) != 0).count();
+        // let len = (0..).take_while(|&i| *string.offset(i) != 0).count();
+        let len = libc::memchr(string as *const _, 0, std::usize::MAX);
+        let len = len as usize - string as usize;
+        dbg!(len);
 
         let slice: &[u8] = std::slice::from_raw_parts(string as *const u8, len);
         std::str::from_utf8(slice).map(|s| s.to_owned()).unwrap()
