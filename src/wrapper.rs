@@ -12,7 +12,7 @@ use libloading::{Library, Symbol};
 use std::convert::Into;
 use std::ffi::c_void;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
+use std::pin::Pin;
 
 #[macro_export]
 macro_rules! check_hr {
@@ -136,7 +136,7 @@ struct DxcIncludeHandlerWrapperVtbl {
 struct DxcIncludeHandlerWrapper<'a> {
     vtable: Box<DxcIncludeHandlerWrapperVtbl>,
     handler: Box<dyn DxcIncludeHandler>,
-    pinned: Vec<Rc<String>>,
+    pinned: Vec<Pin<String>>,
     library: &'a DxcLibrary,
 }
 
@@ -165,19 +165,18 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
         let source = unsafe { (*me).handler.load_source(filename) };
 
         if let Some(source) = source {
-            let pinned_source = Rc::new(source);
-
+            let source = Pin::new(source);
             let mut blob = unsafe {
                 (*me)
                     .library
-                    .create_blob_with_encoding_from_str(pinned_source.as_str())
+                    .create_blob_with_encoding_from_str(&source)
                     .unwrap()
             };
 
             unsafe {
                 blob.inner.add_ref();
                 *include_source = *blob.inner.as_mut_ptr();
-                (*me).pinned.push(pinned_source);
+                (*me).pinned.push(source);
             }
 
             0
