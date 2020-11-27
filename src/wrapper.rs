@@ -59,17 +59,15 @@ impl DxcBlob {
         // IDxcBlob interface that has the same layout and interface identifier (IID).`
         let blob_ptr: *mut *mut IDxcBlob = blob.as_mut_ptr::<IDxcBlob>();
         return_hr_wrapped!(
+            unsafe { winapi::um::d3dcompiler::D3DCreateBlob(slice.len(), blob_ptr as *mut *mut _) },
             unsafe {
-                let hr =
-                    winapi::um::d3dcompiler::D3DCreateBlob(slice.len(), blob_ptr as *mut *mut _);
                 std::ptr::copy_nonoverlapping(
                     slice.as_ptr(),
                     blob.get_buffer_pointer() as *mut u8,
                     slice.len(),
                 );
-                hr
-            },
-            Self { inner: blob }
+                Self { inner: blob }
+            }
         );
     }
 
