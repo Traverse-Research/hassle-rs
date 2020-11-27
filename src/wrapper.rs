@@ -37,6 +37,16 @@ macro_rules! check_hr_wrapped {
     }};
 }
 
+macro_rules! check_comptr_null {
+    ($val:expr, $res:expr) => {{
+        if $val.is_null() {
+            None
+        } else {
+            Some($res)
+        }
+    }};
+}
+
 #[derive(Debug, Clone)]
 pub struct DxcBlob {
     pub(crate) inner: ComPtr<IDxcBlob>,
@@ -44,12 +54,10 @@ pub struct DxcBlob {
 
 impl DxcBlob {
     pub(crate) fn new(inner: ComPtr<IDxcBlob>) -> Self {
-        unsafe {
-            inner.add_ref();
-        }
         Self { inner }
     }
 
+    #[cfg(windows)]
     pub fn from_slice(slice: &[u8]) -> Result<Self, HassleError> {
         let mut blob = ComPtr::<IDxcBlob>::new();
 
@@ -61,11 +69,11 @@ impl DxcBlob {
         check_hr_wrapped!(
             unsafe { winapi::um::d3dcompiler::D3DCreateBlob(slice.len(), blob_ptr as *mut *mut _) },
             unsafe {
-                std::ptr::copy_nonoverlapping(
-                    slice.as_ptr(),
-                    blob.get_buffer_pointer() as *mut u8,
+                let target = std::slice::from_raw_parts_mut(
+                    blob.get_buffer_pointer() as *mut _,
                     slice.len(),
                 );
+                target.copy_from_slice(slice);
                 Self { inner: blob }
             }
         )

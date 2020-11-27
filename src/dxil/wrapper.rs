@@ -64,13 +64,13 @@ impl DxcContainerReflection {
         check_hr_wrapped!(
             unsafe {
                 self.inner
-                    .find_first_part_kind(Self::fourcc(['D', 'X', 'I', 'L']), &mut shader_idx)
+                    .find_first_part_kind(Self::fourcc(*b"DXIL"), &mut shader_idx)
             },
             shader_idx
         )
     }
 
-    fn fourcc(chars: [char; 4]) -> u32 {
+    fn fourcc(chars: [u8; 4]) -> u32 {
         (chars[0] as u32)
             | (chars[1] as u32) << 8
             | (chars[2] as u32) << 16
@@ -131,10 +131,10 @@ impl D3D12LibraryReflection {
         check_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc)
     }
 
-    pub fn get_function_by_index(&self, function_index: i32) -> D3D12FunctionReflection {
+    pub fn get_function_by_index(&self, function_index: i32) -> Option<D3D12FunctionReflection> {
         let mut ptr: ComPtr<ID3D12FunctionReflection> = ComPtr::new();
         unsafe { *ptr.as_mut_ptr() = self.inner.get_function_by_index(function_index) };
-        D3D12FunctionReflection::new(ptr)
+        check_comptr_null!(ptr, D3D12FunctionReflection::new(ptr))
     }
 }
 
@@ -167,20 +167,19 @@ impl D3D12FunctionReflection {
     pub fn get_constant_buffer_by_index(
         &self,
         buffer_index: u32,
-    ) -> D3D12ShaderReflectionConstantBuffer {
+    ) -> Option<D3D12ShaderReflectionConstantBuffer> {
         let mut ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> = ComPtr::new();
         unsafe { *ptr.as_mut_ptr() = self.inner.get_constant_buffer_by_index(buffer_index) };
-        D3D12ShaderReflectionConstantBuffer::new(ptr)
+        check_comptr_null!(ptr, D3D12ShaderReflectionConstantBuffer::new(ptr))
     }
 
-    pub fn get_constant_buffer_by_name(&self, name: &CStr) -> D3D12ShaderReflectionConstantBuffer {
+    pub fn get_constant_buffer_by_name(
+        &self,
+        name: &CStr,
+    ) -> Option<D3D12ShaderReflectionConstantBuffer> {
         let mut ptr: ComPtr<ID3D12ShaderReflectionConstantBuffer> = ComPtr::new();
-        unsafe {
-            *ptr.as_mut_ptr() = self
-                .inner
-                .get_constant_buffer_by_name(name.as_ptr() as *const i8)
-        };
-        D3D12ShaderReflectionConstantBuffer::new(ptr)
+        unsafe { *ptr.as_mut_ptr() = self.inner.get_constant_buffer_by_name(name.as_ptr()) };
+        check_comptr_null!(ptr, D3D12ShaderReflectionConstantBuffer::new(ptr))
     }
 
     pub fn get_desc(&self) -> Result<d3d12shader::D3D12_FUNCTION_DESC, HassleError> {
@@ -188,11 +187,14 @@ impl D3D12FunctionReflection {
         check_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc)
     }
 
-    pub fn get_function_parameter(&self, parameter_index: i32) -> D3D12FunctionParameterReflection {
+    pub fn get_function_parameter(
+        &self,
+        parameter_index: i32,
+    ) -> Option<D3D12FunctionParameterReflection> {
         let mut ptr: ComPtr<ID3D12FunctionParameterReflection> = ComPtr::new();
         unsafe { *ptr.as_mut_ptr() = self.inner.get_function_parameter(parameter_index) };
 
-        D3D12FunctionParameterReflection::new(ptr)
+        check_comptr_null!(ptr, D3D12FunctionParameterReflection::new(ptr))
     }
 
     pub fn get_resource_binding_desc(
@@ -296,16 +298,22 @@ impl D3D12ShaderReflectionType {
     pub fn implements_interface(&self, base: &D3D12ShaderReflectionType) -> HRESULT {
         unsafe {
             self.inner
-                .implements_interface(*base.inner.clone().as_mut_ptr())
+                .implements_interface(base.inner.as_ptr::<ID3D12ShaderReflectionType>() as *mut _)
         }
     }
 
     pub fn is_equal(&self, desc: &D3D12ShaderReflectionType) -> HRESULT {
-        unsafe { self.inner.is_equal(*desc.inner.clone().as_mut_ptr()) }
+        unsafe {
+            self.inner
+                .is_equal(desc.inner.as_ptr::<ID3D12ShaderReflectionType>() as *mut _)
+        }
     }
 
     pub fn is_of_type(&self, desc: &D3D12ShaderReflectionType) -> HRESULT {
-        unsafe { self.inner.is_of_type(*desc.inner.clone().as_mut_ptr()) }
+        unsafe {
+            self.inner
+                .is_of_type(desc.inner.as_ptr::<ID3D12ShaderReflectionType>() as *mut _)
+        }
     }
 }
 
