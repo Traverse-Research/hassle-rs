@@ -15,26 +15,26 @@ use std::ffi::c_void;
 use std::rc::Rc;
 
 #[macro_export]
-macro_rules! return_hr {
-    ($hr:expr, $v: expr) => {
+macro_rules! check_hr {
+    ($hr:expr, $v: expr) => {{
         let hr = $hr;
         if hr == 0 {
-            return Ok($v);
+            Ok($v)
         } else {
-            return Err(hr);
+            Err(hr)
         }
-    };
+    }};
 }
 
-macro_rules! return_hr_wrapped {
-    ($hr:expr, $v: expr) => {
+macro_rules! check_hr_wrapped {
+    ($hr:expr, $v: expr) => {{
         let hr = $hr;
         if hr == 0 {
-            return Ok($v);
+            Ok($v)
         } else {
-            return Err(HassleError::Win32Error(hr));
+            Err(HassleError::Win32Error(hr))
         }
-    };
+    }};
 }
 
 #[derive(Debug, Clone)]
@@ -58,7 +58,7 @@ impl DxcBlob {
         // `The HLSL compiler avoids pulling in DirectX headers and defines an
         // IDxcBlob interface that has the same layout and interface identifier (IID).`
         let blob_ptr: *mut *mut IDxcBlob = blob.as_mut_ptr::<IDxcBlob>();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe { winapi::um::d3dcompiler::D3DCreateBlob(slice.len(), blob_ptr as *mut *mut _) },
             unsafe {
                 std::ptr::copy_nonoverlapping(
@@ -68,7 +68,7 @@ impl DxcBlob {
                 );
                 Self { inner: blob }
             }
-        );
+        )
     }
 
     pub fn to_vec<T>(&self) -> Vec<T>
@@ -115,23 +115,23 @@ impl DxcOperationResult {
 
     pub fn get_status(&self) -> Result<u32, HRESULT> {
         let mut status: u32 = 0;
-        return_hr!(unsafe { self.inner.get_status(&mut status) }, status);
+        check_hr!(unsafe { self.inner.get_status(&mut status) }, status)
     }
 
     pub fn get_result(&self) -> Result<DxcBlob, HRESULT> {
         let mut blob: ComPtr<IDxcBlob> = ComPtr::new();
-        return_hr!(
+        check_hr!(
             unsafe { self.inner.get_result(blob.as_mut_ptr()) },
             DxcBlob::new(blob)
-        );
+        )
     }
 
     pub fn get_error_buffer(&self) -> Result<DxcBlobEncoding, HRESULT> {
         let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
-        return_hr!(
+        check_hr!(
             unsafe { self.inner.get_error_buffer(blob.as_mut_ptr()) },
             DxcBlobEncoding::new(blob)
-        );
+        )
     }
 }
 
@@ -160,7 +160,6 @@ struct DxcIncludeHandlerWrapperVtbl {
 struct DxcIncludeHandlerWrapper<'a> {
     vtable: Box<DxcIncludeHandlerWrapperVtbl>,
     handler: Box<dyn DxcIncludeHandler>,
-    blobs: Vec<DxcBlobEncoding>,
     pinned: Vec<Rc<String>>,
     library: &'a DxcLibrary,
 }
@@ -187,22 +186,22 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
 
         let filename = crate::utils::from_wide(filename as *mut _);
 
-        let source = unsafe { &(*me).handler.load_source(filename) };
+        let source = unsafe { (*me).handler.load_source(filename) };
 
         if let Some(source) = source {
-            let pinned_source = Rc::new(source.clone());
+            let pinned_source = Rc::new(source);
 
             let mut blob = unsafe {
                 (*me)
                     .library
-                    .create_blob_with_encoding_from_str(&*pinned_source)
+                    .create_blob_with_encoding_from_str(pinned_source.as_str())
                     .unwrap()
             };
 
             unsafe {
+                blob.inner.add_ref();
                 *include_source = *blob.inner.as_mut_ptr();
-                (*me).blobs.push(blob);
-                (*me).pinned.push(Rc::clone(&pinned_source));
+                (*me).pinned.push(pinned_source);
             }
 
             0
@@ -273,7 +272,6 @@ impl DxcCompiler {
             Some(Box::new(DxcIncludeHandlerWrapper {
                 vtable: Box::new(vtable),
                 handler: include_handler,
-                blobs: vec![],
                 library,
                 pinned: vec![],
             }))
@@ -313,7 +311,9 @@ impl DxcCompiler {
                 dxc_args.len() as u32,
                 dxc_defines.as_ptr(),
                 dxc_defines.len() as u32,
-                handler_wrapper.map_or(std::ptr::null(), |v| Box::into_raw(v) as _),
+                handler_wrapper
+                    .as_ref()
+                    .map_or(std::ptr::null(), |v| &**v as *const _ as *const _),
                 result.as_mut_ptr(),
             )
         };
@@ -364,7 +364,9 @@ impl DxcCompiler {
                 dxc_args.len() as u32,
                 dxc_defines.as_ptr(),
                 dxc_defines.len() as u32,
-                handler_wrapper.map_or(std::ptr::null(), |v| Box::into_raw(v) as _),
+                handler_wrapper
+                    .as_ref()
+                    .map_or(std::ptr::null(), |v| &**v as *const _ as *const _),
                 result.as_mut_ptr(),
                 &mut debug_filename,
                 debug_blob.as_mut_ptr(),
@@ -414,7 +416,9 @@ impl DxcCompiler {
                 dxc_args.len() as u32,
                 dxc_defines.as_ptr(),
                 dxc_defines.len() as u32,
-                handler_wrapper.map_or(std::ptr::null(), |v| Box::into_raw(v) as _),
+                handler_wrapper
+                    .as_ref()
+                    .map_or(std::ptr::null(), |v| &**v as *const _ as *const _),
                 result.as_mut_ptr(),
             )
         };
@@ -433,13 +437,13 @@ impl DxcCompiler {
 
     pub fn disassemble(&self, blob: &DxcBlob) -> Result<DxcBlobEncoding, HRESULT> {
         let mut result_blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
-        return_hr!(
+        check_hr!(
             unsafe {
                 self.inner
                     .disassemble(blob.inner.as_ptr(), result_blob.as_mut_ptr())
             },
             DxcBlobEncoding::new(result_blob)
-        );
+        )
     }
 }
 
@@ -455,7 +459,7 @@ impl DxcLibrary {
 
     pub fn create_blob_with_encoding(&self, data: &[u8]) -> Result<DxcBlobEncoding, HRESULT> {
         let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
-        return_hr!(
+        check_hr!(
             unsafe {
                 self.inner.create_blob_with_encoding_from_pinned(
                     data.as_ptr() as *const c_void,
@@ -465,7 +469,7 @@ impl DxcLibrary {
                 )
             },
             DxcBlobEncoding::new(blob)
-        );
+        )
     }
 
     pub fn create_blob_with_encoding_from_str(
@@ -475,7 +479,7 @@ impl DxcLibrary {
         let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
         const CP_UTF8: u32 = 65001; // UTF-8 translation
 
-        return_hr!(
+        check_hr!(
             unsafe {
                 self.inner.create_blob_with_encoding_from_pinned(
                     text.as_ptr() as *const c_void,
@@ -485,7 +489,7 @@ impl DxcLibrary {
                 )
             },
             DxcBlobEncoding::new(blob)
-        );
+        )
     }
 
     pub fn get_blob_as_string(&self, blob: &DxcBlobEncoding) -> String {
@@ -546,50 +550,50 @@ impl Dxc {
 
     pub fn create_compiler(&self) -> Result<DxcCompiler, HassleError> {
         let mut compiler: ComPtr<IDxcCompiler2> = ComPtr::new();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             self.get_dxc_create_instance()?(
                 &CLSID_DxcCompiler,
                 &IID_IDxcCompiler2,
                 compiler.as_mut_ptr(),
             ),
             DxcCompiler::new(compiler, self.create_library()?)
-        );
+        )
     }
 
     pub fn create_library(&self) -> Result<DxcLibrary, HassleError> {
         let mut library: ComPtr<IDxcLibrary> = ComPtr::new();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             self.get_dxc_create_instance()?(
                 &CLSID_DxcLibrary,
                 &IID_IDxcLibrary,
                 library.as_mut_ptr(),
             ),
             DxcLibrary::new(library)
-        );
+        )
     }
 
     pub fn create_container_reflection(&self) -> Result<DxcContainerReflection, HassleError> {
         let mut reflection: ComPtr<IDxcContainerReflection> = ComPtr::new();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             self.get_dxc_create_instance()?(
                 &CLSID_DxcContainerReflection,
                 &IID_IDxcContainerReflection,
                 reflection.as_mut_ptr(),
             ),
             DxcContainerReflection::new(reflection)
-        );
+        )
     }
 
     pub fn create_validator(&self) -> Result<DxcValidator, HassleError> {
         let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             self.get_dxc_create_instance()?(
                 &CLSID_DxcValidator,
                 &IID_IDxcValidator,
                 validator.as_mut_ptr(),
             ),
             DxcValidator::new(validator)
-        );
+        )
     }
 }
 
@@ -620,7 +624,7 @@ impl DxcValidator {
         let mut major = 0;
         let mut minor = 0;
 
-        return_hr! {
+        check_hr! {
             unsafe { version.get_version(&mut major, &mut minor) },
             (major, minor)
         }

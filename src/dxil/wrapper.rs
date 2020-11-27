@@ -34,14 +34,14 @@ impl Dxil {
 
     pub fn create_validator(&self) -> Result<DxcValidator, HassleError> {
         let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             self.get_dxc_create_instance()?(
                 &CLSID_DxcValidator,
                 &IID_IDxcValidator,
                 validator.as_mut_ptr(),
             ),
             DxcValidator::new(validator)
-        );
+        )
     }
 }
 
@@ -55,19 +55,19 @@ impl DxcContainerReflection {
         Self { inner }
     }
 
-    pub fn load(&self, p_dxc_blob: &DxcBlob) -> HassleError {
-        unsafe { HassleError::Win32Error(self.inner.load(p_dxc_blob.inner.as_ptr())) }
+    pub fn load(&self, p_dxc_blob: &DxcBlob) -> Result<(), HassleError> {
+        check_hr_wrapped!(unsafe { self.inner.load(p_dxc_blob.inner.as_ptr()) }, ())
     }
 
     pub fn find_first_part_kind(&self) -> Result<u32, HassleError> {
         let mut shader_idx = 0u32;
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe {
                 self.inner
                     .find_first_part_kind(Self::fourcc(['D', 'X', 'I', 'L']), &mut shader_idx)
             },
             shader_idx
-        );
+        )
     }
 
     fn fourcc(chars: [char; 4]) -> u32 {
@@ -79,7 +79,7 @@ impl DxcContainerReflection {
 
     pub fn get_part_reflection(&self, idx: u32) -> Result<D3D12ShaderReflection, HassleError> {
         let mut p_reflection: ComPtr<ID3D12ShaderReflection> = ComPtr::new();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe {
                 self.inner.get_part_reflection(
                     idx,
@@ -88,31 +88,31 @@ impl DxcContainerReflection {
                 )
             },
             D3D12ShaderReflection::new(p_reflection)
-        );
+        )
     }
 
     pub fn get_part_kind(&self, index: u32) -> Result<u32, HassleError> {
         let mut kind = 0u32;
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe { self.inner.get_part_kind(index, &mut kind as *mut _) },
             kind
-        );
+        )
     }
 
     pub fn get_part_count(&self) -> Result<u32, HassleError> {
         let mut count = 0u32;
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe { self.inner.get_part_count(&mut count as *mut _) },
             count
-        );
+        )
     }
 
     pub fn get_part_content(&self, index: u32) -> Result<DxcBlob, HassleError> {
         let mut content: ComPtr<IDxcBlob> = ComPtr::new();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe { self.inner.get_part_content(index, content.as_mut_ptr()) },
             DxcBlob::new(content)
-        );
+        )
     }
 }
 
@@ -128,7 +128,7 @@ impl D3D12LibraryReflection {
 
     pub fn get_desc(&self) -> Result<d3d12shader::D3D12_LIBRARY_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_LIBRARY_DESC::default();
-        return_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc);
+        check_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc)
     }
 
     pub fn get_function_by_index(&self, function_index: i32) -> D3D12FunctionReflection {
@@ -150,7 +150,7 @@ impl D3D12FunctionParameterReflection {
 
     pub fn get_desc(&self) -> Result<d3d12shader::D3D12_PARAMETER_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_PARAMETER_DESC::default();
-        return_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc);
+        check_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc)
     }
 }
 
@@ -185,7 +185,7 @@ impl D3D12FunctionReflection {
 
     pub fn get_desc(&self) -> Result<d3d12shader::D3D12_FUNCTION_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_FUNCTION_DESC::default();
-        return_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc);
+        check_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc)
     }
 
     pub fn get_function_parameter(&self, parameter_index: i32) -> D3D12FunctionParameterReflection {
@@ -200,13 +200,13 @@ impl D3D12FunctionReflection {
         resource_index: u32,
     ) -> Result<d3d12shader::D3D12_SHADER_INPUT_BIND_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_SHADER_INPUT_BIND_DESC::default();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe {
                 self.inner
                     .get_resource_binding_desc(resource_index, &mut desc as *mut _)
             },
             desc
-        );
+        )
     }
 
     pub fn get_resource_binding_desc_by_name(
@@ -214,7 +214,7 @@ impl D3D12FunctionReflection {
         name: &CStr,
     ) -> Result<d3d12shader::D3D12_SHADER_INPUT_BIND_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_SHADER_INPUT_BIND_DESC::default();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe {
                 self.inner.get_resource_binding_desc_by_name(
                     name.as_ptr() as *const i8,
@@ -222,7 +222,7 @@ impl D3D12FunctionReflection {
                 )
             },
             desc
-        );
+        )
     }
 
     pub fn get_variable_by_name(&self, name: &CStr) -> D3D12ShaderReflectionVariable {
@@ -250,7 +250,7 @@ impl D3D12ShaderReflectionType {
 
     pub fn get_desc(&self) -> Result<d3d12shader::D3D12_SHADER_TYPE_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_SHADER_TYPE_DESC::default();
-        return_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc);
+        check_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc)
     }
 
     pub fn get_inferface_by_index(&self, index: u32) -> D3D12ShaderReflectionType {
@@ -327,7 +327,7 @@ impl D3D12ShaderReflectionVariable {
 
     pub fn get_desc(&self) -> Result<d3d12shader::D3D12_SHADER_VARIABLE_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_SHADER_VARIABLE_DESC::default();
-        return_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc);
+        check_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc)
     }
 
     pub fn get_interface_slot(&self, array_index: u32) -> u32 {
@@ -352,10 +352,10 @@ impl D3D12ShaderReflectionConstantBuffer {
     }
     pub fn get_desc(&self) -> Result<d3d12shader::D3D12_SHADER_BUFFER_DESC, HassleError> {
         let mut p_desc = d3d12shader::D3D12_SHADER_BUFFER_DESC::default();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe { self.inner.get_desc(&mut p_desc as *mut _) },
             p_desc
-        );
+        )
     }
 
     pub fn get_variable_by_index(&self, index: u32) -> D3D12ShaderReflectionVariable {
@@ -407,7 +407,7 @@ impl D3D12ShaderReflection {
 
     pub fn get_desc(&self) -> Result<d3d12shader::D3D12_SHADER_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_SHADER_DESC::default();
-        return_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc);
+        check_hr_wrapped!(unsafe { self.inner.get_desc(&mut desc as *mut _) }, desc)
     }
 
     pub fn get_gs_input_primitive(&self) -> d3dcommon::D3D_PRIMITIVE {
@@ -416,13 +416,13 @@ impl D3D12ShaderReflection {
 
     pub fn get_min_feature_level(&self) -> Result<d3dcommon::D3D_FEATURE_LEVEL, HassleError> {
         let mut feature_level = d3dcommon::D3D_FEATURE_LEVEL::default();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe {
                 self.inner
                     .get_min_feature_level(&mut feature_level as *mut _)
             },
             feature_level
-        );
+        )
     }
 
     pub fn get_movc_instruction_count(&self) -> u32 {
@@ -442,13 +442,13 @@ impl D3D12ShaderReflection {
         parameter_index: u32,
     ) -> Result<d3d12shader::D3D12_SIGNATURE_PARAMETER_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_SIGNATURE_PARAMETER_DESC::default();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe {
                 self.inner
                     .get_output_parameter_desc(parameter_index, &mut desc as *mut _)
             },
             desc
-        );
+        )
     }
 
     pub fn get_patch_constant_parameter_desc(
@@ -456,13 +456,13 @@ impl D3D12ShaderReflection {
         parameter_index: u32,
     ) -> Result<d3d12shader::D3D12_SIGNATURE_PARAMETER_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_SIGNATURE_PARAMETER_DESC::default();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe {
                 self.inner
                     .get_patch_constant_parameter_desc(parameter_index, &mut desc as *mut _)
             },
             desc
-        );
+        )
     }
 
     pub fn get_requires_flags(&self) -> u64 {
@@ -474,13 +474,13 @@ impl D3D12ShaderReflection {
         resource_index: u32,
     ) -> Result<d3d12shader::D3D12_SHADER_INPUT_BIND_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_SHADER_INPUT_BIND_DESC::default();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe {
                 self.inner
                     .get_resource_binding_desc(resource_index, &mut desc as *mut _)
             },
             desc
-        );
+        )
     }
 
     pub fn get_resource_binding_desc_by_name(
@@ -488,7 +488,7 @@ impl D3D12ShaderReflection {
         name: &CStr,
     ) -> Result<d3d12shader::D3D12_SHADER_INPUT_BIND_DESC, HassleError> {
         let mut desc = d3d12shader::D3D12_SHADER_INPUT_BIND_DESC::default();
-        return_hr_wrapped!(
+        check_hr_wrapped!(
             unsafe {
                 self.inner.get_resource_binding_desc_by_name(
                     name.as_ptr() as *const i8,
@@ -496,7 +496,7 @@ impl D3D12ShaderReflection {
                 )
             },
             desc
-        );
+        )
     }
 
     pub fn get_thread_group_size(&self) -> (u32, u32, u32, u32) {

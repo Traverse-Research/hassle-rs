@@ -32,6 +32,7 @@ fn main() {
 
         let name = cursor.get_display_name().unwrap();
         println!("Name {:?}", name);
+        assert_eq!(name, "copy.hlsl");
 
         let cursor_kind = cursor.get_kind().unwrap();
         println!("CursorKind {:?}", cursor_kind);
@@ -41,6 +42,19 @@ fn main() {
     }
 
     let child_cursors = cursor.get_all_children().unwrap();
+
+    assert_eq!(
+        child_cursors[0].get_display_name(),
+        Ok("g_input".to_owned())
+    );
+    assert_eq!(
+        child_cursors[1].get_display_name(),
+        Ok("g_output".to_owned())
+    );
+    assert_eq!(
+        child_cursors[2].get_display_name(),
+        Ok("copyCs(uint3)".to_owned())
+    );
 
     for child_cursor in child_cursors {
         let range = child_cursor.get_extent().unwrap();
