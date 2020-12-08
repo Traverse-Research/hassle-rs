@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::os::{SysFreeString, BSTR, HRESULT, LPSTR, LPWSTR, WCHAR};
 use crate::wrapper::*;
 use thiserror::Error;
@@ -80,7 +82,7 @@ pub enum HassleError {
     ValidationError(String),
     #[error("Failed to load library {filename:?}: {inner:?}")]
     LoadLibraryError {
-        filename: String,
+        filename: PathBuf,
         #[source]
         inner: libloading::Error,
     },
@@ -95,6 +97,8 @@ pub enum HassleError {
 /// executable environment.
 ///
 /// Specify -spirv as one of the `args` to compile to SPIR-V
+/// `dxc_path` can point to a library directly or the directory containing the library,
+/// in which case the appended filename depends on the platform.
 pub fn compile_hlsl(
     source_name: &str,
     shader_text: &str,
@@ -103,7 +107,7 @@ pub fn compile_hlsl(
     args: &[&str],
     defines: &[(&str, Option<&str>)],
 ) -> Result<Vec<u8>, HassleError> {
-    let dxc = Dxc::new()?;
+    let dxc = Dxc::new(None)?;
 
     let compiler = dxc.create_compiler()?;
     let library = dxc.create_library()?;
@@ -143,10 +147,11 @@ pub fn compile_hlsl(
 /// Helper function to validate a DXIL binary independant from the compilation process,
 /// this function expects `dxcompiler.dll` and `dxil.dll` to be available in the current
 /// execution environment.
-/// `dxil.dll` is currently not available on Linux.
+///
+/// `dxil.dll` is only available on Windows.
 pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
-    let dxc = Dxc::new()?;
-    let dxil = Dxil::new()?;
+    let dxc = Dxc::new(None)?;
+    let dxil = Dxil::new(None)?;
 
     let validator = dxil.create_validator()?;
     let library = dxc.create_library()?;

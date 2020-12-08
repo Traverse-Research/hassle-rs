@@ -11,6 +11,7 @@ use com_rs::ComPtr;
 use libloading::{Library, Symbol};
 use std::convert::Into;
 use std::ffi::c_void;
+use std::path::Path;
 use std::rc::Rc;
 
 #[macro_export]
@@ -492,25 +493,37 @@ pub struct Dxc {
 }
 
 #[cfg(target_os = "windows")]
-fn dxcompiler_lib_name() -> &'static str {
-    "dxcompiler.dll"
+fn dxcompiler_lib_name() -> &'static Path {
+    Path::new("dxcompiler.dll")
 }
 
 #[cfg(target_os = "linux")]
-fn dxcompiler_lib_name() -> &'static str {
-    "./libdxcompiler.so"
+fn dxcompiler_lib_name() -> &'static Path {
+    Path::new("./libdxcompiler.so")
 }
 
 #[cfg(target_os = "macos")]
-fn dxcompiler_lib_name() -> &'static str {
-    "./libdxcompiler.dynlib"
+fn dxcompiler_lib_name() -> &'static Path {
+    Path::new("./libdxcompiler.dynlib")
 }
 
 impl Dxc {
-    pub fn new() -> Result<Self, HassleError> {
-        let lib_name = dxcompiler_lib_name();
-        let dxc_lib = Library::new(lib_name).map_err(|e| HassleError::LoadLibraryError {
-            filename: lib_name.to_string(),
+    /// `dxc_path` can point to a library directly or the directory containing the library,
+    /// in which case the appended filename depends on the platform.
+    pub fn new(lib_path: Option<&Path>) -> Result<Self, HassleError> {
+        let joined_path;
+        let lib_path = if let Some(lib_path) = lib_path {
+            if lib_path.is_file() {
+                lib_path
+            } else {
+                joined_path = lib_path.join(dxcompiler_lib_name());
+                &joined_path
+            }
+        } else {
+            dxcompiler_lib_name()
+        };
+        let dxc_lib = Library::new(lib_path).map_err(|e| HassleError::LoadLibraryError {
+            filename: lib_path.to_owned(),
             inner: e,
         })?;
 
@@ -608,23 +621,35 @@ pub struct Dxil {
 }
 
 impl Dxil {
-    pub fn new() -> Result<Self, HassleError> {
-        #[cfg(not(windows))]
-        {
-            Err(HassleError::WindowsOnly(
-                "DXIL Signing is only supported on windows at the moment".to_string(),
-            ))
-        }
+    #[cfg(not(windows))]
+    pub fn new(_: Option<&Path>) -> Result<Self, HassleError> {
+        Err(HassleError::WindowsOnly(
+            "DXIL Signing is only supported on Windows".to_string(),
+        ))
+    }
 
-        #[cfg(windows)]
-        {
-            let dxil_lib = Library::new("dxil.dll").map_err(|e| HassleError::LoadLibraryError {
-                filename: "dxil".to_string(),
-                inner: e,
-            })?;
+    /// `dxil_path` can point to a library directly or the directory containing the library,
+    /// in which case `dxil.dll` is appended.
+    #[cfg(windows)]
+    pub fn new(lib_path: Option<&Path>) -> Result<Self, HassleError> {
+        let joined_path;
+        let lib_path = if let Some(lib_path) = lib_path {
+            if lib_path.is_file() {
+                lib_path
+            } else {
+                joined_path = lib_path.join("dxil.dll");
+                &joined_path
+            }
+        } else {
+            Path::new("dxil.dll")
+        };
 
-            Ok(Self { dxil_lib })
-        }
+        let dxil_lib = Library::new(lib_path).map_err(|e| HassleError::LoadLibraryError {
+            filename: lib_path.to_owned(),
+            inner: e,
+        })?;
+
+        Ok(Self { dxil_lib })
     }
 
     fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>, HassleError> {
