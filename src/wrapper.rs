@@ -11,7 +11,7 @@ use com_rs::ComPtr;
 use libloading::{Library, Symbol};
 use std::convert::Into;
 use std::ffi::c_void;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 #[macro_export]
@@ -510,20 +510,18 @@ fn dxcompiler_lib_name() -> &'static Path {
 impl Dxc {
     /// `dxc_path` can point to a library directly or the directory containing the library,
     /// in which case the appended filename depends on the platform.
-    pub fn new(lib_path: Option<&Path>) -> Result<Self, HassleError> {
-        let joined_path;
+    pub fn new(lib_path: Option<PathBuf>) -> Result<Self, HassleError> {
         let lib_path = if let Some(lib_path) = lib_path {
             if lib_path.is_file() {
                 lib_path
             } else {
-                joined_path = lib_path.join(dxcompiler_lib_name());
-                &joined_path
+                lib_path.join(&dxcompiler_lib_name())
             }
         } else {
-            dxcompiler_lib_name()
+            dxcompiler_lib_name().to_owned()
         };
-        let dxc_lib = Library::new(lib_path).map_err(|e| HassleError::LoadLibraryError {
-            filename: lib_path.to_owned(),
+        let dxc_lib = Library::new(&lib_path).map_err(|e| HassleError::LoadLibraryError {
+            filename: lib_path,
             inner: e,
         })?;
 
@@ -622,7 +620,7 @@ pub struct Dxil {
 
 impl Dxil {
     #[cfg(not(windows))]
-    pub fn new(_: Option<&Path>) -> Result<Self, HassleError> {
+    pub fn new(_: Option<PathBuf>) -> Result<Self, HassleError> {
         Err(HassleError::WindowsOnly(
             "DXIL Signing is only supported on Windows".to_string(),
         ))
@@ -631,20 +629,18 @@ impl Dxil {
     /// `dxil_path` can point to a library directly or the directory containing the library,
     /// in which case `dxil.dll` is appended.
     #[cfg(windows)]
-    pub fn new(lib_path: Option<&Path>) -> Result<Self, HassleError> {
-        let joined_path;
+    pub fn new(lib_path: Option<PathBuf>) -> Result<Self, HassleError> {
         let lib_path = if let Some(lib_path) = lib_path {
             if lib_path.is_file() {
                 lib_path
             } else {
-                joined_path = lib_path.join("dxil.dll");
-                &joined_path
+                lib_path.join("dxil.dll")
             }
         } else {
-            Path::new("dxil.dll")
+            PathBuf::from("dxil.dll")
         };
 
-        let dxil_lib = Library::new(lib_path).map_err(|e| HassleError::LoadLibraryError {
+        let dxil_lib = Library::new(&lib_path).map_err(|e| HassleError::LoadLibraryError {
             filename: lib_path.to_owned(),
             inner: e,
         })?;
