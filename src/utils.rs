@@ -8,7 +8,9 @@ use thiserror::Error;
 use winapi::um::oleauto::SysStringLen;
 
 pub(crate) fn to_wide(msg: &str) -> Vec<WCHAR> {
-    widestring::WideCString::from_str(msg).unwrap().into_vec()
+    widestring::WideCString::from_str(msg)
+        .unwrap()
+        .into_vec_with_nul()
 }
 
 pub(crate) fn from_wide(wide: LPWSTR) -> String {
