@@ -1,4 +1,4 @@
-hassle-rs
+🌤 hassle-rs
 ========
 [![Actions Status](https://github.com/Traverse-Research/hassle-rs/workflows/Continuous%20integration/badge.svg)](https://github.com/Traverse-Research/hassle-rs/actions)
 [![Latest version](https://img.shields.io/crates/v/hassle-rs.svg)](https://crates.io/crates/hassle-rs)
