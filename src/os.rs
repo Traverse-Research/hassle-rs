@@ -1,3 +1,6 @@
+// Allow uppercase names to match Windows API:
+#![allow(clippy::upper_case_acronyms)]
+
 #[cfg(windows)]
 mod os_defs {
     pub use winapi::shared::{
