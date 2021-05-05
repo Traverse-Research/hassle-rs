@@ -56,7 +56,13 @@ if let Some(err) = result.err() {
 
 ## macOS support
 
-Currently macOS support is quite early, however, one can build a libdxcompiler.dynlib from source by building this commit: https://github.com/microsoft/DirectXShaderCompiler/pull/3062/commits/9527fe6346391ac9a31799d730c7744b482e2386 and following these steps: https://github.com/microsoft/DirectXShaderCompiler/blob/master/docs/DxcOnUnix.rst#building-dxc
+One can build `libdxcompiler.dynlib` from source with [this commit](https://github.com/microsoft/DirectXShaderCompiler/pull/3062/commits/9f2b30aa333f22eed00bf37b3a9b94f5ff5d23fe) for `clang` or [the entire PR](https://github.com/microsoft/DirectXShaderCompiler/pull/3062) for `GCC`, by following [the DXC Unix build guide](https://github.com/microsoft/DirectXShaderCompiler/blob/master/docs/DxcOnUnix.rst#building-dxc). These patches [have been merged](https://github.com/microsoft/DirectXShaderCompiler/commit/af14220b45d3ce46e0bad51ce79655e41d07c478) to DXC and are available since `release-1.6.2012`.
+
+## Linux support
+
+Linux shares the same requirements as [macOS support](#macOS-support) when compiling from source but DXC provides prebuilt libraries for every commit on [AppVeyor](https://ci.appveyor.com/project/dnovillo/directxshadercompiler/history). These are linked from individual commits on GitHub too.
+
+Furthermore semantics around `BSTR` (only used in `intellisense`) have [changed since hassle-rs 0.5.1](https://github.com/Traverse-Research/hassle-rs/commit/94670248cc01614c3a9c9f4d5288afb4040544bd) and require `libdxcompiler.so` compiled from at least [this commit](https://github.com/microsoft/DirectXShaderCompiler/commit/2ade6f84d6b95bfd96eec1d6d15e3aa3b519d180), also included in `release-1.6.2012`. `Intellisense` on hassle-rs `0.5.0` and below is not compatible with these newer libraries.
 
 ## License
 
