@@ -9,7 +9,6 @@ use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
 use crate::utils::{from_wide, to_wide, HassleError};
 use com_rs::ComPtr;
 use libloading::{Library, Symbol};
-use std::convert::Into;
 use std::ffi::c_void;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -47,18 +46,41 @@ impl DxcBlob {
         Self { inner }
     }
 
-    pub fn to_vec<T>(&self) -> Vec<T>
-    where
-        T: Clone,
-    {
-        let slice = unsafe {
+    pub fn as_slice<T>(&self) -> &[T] {
+        unsafe {
             std::slice::from_raw_parts(
                 self.inner.get_buffer_pointer() as *const T,
                 self.inner.get_buffer_size() / std::mem::size_of::<T>(),
             )
-        };
+        }
+    }
 
-        slice.to_vec()
+    pub fn as_mut_slice<T>(&mut self) -> &mut [T] {
+        unsafe {
+            std::slice::from_raw_parts_mut(
+                self.inner.get_buffer_pointer() as *mut T,
+                self.inner.get_buffer_size() / std::mem::size_of::<T>(),
+            )
+        }
+    }
+
+    pub fn to_vec<T>(&self) -> Vec<T>
+    where
+        T: Clone,
+    {
+        self.as_slice().to_vec()
+    }
+}
+
+impl AsRef<[u8]> for DxcBlob {
+    fn as_ref(&self) -> &[u8] {
+        self.as_slice()
+    }
+}
+
+impl AsMut<[u8]> for DxcBlob {
+    fn as_mut(&mut self) -> &mut [u8] {
+        self.as_mut_slice()
     }
 }
 
@@ -73,9 +95,9 @@ impl DxcBlobEncoding {
     }
 }
 
-impl Into<DxcBlob> for DxcBlobEncoding {
-    fn into(self) -> DxcBlob {
-        DxcBlob::new(ComPtr::from(&self.inner))
+impl From<DxcBlobEncoding> for DxcBlob {
+    fn from(encoded_blob: DxcBlobEncoding) -> Self {
+        DxcBlob::new((&encoded_blob.inner).into())
     }
 }
 
