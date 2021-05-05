@@ -21,7 +21,6 @@ maintenance = { status = "actively-developed" }
 default-target = "x86_64-pc-windows-msvc"
 
 [dependencies]
-libloading = "0.7.0"
 com-rs = "0.2.1"
 bitflags = "1.2.1"
 widestring = "1.0.1"

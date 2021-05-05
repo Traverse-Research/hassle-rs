@@ -8,7 +8,6 @@ use crate::ffi::*;
 use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
 use crate::utils::{from_wide, to_wide, HassleError, Result};
 use com_rs::ComPtr;
-use libloading::{Library, Symbol};
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 
@@ -461,49 +460,13 @@ impl DxcLibrary {
 }
 
 #[derive(Debug)]
-pub struct Dxc {
-    dxc_lib: Library,
-}
-
-#[cfg(target_os = "windows")]
-fn dxcompiler_lib_name() -> &'static Path {
-    Path::new("dxcompiler.dll")
-}
-
-#[cfg(any(target_os = "linux", target_os = "android"))]
-fn dxcompiler_lib_name() -> &'static Path {
-    Path::new("./libdxcompiler.so")
-}
-
-#[cfg(target_os = "macos")]
-fn dxcompiler_lib_name() -> &'static Path {
-    Path::new("./libdxcompiler.dylib")
-}
+pub struct Dxc;
 
 impl Dxc {
     /// `dxc_path` can point to a library directly or the directory containing the library,
     /// in which case the appended filename depends on the platform.
-    pub fn new(lib_path: Option<PathBuf>) -> Result<Self> {
-        let lib_path = if let Some(lib_path) = lib_path {
-            if lib_path.is_file() {
-                lib_path
-            } else {
-                lib_path.join(dxcompiler_lib_name())
-            }
-        } else {
-            dxcompiler_lib_name().to_owned()
-        };
-        let dxc_lib =
-            unsafe { Library::new(&lib_path) }.map_err(|e| HassleError::LoadLibraryError {
-                filename: lib_path,
-                inner: e,
-            })?;
-
-        Ok(Self { dxc_lib })
-    }
-
-    pub(crate) fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>> {
-        Ok(unsafe { self.dxc_lib.get(b"DxcCreateInstance\0")? })
+    pub fn new(_lib_path: Option<PathBuf>) -> Result<Self> {
+        Ok(Self)
     }
 
     pub fn create_compiler(&self) -> Result<DxcCompiler> {
@@ -649,9 +612,7 @@ impl DxcReflector {
 }
 
 #[derive(Debug)]
-pub struct Dxil {
-    dxil_lib: Library,
-}
+pub struct Dxil;
 
 impl Dxil {
     #[cfg(not(windows))]
@@ -664,28 +625,8 @@ impl Dxil {
     /// `dxil_path` can point to a library directly or the directory containing the library,
     /// in which case `dxil.dll` is appended.
     #[cfg(windows)]
-    pub fn new(lib_path: Option<PathBuf>) -> Result<Self> {
-        let lib_path = if let Some(lib_path) = lib_path {
-            if lib_path.is_file() {
-                lib_path
-            } else {
-                lib_path.join("dxil.dll")
-            }
-        } else {
-            PathBuf::from("dxil.dll")
-        };
-
-        let dxil_lib =
-            unsafe { Library::new(&lib_path) }.map_err(|e| HassleError::LoadLibraryError {
-                filename: lib_path.to_owned(),
-                inner: e,
-            })?;
-
-        Ok(Self { dxil_lib })
-    }
-
-    fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>> {
-        Ok(unsafe { self.dxil_lib.get(b"DxcCreateInstance\0")? })
+    pub fn new(_lib_path: Option<PathBuf>) -> Result<Self> {
+        Ok(Self)
     }
 
     pub fn create_validator(&self) -> Result<DxcValidator> {

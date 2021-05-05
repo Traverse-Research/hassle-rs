@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use crate::os::{SysFreeString, SysStringLen, BSTR, HRESULT, LPCSTR, LPCWSTR, WCHAR};
 use crate::wrapper::*;
 use thiserror::Error;
@@ -64,14 +62,6 @@ pub enum HassleError {
     CompileError(String),
     #[error("Validation error: {0}")]
     ValidationError(String),
-    #[error("Failed to load library {filename:?}: {inner:?}")]
-    LoadLibraryError {
-        filename: PathBuf,
-        #[source]
-        inner: libloading::Error,
-    },
-    #[error("LibLoading error: {0:?}")]
-    LibLoadingError(#[from] libloading::Error),
     #[error("Windows only")]
     WindowsOnly(String),
 }
