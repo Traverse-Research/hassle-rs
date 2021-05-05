@@ -9,13 +9,14 @@ mod os_defs {
     };
 
     pub use winapi::um::combaseapi::CoTaskMemFree;
-    pub use winapi::um::oleauto::SysFreeString;
+    pub use winapi::um::oleauto::{SysFreeString, SysStringLen};
 }
 
 #[cfg(not(windows))]
 mod os_defs {
     pub type CHAR = i8;
-    pub type WCHAR = u32;
+    pub type UINT = u32;
+    pub type WCHAR = widestring::WideChar;
     pub type OLECHAR = WCHAR;
     pub type LPSTR = *mut CHAR;
     pub type LPWSTR = *mut WCHAR;
@@ -25,20 +26,57 @@ mod os_defs {
     pub type LPBSTR = *mut BSTR;
     pub type HRESULT = i32;
 
-    #[allow(non_snake_case)]
-    /// # Safety
-    /// `p` must be a valid pointer to an allocation made with `malloc`
-    pub unsafe fn CoTaskMemFree(p: *mut libc::c_void) {
-        // https://github.com/microsoft/DirectXShaderCompiler/blob/a8d9780046cb64a1cea842fa6fc28a250e3e2c09/include/dxc/Support/WinAdapter.h#L46
-        libc::free(p)
+    /// Returns a mutable pointer to the length prefix of the string
+    fn len_ptr(p: BSTR) -> *mut UINT {
+        // The first four bytes before the pointer contain the length prefix:
+        // https://docs.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr#remarks
+        unsafe { p.cast::<UINT>().offset(-1) }
     }
 
     #[allow(non_snake_case)]
     /// # Safety
-    /// `p` must be a valid pointer to an allocation made with `malloc`
+    /// `p` must be a valid pointer to an allocation made with `malloc`, or null.
+    pub unsafe fn CoTaskMemFree(p: *mut libc::c_void) {
+        // https://github.com/microsoft/DirectXShaderCompiler/blob/56e22b30c5e43632f56a1f97865f37108ec35463/include/dxc/Support/WinAdapter.h#L46
+        if !p.is_null() {
+            libc::free(p)
+        }
+    }
+
+    #[allow(non_snake_case)]
+    /// # Safety
+    /// `p` must be a valid pointer to an allocation made with `malloc`, or null.
     pub unsafe fn SysFreeString(p: BSTR) {
-        // https://github.com/microsoft/DirectXShaderCompiler/blob/a8d9780046cb64a1cea842fa6fc28a250e3e2c09/include/dxc/Support/WinAdapter.h#L48-L50
-        libc::free(p as _)
+        // https://github.com/microsoft/DirectXShaderCompiler/blob/56e22b30c5e43632f56a1f97865f37108ec35463/lib/DxcSupport/WinAdapter.cpp#L50-L53
+        if !p.is_null() {
+            libc::free(len_ptr(p).cast::<_>())
+        }
+    }
+
+    #[allow(non_snake_case)]
+    /// Returns the size of `p` in bytes, excluding terminating NULL character
+    ///
+    /// # Safety
+    /// `p` must be a valid pointer to a [`BSTR`] with size-prefix in the `4` leading bytes, or null.
+    ///
+    /// https://docs.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr#remarks
+    pub unsafe fn SysStringByteLen(p: BSTR) -> UINT {
+        if p.is_null() {
+            0
+        } else {
+            *len_ptr(p)
+        }
+    }
+
+    #[allow(non_snake_case)]
+    /// Returns the size of `p` in characters, excluding terminating NULL character
+    ///
+    /// # Safety
+    /// `p` must be a valid pointer to a [`BSTR`] with size-prefix in the `4` leading bytes, or null.
+    ///
+    /// https://docs.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr#remarks
+    pub unsafe fn SysStringLen(p: BSTR) -> UINT {
+        SysStringByteLen(p) / std::mem::size_of::<OLECHAR>() as UINT
     }
 }
 
