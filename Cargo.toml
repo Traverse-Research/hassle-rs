@@ -1,6 +1,6 @@
 [package]
 name = "hassle-rs"
-version = "0.5.1-alpha.0"
+version = "0.5.1"
 authors = ["Traverse-Research <support@traverseresearch.nl>"]
 edition = "2018"
 description = "HLSL compiler library, this crate provides an FFI layer and idiomatic rust wrappers for the new DXC hlsl compiler and validator."
