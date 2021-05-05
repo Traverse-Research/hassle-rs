@@ -541,10 +541,11 @@ impl Dxc {
         } else {
             dxcompiler_lib_name().to_owned()
         };
-        let dxc_lib = Library::new(&lib_path).map_err(|e| HassleError::LoadLibraryError {
-            filename: lib_path,
-            inner: e,
-        })?;
+        let dxc_lib =
+            unsafe { Library::new(&lib_path) }.map_err(|e| HassleError::LoadLibraryError {
+                filename: lib_path,
+                inner: e,
+            })?;
 
         Ok(Self { dxc_lib })
     }
@@ -661,10 +662,11 @@ impl Dxil {
             PathBuf::from("dxil.dll")
         };
 
-        let dxil_lib = Library::new(&lib_path).map_err(|e| HassleError::LoadLibraryError {
-            filename: lib_path.to_owned(),
-            inner: e,
-        })?;
+        let dxil_lib =
+            unsafe { Library::new(&lib_path) }.map_err(|e| HassleError::LoadLibraryError {
+                filename: lib_path.to_owned(),
+                inner: e,
+            })?;
 
         Ok(Self { dxil_lib })
     }
