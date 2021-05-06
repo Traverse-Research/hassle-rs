@@ -376,9 +376,19 @@ impl DxcCompiler {
         }
 
         if result_hr == 0 && compile_error == 0 {
+            let debug_name = if debug_filename.is_null() {
+                String::new()
+            } else {
+                let s = from_wide(debug_filename);
+                // Can't be done in `fn from_wide`, our include handler calls it in
+                // `fn load_source` to read an LPWSTR that's _not_ owned by us.
+                unsafe { crate::os::CoTaskMemFree(debug_filename.cast::<_>()) }
+                s
+            };
+            dbg!(&debug_name);
             Ok((
                 DxcOperationResult::new(result),
-                from_wide(debug_filename),
+                debug_name,
                 DxcBlob::new(debug_blob),
             ))
         } else {

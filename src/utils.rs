@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::os::{SysFreeString, SysStringLen, BSTR, HRESULT, LPSTR, LPWSTR, WCHAR};
+use crate::os::{CoTaskMemFree, SysFreeString, SysStringLen, BSTR, HRESULT, LPSTR, LPWSTR, WCHAR};
 use crate::wrapper::*;
 use thiserror::Error;
 
@@ -36,7 +36,11 @@ pub(crate) fn from_lpstr(string: LPSTR) -> String {
         let len = (0..).take_while(|&i| *string.offset(i) != 0).count();
 
         let slice: &[u8] = std::slice::from_raw_parts(string as *const u8, len);
-        std::str::from_utf8(slice).map(|s| s.to_owned()).unwrap()
+        let str = std::str::from_utf8(slice).map(|s| s.to_owned()).unwrap();
+        // (For intellisense only!)
+        // https://github.com/microsoft/DirectXShaderCompiler/blob/320d40bf354ae6e59eb2d6b8a5ac0dca5dd658f7/tools/clang/tools/libclang/dxcisenseimpl.cpp#L193
+        CoTaskMemFree(string.cast::<_>());
+        str
     }
 }
 
@@ -100,7 +104,7 @@ pub fn compile_hlsl(
         .create_blob_with_encoding_from_str(shader_text)
         .map_err(HassleError::Win32Error)?;
 
-    let result = compiler.compile(
+    let result = compiler.compile_with_debug(
         &blob,
         source_name,
         entry_point,
@@ -120,7 +124,7 @@ pub fn compile_hlsl(
                 library.get_blob_as_string(&error_blob),
             ))
         }
-        Ok(result) => {
+        Ok((result, _, _)) => {
             let result_blob = result.get_result().map_err(HassleError::Win32Error)?;
 
             Ok(result_blob.to_vec())
