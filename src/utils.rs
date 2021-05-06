@@ -22,7 +22,7 @@ pub(crate) fn from_bstr(string: BSTR) -> String {
     unsafe {
         let len = SysStringLen(string) as usize;
 
-        let result = widestring::WideCStr::from_ptr_with_nul(string, len)
+        let result = widestring::WideStr::from_ptr(string, len)
             .to_string()
             .expect("widestring decode failed");
 
