@@ -119,10 +119,6 @@ struct DxcIncludeHandlerWrapperVtbl {
     ) -> HRESULT,
     add_ref: extern "system" fn(*const com_rs::IUnknown) -> HRESULT,
     release: extern "system" fn(*const com_rs::IUnknown) -> HRESULT,
-    #[cfg(not(windows))]
-    complete_object_destructor: extern "system" fn(*const com_rs::IUnknown) -> HRESULT,
-    #[cfg(not(windows))]
-    deleting_destructor: extern "system" fn(*const com_rs::IUnknown) -> HRESULT,
     load_source: extern "system" fn(*mut com_rs::IUnknown, LPCWSTR, *mut *mut IDxcBlob) -> HRESULT,
 }
 
@@ -143,7 +139,11 @@ impl<'a, 'i> DxcIncludeHandlerWrapper<'a, 'i> {
         HRESULT(0) // dummy impl
     }
 
-    extern "system" fn dummy(_me: *const com_rs::IUnknown) -> HRESULT {
+    extern "system" fn add_ref(_me: *const com_rs::IUnknown) -> HRESULT {
+        HRESULT(0) // dummy impl
+    }
+
+    extern "system" fn release(_me: *const com_rs::IUnknown) -> HRESULT {
         HRESULT(0) // dummy impl
     }
 
@@ -230,12 +230,8 @@ impl DxcCompiler {
         if let Some(include_handler) = include_handler {
             let vtable = DxcIncludeHandlerWrapperVtbl {
                 query_interface: DxcIncludeHandlerWrapper::query_interface,
-                add_ref: DxcIncludeHandlerWrapper::dummy,
-                release: DxcIncludeHandlerWrapper::dummy,
-                #[cfg(not(windows))]
-                complete_object_destructor: DxcIncludeHandlerWrapper::dummy,
-                #[cfg(not(windows))]
-                deleting_destructor: DxcIncludeHandlerWrapper::dummy,
+                add_ref: DxcIncludeHandlerWrapper::add_ref,
+                release: DxcIncludeHandlerWrapper::release,
                 load_source: DxcIncludeHandlerWrapper::load_source,
             };
 
