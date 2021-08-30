@@ -12,6 +12,7 @@
 //! ## Simple example
 //!
 //! ```rust
+//! use hassle_rs::compile_hlsl;
 //!
 //! let code = "
 //!     Texture2D<float4> g_input    : register(t0, space0);

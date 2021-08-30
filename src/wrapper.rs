@@ -139,19 +139,19 @@ pub trait DxcIncludeHandler {
 
 #[repr(C)]
 struct DxcIncludeHandlerWrapperVtbl {
-    query_interface: extern "stdcall" fn(
+    query_interface: extern "system" fn(
         *const com_rs::IUnknown,
         &com_rs::IID,
         *mut *mut core::ffi::c_void,
     ) -> com_rs::HResult,
-    add_ref: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
-    release: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
+    add_ref: extern "system" fn(*const com_rs::IUnknown) -> HRESULT,
+    release: extern "system" fn(*const com_rs::IUnknown) -> HRESULT,
     #[cfg(not(windows))]
-    complete_object_destructor: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
+    complete_object_destructor: extern "system" fn(*const com_rs::IUnknown) -> HRESULT,
     #[cfg(not(windows))]
-    deleting_destructor: extern "stdcall" fn(*const com_rs::IUnknown) -> HRESULT,
+    deleting_destructor: extern "system" fn(*const com_rs::IUnknown) -> HRESULT,
     load_source:
-        extern "stdcall" fn(*mut com_rs::IUnknown, LPCWSTR, *mut *mut IDxcBlob) -> com_rs::HResult,
+        extern "system" fn(*mut com_rs::IUnknown, LPCWSTR, *mut *mut IDxcBlob) -> com_rs::HResult,
 }
 
 #[repr(C)]
@@ -163,7 +163,7 @@ struct DxcIncludeHandlerWrapper<'a> {
 }
 
 impl<'a> DxcIncludeHandlerWrapper<'a> {
-    extern "stdcall" fn query_interface(
+    extern "system" fn query_interface(
         _me: *const com_rs::IUnknown,
         _rrid: &com_rs::IID,
         _ppv_obj: *mut *mut core::ffi::c_void,
@@ -171,11 +171,11 @@ impl<'a> DxcIncludeHandlerWrapper<'a> {
         0 // dummy impl
     }
 
-    extern "stdcall" fn dummy(_me: *const com_rs::IUnknown) -> HRESULT {
+    extern "system" fn dummy(_me: *const com_rs::IUnknown) -> HRESULT {
         0 // dummy impl
     }
 
-    extern "stdcall" fn load_source(
+    extern "system" fn load_source(
         me: *mut com_rs::IUnknown,
         filename: LPCWSTR,
         include_source: *mut *mut IDxcBlob,
@@ -289,11 +289,11 @@ impl DxcCompiler {
     ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
-        Self::prep_args(&args, &mut wide_args, &mut dxc_args);
+        Self::prep_args(args, &mut wide_args, &mut dxc_args);
 
         let mut wide_defines = vec![];
         let mut dxc_defines = vec![];
-        Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
+        Self::prep_defines(defines, &mut wide_defines, &mut dxc_defines);
 
         let handler_wrapper = Self::prep_include_handler(&self.library, include_handler);
 
@@ -339,11 +339,11 @@ impl DxcCompiler {
     ) -> Result<(DxcOperationResult, String, DxcBlob), (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
-        Self::prep_args(&args, &mut wide_args, &mut dxc_args);
+        Self::prep_args(args, &mut wide_args, &mut dxc_args);
 
         let mut wide_defines = vec![];
         let mut dxc_defines = vec![];
-        Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
+        Self::prep_defines(defines, &mut wide_defines, &mut dxc_defines);
 
         let handler_wrapper = Self::prep_include_handler(&self.library, include_handler);
 
@@ -396,11 +396,11 @@ impl DxcCompiler {
     ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
-        Self::prep_args(&args, &mut wide_args, &mut dxc_args);
+        Self::prep_args(args, &mut wide_args, &mut dxc_args);
 
         let mut wide_defines = vec![];
         let mut dxc_defines = vec![];
-        Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
+        Self::prep_defines(defines, &mut wide_defines, &mut dxc_defines);
 
         let handler_wrapper = Self::prep_include_handler(&self.library, include_handler);
 

@@ -141,7 +141,7 @@ pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
     let library = dxc.create_library()?;
 
     let blob_encoding = library
-        .create_blob_with_encoding(&data)
+        .create_blob_with_encoding(data)
         .map_err(HassleError::Win32Error)?;
 
     match validator.validate(blob_encoding.into()) {
