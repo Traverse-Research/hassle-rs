@@ -14,7 +14,7 @@ com_interface! {
     /// binary incompatible.
     ///
     /// See the third and fourth entry:
-    /// ```
+    /// ```cmd
     /// vtable for 'DxcLibrary' @ 0x7ffff7cbc5f8 (subobject @ 0x5555556bb9e0):
     /// [0]: 0x7ffff6a56d40 <DxcLibrary::QueryInterface(_GUID const&, void**)>
     /// [1]: 0x7ffff6a56d20 <DxcLibrary::AddRef()>
