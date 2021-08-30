@@ -93,5 +93,5 @@ fn main() {
 
     let cursor = translation_unit.get_cursor().unwrap();
 
-    print_cursor_tree(&cursor, &source)
+    print_cursor_tree(&cursor, source)
 }
