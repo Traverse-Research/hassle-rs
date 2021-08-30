@@ -289,11 +289,11 @@ impl DxcCompiler {
     ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
-        Self::prep_args(&args, &mut wide_args, &mut dxc_args);
+        Self::prep_args(args, &mut wide_args, &mut dxc_args);
 
         let mut wide_defines = vec![];
         let mut dxc_defines = vec![];
-        Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
+        Self::prep_defines(defines, &mut wide_defines, &mut dxc_defines);
 
         let handler_wrapper = Self::prep_include_handler(&self.library, include_handler);
 
@@ -339,11 +339,11 @@ impl DxcCompiler {
     ) -> Result<(DxcOperationResult, String, DxcBlob), (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
-        Self::prep_args(&args, &mut wide_args, &mut dxc_args);
+        Self::prep_args(args, &mut wide_args, &mut dxc_args);
 
         let mut wide_defines = vec![];
         let mut dxc_defines = vec![];
-        Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
+        Self::prep_defines(defines, &mut wide_defines, &mut dxc_defines);
 
         let handler_wrapper = Self::prep_include_handler(&self.library, include_handler);
 
@@ -396,11 +396,11 @@ impl DxcCompiler {
     ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
-        Self::prep_args(&args, &mut wide_args, &mut dxc_args);
+        Self::prep_args(args, &mut wide_args, &mut dxc_args);
 
         let mut wide_defines = vec![];
         let mut dxc_defines = vec![];
-        Self::prep_defines(&defines, &mut wide_defines, &mut dxc_defines);
+        Self::prep_defines(defines, &mut wide_defines, &mut dxc_defines);
 
         let handler_wrapper = Self::prep_include_handler(&self.library, include_handler);
 
