@@ -2,8 +2,8 @@ use crate::intellisense::ffi::*;
 use crate::os::{CoTaskMemFree, BSTR, HRESULT, LPSTR};
 use crate::utils::HassleError;
 use crate::wrapper::Dxc;
-use com_rs::ComPtr;
 use std::ffi::CString;
+use tinycom::ComPtr;
 
 #[derive(Debug)]
 pub struct DxcIntellisense {

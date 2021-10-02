@@ -1,10 +1,7 @@
 #[cfg(not(windows))]
 use crate::os::HRESULT;
-use com_rs::{com_interface, IUnknown, IID};
 
-extern "C" {
-    static IID_IUnknown: IID;
-}
+use tinycom::{com_interface, IID_IUnknown, IUnknown};
 
 #[cfg(not(windows))]
 // Steal the interface ID from IUnknown:

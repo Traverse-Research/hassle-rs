@@ -3,8 +3,8 @@
 
 use crate::os::{HRESULT, LPCWSTR, LPWSTR};
 pub(crate) use crate::unknown::IDxcUnknownShim;
-use com_rs::{com_interface, iid, IUnknown, IID};
 use std::ffi::c_void;
+use tinycom::{com_interface, iid, IUnknown, IID};
 
 pub type DxcCreateInstanceProc =
     extern "system" fn(rclsid: &IID, riid: &IID, ppv: *mut *mut c_void) -> HRESULT;

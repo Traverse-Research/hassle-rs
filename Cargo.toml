@@ -10,11 +10,7 @@ homepage = "https://github.com/Traverse-Research/hassle-rs"
 repository = "https://github.com/Traverse-Research/hassle-rs"
 keywords = ["shader", "pipeline", "hlsl", "dxc", "intellisense"]
 categories = ["rendering", "rendering::graphics-api"]
-include = [
-    "src/*.rs",
-    "src/intellisense/*.rs",
-    "Cargo.toml",
-]
+include = ["src/*.rs", "src/intellisense/*.rs", "Cargo.toml"]
 documentation = "https://docs.rs/hassle-rs"
 
 [badges]
@@ -25,7 +21,7 @@ default-target = "x86_64-pc-windows-msvc"
 
 [dependencies]
 libloading = "0.7.0"
-com-rs = "0.2.1"
+tinycom = { git = "https://github.com/legion-labs/tinycom-rs", branch = "main" }
 bitflags = "1.2.1"
 widestring = "0.4.2"
 thiserror = "1.0"

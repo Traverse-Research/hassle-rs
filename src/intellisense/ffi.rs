@@ -1,7 +1,7 @@
 use crate::os::{BSTR, HRESULT, LPCSTR, LPSTR};
 pub(crate) use crate::unknown::IDxcUnknownShim;
 use bitflags::bitflags;
-use com_rs::{com_interface, iid, IUnknown};
+use tinycom::{com_interface, iid, IUnknown};
 
 bitflags! {
     pub struct DxcGlobalOptions : u32 {
