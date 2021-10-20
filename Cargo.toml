@@ -1,6 +1,6 @@
 [package]
 name = "hassle-rs"
-version = "0.5.3"
+version = "0.5.4"
 authors = ["Traverse-Research <support@traverseresearch.nl>"]
 edition = "2018"
 description = "HLSL compiler library, this crate provides an FFI layer and idiomatic rust wrappers for the new DXC hlsl compiler and validator."
@@ -23,7 +23,7 @@ default-target = "x86_64-pc-windows-msvc"
 libloading = "0.7.0"
 tinycom = { git = "https://github.com/legion-labs/tinycom-rs", branch = "main" }
 bitflags = "1.2.1"
-widestring = "0.4.2"
+widestring = "0.5.0"
 thiserror = "1.0"
 
 [target.'cfg(windows)'.dependencies]
