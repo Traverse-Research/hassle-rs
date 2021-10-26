@@ -520,7 +520,7 @@ fn dxcompiler_lib_name() -> &'static Path {
 
 #[cfg(target_os = "linux")]
 fn dxcompiler_lib_name() -> &'static Path {
-    Path::new(".libdxcompiler.so")
+    Path::new("libdxcompiler.so")
 }
 
 #[cfg(target_os = "macos")]
