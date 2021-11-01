@@ -37,4 +37,4 @@ winapi = { version = "0.3.9", features = ["wtypes", "oleauto", "combaseapi"] }
 libc = "0.2"
 
 [dev-dependencies]
-rspirv = "0.10"
+rspirv = "0.11"
