@@ -11,14 +11,26 @@ use com::{class, interfaces::IUnknown, production::Class, production::ClassAlloc
 use libloading::{library_filename, Library, Symbol};
 use std::cell::RefCell;
 use std::convert::TryFrom;
+use std::fmt;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::pin::Pin;
 
-#[derive(Debug)]
 #[repr(transparent)]
 pub struct DxcBlob {
     inner: IDxcBlob,
+}
+
+impl fmt::Debug for DxcBlob {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DxcBlob")
+            .field("inner", &self.inner)
+            .field("buffer_pointer()", &unsafe {
+                self.inner.get_buffer_pointer()
+            })
+            .field("buffer_size()", &unsafe { self.inner.get_buffer_size() })
+            .finish()
+    }
 }
 
 impl DxcBlob {
@@ -54,10 +66,7 @@ impl DxcBlob {
         }
     }
 
-    pub fn to_vec<T>(&self) -> Vec<T>
-    where
-        T: Clone,
-    {
+    pub fn to_vec<T: Clone>(&self) -> Vec<T> {
         self.as_slice().to_vec()
     }
 }
@@ -74,15 +83,59 @@ impl AsMut<[u8]> for DxcBlob {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum DxcEncoding {
+    Unknown,
+    Utf8,
+}
+
 #[repr(transparent)]
 pub struct DxcBlobEncoding {
     inner: IDxcBlobEncoding,
 }
 
+impl fmt::Debug for DxcBlobEncoding {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DxcBlobEncoding")
+            .field("blob", self.deref())
+            .field("encoding", &self.encoding().unwrap())
+            .finish()
+    }
+}
+
 impl DxcBlobEncoding {
     fn new(inner: IDxcBlobEncoding) -> Self {
         Self { inner }
+    }
+
+    fn encoding(&self) -> Result<DxcEncoding> {
+        let mut known = 0;
+        let mut code_page = 0;
+        unsafe { self.inner.get_encoding(&mut known, &mut code_page) }.result()?;
+        Ok(if known == 0 {
+            assert_eq!(code_page, CP_ACP);
+            DxcEncoding::Unknown
+        } else if known == 1 {
+            match code_page {
+                CP_UTF8 => DxcEncoding::Utf8,
+                x => todo!("Unknown codepage {x:#}"),
+            }
+        } else {
+            panic!("Unexpected boolean value {:#}", known)
+        })
+    }
+
+    /// Returns [`None`] if [`Self::encoding()`] is not [`DxcEncoding::Utf8`].  Call
+    /// [`DxcLibrary::get_blob_as_utf8()`] to convert it, and call this function on the resulting
+    /// blob again.
+    pub fn as_str(&self) -> Option<&str> {
+        match self.encoding().expect("Known encoding") {
+            DxcEncoding::Unknown => None,
+            DxcEncoding::Utf8 => Some(
+                std::str::from_utf8(self.as_slice())
+                    .expect("DXC claimed the buffer should contain UTF-8"),
+            ),
+        }
     }
 }
 
@@ -121,9 +174,9 @@ impl DxcOperationResult {
         Self { inner }
     }
 
-    pub fn get_status(&self) -> Result<u32> {
-        let mut status: u32 = 0;
-        unsafe { self.inner.get_status(&mut status) }.result_with_success(status)
+    pub fn get_status(&self) -> Result<HRESULT> {
+        let mut status = 0;
+        unsafe { self.inner.get_status(&mut status) }.result_with_success(HRESULT(status))
     }
 
     pub fn get_result(&self) -> Result<DxcBlob> {
@@ -174,7 +227,9 @@ class! {
                     .create_blob_with_encoding_from_str(&source)
                     .unwrap();
 
-                unsafe { *include_source = Some(DxcBlob::from(blob).inner) };
+                // unsafe { *include_source = Some(DxcBlob::from(blob).inner) };
+                // TODO: We shouldn't need a clone here, if we could freely upcast by moving.
+                unsafe { *include_source = Some(blob.deref().inner.clone()) };
                 self.pinned.borrow_mut().push(source);
 
                 // NOERROR
@@ -304,7 +359,8 @@ impl DxcCompiler {
         args: &[&str],
         include_handler: Option<&mut dyn DxcIncludeHandler>,
         defines: &[(&str, Option<&str>)],
-    ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
+        // ) -> Result<DxcBlob, (HRESULT, DxcBlob)> {
+    ) -> Result<DxcOperationResult, HassleError> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
         Self::prep_args(args, &mut wide_args, &mut dxc_args);
@@ -323,7 +379,7 @@ impl DxcCompiler {
             .map(|i| i.query_interface().unwrap());
 
         let mut result = None;
-        let result_hr = unsafe {
+        unsafe {
             self.inner.compile(
                 &blob.inner,
                 to_wide(source_name).as_ptr(),
@@ -336,18 +392,11 @@ impl DxcCompiler {
                 &include_handler,
                 &mut result,
             )
-        };
-
-        let result = result.unwrap();
-
-        let mut compile_error = 0u32;
-        let status_hr = unsafe { result.get_status(&mut compile_error) };
-
-        if !result_hr.is_err() && !status_hr.is_err() && compile_error == 0 {
-            Ok(DxcOperationResult::new(result))
-        } else {
-            Err((DxcOperationResult::new(result), result_hr))
         }
+        .result()?;
+
+        let result = result.expect("Non-null IDxcOperationResult");
+        Ok(DxcOperationResult::new(result))
     }
 
     pub fn compile_with_debug(
@@ -359,7 +408,7 @@ impl DxcCompiler {
         args: &[&str],
         include_handler: Option<&mut dyn DxcIncludeHandler>,
         defines: &[(&str, Option<&str>)],
-    ) -> Result<(DxcOperationResult, String, DxcBlob), (DxcOperationResult, HRESULT)> {
+    ) -> Result<(DxcOperationResult, (String, DxcBlob)), HassleError> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
         Self::prep_args(args, &mut wide_args, &mut dxc_args);
@@ -380,7 +429,7 @@ impl DxcCompiler {
         let mut debug_blob = None;
         let mut debug_filename: LPWSTR = std::ptr::null_mut();
 
-        let result_hr = unsafe {
+        unsafe {
             self.inner.compile_with_debug(
                 &blob.inner,
                 to_wide(source_name).as_ptr(),
@@ -395,22 +444,15 @@ impl DxcCompiler {
                 &mut debug_filename,
                 &mut debug_blob,
             )
-        };
-        let result = result.unwrap();
-        let debug_blob = debug_blob.unwrap();
-
-        let mut compile_error = 0u32;
-        let status_hr = unsafe { result.get_status(&mut compile_error) };
-
-        if !result_hr.is_err() && !status_hr.is_err() && compile_error == 0 {
-            Ok((
-                DxcOperationResult::new(result),
-                from_wide(debug_filename),
-                DxcBlob::new(debug_blob),
-            ))
-        } else {
-            Err((DxcOperationResult::new(result), result_hr))
         }
+        .result()?;
+
+        let result = result.expect("Non-null IDxcOperationResult");
+        let debug_blob = debug_blob.expect("Non-null debug blob");
+        Ok((
+            DxcOperationResult::new(result),
+            (from_wide(debug_filename), DxcBlob::new(debug_blob)),
+        ))
     }
 
     pub fn preprocess(
@@ -420,7 +462,7 @@ impl DxcCompiler {
         args: &[&str],
         include_handler: Option<&mut dyn DxcIncludeHandler>,
         defines: &[(&str, Option<&str>)],
-    ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
+    ) -> Result<DxcOperationResult, HassleError> {
         let mut wide_args = vec![];
         let mut dxc_args = vec![];
         Self::prep_args(args, &mut wide_args, &mut dxc_args);
@@ -438,7 +480,7 @@ impl DxcCompiler {
             .map(|i| i.query_interface().unwrap());
 
         let mut result = None;
-        let result_hr = unsafe {
+        unsafe {
             self.inner.preprocess(
                 &blob.inner,
                 to_wide(source_name).as_ptr(),
@@ -449,18 +491,11 @@ impl DxcCompiler {
                 include_handler,
                 &mut result,
             )
-        };
-
-        let result = result.unwrap();
-
-        let mut compile_error = 0u32;
-        let status_hr = unsafe { result.get_status(&mut compile_error) };
-
-        if !result_hr.is_err() && !status_hr.is_err() && compile_error == 0 {
-            Ok(DxcOperationResult::new(result))
-        } else {
-            Err((DxcOperationResult::new(result), result_hr))
         }
+        .result()?;
+
+        let result = result.expect("Non-null IDxcOperationResult");
+        Ok(DxcOperationResult::new(result))
     }
 
     pub fn disassemble(&self, blob: &DxcBlob) -> Result<DxcBlobEncoding> {
@@ -497,7 +532,6 @@ impl DxcLibrary {
 
     pub fn create_blob_with_encoding_from_str(&self, text: &str) -> Result<DxcBlobEncoding> {
         let mut blob = None;
-        const CP_UTF8: u32 = 65001; // UTF-8 translation
 
         unsafe {
             self.inner.create_blob_with_encoding_from_pinned(
@@ -512,14 +546,15 @@ impl DxcLibrary {
     }
 
     /// Convert or return matching encoded text blob as UTF-8.
-    pub fn get_blob_as_string(&self, blob: &DxcBlob) -> Result<String> {
+    pub fn get_blob_as_utf8(&self, blob: &DxcBlob) -> Result<DxcBlobEncoding> {
         let mut blob_utf8 = None;
 
         unsafe { self.inner.get_blob_as_utf8(&blob.inner, &mut blob_utf8) }.result()?;
 
-        let blob_utf8 = blob_utf8.unwrap();
+        let blob_utf8 = DxcBlobEncoding::new(blob_utf8.unwrap());
+        assert_eq!(blob_utf8.encoding()?, DxcEncoding::Utf8);
 
-        Ok(String::from_utf8(DxcBlobEncoding::new(blob_utf8).to_vec()).unwrap())
+        Ok(blob_utf8)
     }
 }
 
@@ -601,26 +636,16 @@ impl DxcValidator {
         unsafe { version.get_version(&mut major, &mut minor) }.result_with_success((major, minor))
     }
 
-    pub fn validate(&self, blob: DxcBlob) -> Result<DxcBlob, (DxcOperationResult, HassleError)> {
+    pub fn validate(&self, blob: &DxcBlob) -> Result<DxcOperationResult> {
         let mut result = None;
-        let result_hr = unsafe {
+        unsafe {
             self.inner
                 .validate(&blob.inner, DXC_VALIDATOR_FLAGS_IN_PLACE_EDIT, &mut result)
-        };
-
-        let result = result.unwrap();
-
-        let mut validate_status = 0u32;
-        let status_hr = unsafe { result.get_status(&mut validate_status) };
-
-        if !result_hr.is_err() && !status_hr.is_err() && validate_status == 0 {
-            Ok(blob)
-        } else {
-            Err((
-                DxcOperationResult::new(result),
-                HassleError::Win32Error(result_hr),
-            ))
         }
+        .result()?;
+
+        let result = result.expect("Non-null IDxcOperationResult");
+        Ok(DxcOperationResult::new(result))
     }
 }
 
