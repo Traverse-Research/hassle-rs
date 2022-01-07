@@ -134,7 +134,7 @@ impl DxcOperationResult {
 }
 
 pub trait DxcIncludeHandler {
-    fn load_source(&self, filename: String) -> Option<String>;
+    fn load_source(&mut self, filename: String) -> Option<String>;
 }
 
 #[repr(C)]
@@ -155,14 +155,14 @@ struct DxcIncludeHandlerWrapperVtbl {
 }
 
 #[repr(C)]
-struct DxcIncludeHandlerWrapper<'a> {
+struct DxcIncludeHandlerWrapper<'a, 'i> {
     vtable: Box<DxcIncludeHandlerWrapperVtbl>,
-    handler: Box<dyn DxcIncludeHandler>,
+    handler: &'i mut dyn DxcIncludeHandler,
     pinned: Vec<Pin<String>>,
     library: &'a DxcLibrary,
 }
 
-impl<'a> DxcIncludeHandlerWrapper<'a> {
+impl<'a, 'i> DxcIncludeHandlerWrapper<'a, 'i> {
     extern "system" fn query_interface(
         _me: *const tinycom::IUnknown,
         _rrid: &tinycom::IID,
@@ -250,10 +250,10 @@ impl DxcCompiler {
         }
     }
 
-    fn prep_include_handler(
-        library: &DxcLibrary,
-        include_handler: Option<Box<dyn DxcIncludeHandler>>,
-    ) -> Option<Box<DxcIncludeHandlerWrapper>> {
+    fn prep_include_handler<'a, 'i>(
+        library: &'a DxcLibrary,
+        include_handler: Option<&'i mut dyn DxcIncludeHandler>,
+    ) -> Option<Box<DxcIncludeHandlerWrapper<'a, 'i>>> {
         if let Some(include_handler) = include_handler {
             let vtable = DxcIncludeHandlerWrapperVtbl {
                 query_interface: DxcIncludeHandlerWrapper::query_interface,
@@ -284,7 +284,7 @@ impl DxcCompiler {
         entry_point: &str,
         target_profile: &str,
         args: &[&str],
-        include_handler: Option<Box<dyn DxcIncludeHandler>>,
+        include_handler: Option<&mut dyn DxcIncludeHandler>,
         defines: &[(&str, Option<&str>)],
     ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
@@ -334,7 +334,7 @@ impl DxcCompiler {
         entry_point: &str,
         target_profile: &str,
         args: &[&str],
-        include_handler: Option<Box<dyn DxcIncludeHandler>>,
+        include_handler: Option<&mut dyn DxcIncludeHandler>,
         defines: &[(&str, Option<&str>)],
     ) -> Result<(DxcOperationResult, String, DxcBlob), (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];
@@ -391,7 +391,7 @@ impl DxcCompiler {
         blob: &DxcBlobEncoding,
         source_name: &str,
         args: &[&str],
-        include_handler: Option<Box<dyn DxcIncludeHandler>>,
+        include_handler: Option<&mut dyn DxcIncludeHandler>,
         defines: &[(&str, Option<&str>)],
     ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
         let mut wide_args = vec![];

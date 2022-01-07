@@ -43,7 +43,7 @@ pub(crate) fn from_lpstr(string: LPSTR) -> String {
 struct DefaultIncludeHandler {}
 
 impl DxcIncludeHandler for DefaultIncludeHandler {
-    fn load_source(&self, filename: String) -> Option<String> {
+    fn load_source(&mut self, filename: String) -> Option<String> {
         use std::io::Read;
         match std::fs::File::open(filename) {
             Ok(mut f) => {
@@ -60,7 +60,7 @@ impl DxcIncludeHandler for DefaultIncludeHandler {
 pub enum HassleError {
     #[error("Win32 error: {0:X}")]
     Win32Error(HRESULT),
-    #[error("Compile error: {0}")]
+    #[error("{0}")]
     CompileError(String),
     #[error("Validation error: {0}")]
     ValidationError(String),
@@ -106,7 +106,7 @@ pub fn compile_hlsl(
         entry_point,
         target_profile,
         args,
-        Some(Box::new(DefaultIncludeHandler {})),
+        Some(&mut DefaultIncludeHandler {}),
         defines,
     );
 

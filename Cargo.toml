@@ -1,6 +1,6 @@
 [package]
 name = "hassle-rs"
-version = "0.5.4"
+version = "0.6.0"
 authors = ["Traverse-Research <support@traverseresearch.nl>"]
 edition = "2018"
 description = "HLSL compiler library, this crate provides an FFI layer and idiomatic rust wrappers for the new DXC hlsl compiler and validator."
@@ -33,4 +33,4 @@ winapi = { version = "0.3.9", features = ["wtypes", "oleauto", "combaseapi"] }
 libc = "0.2"
 
 [dev-dependencies]
-rspirv = "0.10"
+rspirv = "0.11"
