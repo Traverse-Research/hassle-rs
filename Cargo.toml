@@ -13,6 +13,7 @@ categories = ["rendering", "rendering::graphics-api"]
 include = [
     "src/*.rs",
     "src/intellisense/*.rs",
+    "src/fake_sign/*.rs",
     "Cargo.toml",
 ]
 documentation = "https://docs.rs/hassle-rs"
