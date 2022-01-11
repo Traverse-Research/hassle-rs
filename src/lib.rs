@@ -39,10 +39,10 @@
 
 pub(crate) mod unknown;
 
+pub mod fake_sign;
 pub mod ffi;
 pub mod os;
 pub mod utils;
-pub mod fake_sign;
 
 #[macro_use]
 pub mod wrapper;

@@ -1,6 +1,6 @@
 // https://github.com/stainless-steel/md5/blob/3236fc93c26af909923767e65be87e45c47aab89/LICENSE.md
-// 
-// Taken under the Apache 2.0 and MIT dual license to be included into this project with small 
+//
+// Taken under the Apache 2.0 and MIT dual license to be included into this project with small
 // modifications.
 //
 // Apache 2.0
