@@ -39,6 +39,7 @@
 
 pub(crate) mod unknown;
 
+pub mod fake_sign;
 pub mod ffi;
 pub mod os;
 pub mod utils;
@@ -50,5 +51,6 @@ pub mod intellisense;
 
 pub use crate::ffi::*;
 pub use crate::utils::compile_hlsl;
+pub use crate::utils::fake_sign_dxil_in_place;
 pub use crate::utils::validate_dxil;
 pub use crate::wrapper::*;
