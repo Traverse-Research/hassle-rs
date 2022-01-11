@@ -157,3 +157,5 @@ pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
         }
     }
 }
+
+pub use crate::fake_sign::fake_sign_dxil_in_place;

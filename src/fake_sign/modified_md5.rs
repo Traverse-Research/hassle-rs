@@ -94,8 +94,9 @@ fn consume(
         k += 1;
         if k == 0x40 {
             let mut j = 0;
-            for i in 0..16 {
-                input[i] = ((buffer[j + 3] as u32) << 24)
+            //for i in 0..16 {
+            for v in input.iter_mut() {
+                *v = ((buffer[j + 3] as u32) << 24)
                     | ((buffer[j + 2] as u32) << 16)
                     | ((buffer[j + 1] as u32) << 8)
                     | (buffer[j] as u32);
