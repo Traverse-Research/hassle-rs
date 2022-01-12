@@ -48,7 +48,7 @@ impl DxcIncludeHandler for DefaultIncludeHandler {
         match std::fs::File::open(filename) {
             Ok(mut f) => {
                 let mut content = String::new();
-                f.read_to_string(&mut content).unwrap();
+                f.read_to_string(&mut content).ok()?;
                 Some(content)
             }
             Err(_) => None,
