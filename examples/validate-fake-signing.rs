@@ -5,16 +5,9 @@ pub struct MinimalHeader {
 }
 
 fn get_digest(buffer: &[u8]) -> [u32; 4] {
-    let buffer_ptr: *const u8 = buffer.as_ptr();
-    let header_ptr: *const MinimalHeader = buffer_ptr as *const _;
-    let header_ref: &MinimalHeader = unsafe { &*header_ptr };
-    let digest: [u32; 4] = [
-        header_ref.hash_digest[0],
-        header_ref.hash_digest[1],
-        header_ref.hash_digest[2],
-        header_ref.hash_digest[3],
-    ];
-    digest
+    let header_ptr = buffer.as_ptr().cast::<MinimalHeader>();
+    let header_ref = unsafe { &*header_ptr };
+    header_ref.hash_digest
 }
 
 use hassle_rs::{compile_hlsl, fake_sign_dxil_in_place, validate_dxil};
@@ -49,7 +42,7 @@ fn main() {
 
         if fake_signed_digest != with_digest {
             println!("---- Mismatch in file {} ----", idx);
-            all_matches &= true;
+            all_matches &= false;
         }
     }
 
