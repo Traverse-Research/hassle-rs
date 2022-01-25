@@ -43,14 +43,10 @@ pub mod fake_sign;
 pub mod ffi;
 pub mod os;
 pub mod utils;
-
-#[macro_use]
 pub mod wrapper;
 
 pub mod intellisense;
 
 pub use crate::ffi::*;
-pub use crate::utils::compile_hlsl;
-pub use crate::utils::fake_sign_dxil_in_place;
-pub use crate::utils::validate_dxil;
+pub use crate::utils::{compile_hlsl, fake_sign_dxil_in_place, validate_dxil, HassleError, Result};
 pub use crate::wrapper::*;
