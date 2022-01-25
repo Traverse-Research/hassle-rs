@@ -76,6 +76,34 @@ pub enum HassleError {
     WindowsOnly(String),
 }
 
+pub type Result<T, E = HassleError> = std::result::Result<T, E>;
+
+impl HRESULT {
+    /// Turns an [`HRESULT`] from the COM [`crate::ffi`] API declaration
+    /// into a [`Result`] containing [`HassleError`].
+    pub fn result(self) -> Result<()> {
+        self.result_with_success(())
+    }
+
+    /// Turns an [`HRESULT`] from the COM [`crate::ffi`] API declaration
+    /// into a [`Result`] containing [`HassleError`], with the desired value.
+    ///
+    /// Note that `v` is passed by value and is not a closure that is executed
+    /// lazily.  Use the short-circuiting `?` operator for such cases:
+    /// ```no_run
+    /// let mut blob: ComPtr<IDxcBlob> = ComPtr::new();
+    /// unsafe { self.inner.get_result(blob.as_mut_ptr()) }.result()?;
+    /// Ok(DxcBlob::new(blob))
+    /// ```
+    pub fn result_with_success<T>(self, v: T) -> Result<T> {
+        if self.is_err() {
+            Err(HassleError::Win32Error(self))
+        } else {
+            Ok(v)
+        }
+    }
+}
+
 /// Helper function to directly compile a HLSL shader to an intermediate language,
 /// this function expects `dxcompiler.dll` to be available in the current
 /// executable environment.
@@ -90,15 +118,13 @@ pub fn compile_hlsl(
     target_profile: &str,
     args: &[&str],
     defines: &[(&str, Option<&str>)],
-) -> Result<Vec<u8>, HassleError> {
+) -> Result<Vec<u8>> {
     let dxc = Dxc::new(None)?;
 
     let compiler = dxc.create_compiler()?;
     let library = dxc.create_library()?;
 
-    let blob = library
-        .create_blob_with_encoding_from_str(shader_text)
-        .map_err(HassleError::Win32Error)?;
+    let blob = library.create_blob_with_encoding_from_str(shader_text)?;
 
     let result = compiler.compile(
         &blob,
@@ -112,18 +138,13 @@ pub fn compile_hlsl(
 
     match result {
         Err(result) => {
-            let error_blob = result
-                .0
-                .get_error_buffer()
-                .map_err(HassleError::Win32Error)?;
+            let error_blob = result.0.get_error_buffer()?;
             Err(HassleError::CompileError(
-                library
-                    .get_blob_as_string(&error_blob)
-                    .map_err(HassleError::Win32Error)?,
+                library.get_blob_as_string(&error_blob)?,
             ))
         }
         Ok(result) => {
-            let result_blob = result.get_result().map_err(HassleError::Win32Error)?;
+            let result_blob = result.get_result()?;
 
             Ok(result_blob.to_vec())
         }
@@ -142,21 +163,14 @@ pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
     let validator = dxil.create_validator()?;
     let library = dxc.create_library()?;
 
-    let blob_encoding = library
-        .create_blob_with_encoding(data)
-        .map_err(HassleError::Win32Error)?;
+    let blob_encoding = library.create_blob_with_encoding(data)?;
 
     match validator.validate(blob_encoding.into()) {
         Ok(blob) => Ok(blob.to_vec()),
         Err(result) => {
-            let error_blob = result
-                .0
-                .get_error_buffer()
-                .map_err(HassleError::Win32Error)?;
+            let error_blob = result.0.get_error_buffer()?;
             Err(HassleError::ValidationError(
-                library
-                    .get_blob_as_string(&error_blob)
-                    .map_err(HassleError::Win32Error)?,
+                library.get_blob_as_string(&error_blob)?,
             ))
         }
     }
