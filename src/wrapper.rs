@@ -9,7 +9,6 @@ use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
 use crate::utils::{from_wide, to_wide, HassleError, Result};
 use com_rs::ComPtr;
 use libloading::{Library, Symbol};
-use std::ffi::c_void;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 
@@ -26,7 +25,7 @@ impl DxcBlob {
     pub fn as_slice<T>(&self) -> &[T] {
         unsafe {
             std::slice::from_raw_parts(
-                self.inner.get_buffer_pointer() as *const T,
+                self.inner.get_buffer_pointer().cast(),
                 self.inner.get_buffer_size() / std::mem::size_of::<T>(),
             )
         }
@@ -35,7 +34,7 @@ impl DxcBlob {
     pub fn as_mut_slice<T>(&mut self) -> &mut [T] {
         unsafe {
             std::slice::from_raw_parts_mut(
-                self.inner.get_buffer_pointer() as *mut T,
+                self.inner.get_buffer_pointer().cast(),
                 self.inner.get_buffer_size() / std::mem::size_of::<T>(),
             )
         }
@@ -153,9 +152,9 @@ impl<'a, 'i> DxcIncludeHandlerWrapper<'a, 'i> {
         filename: LPCWSTR,
         include_source: *mut *mut IDxcBlob,
     ) -> HRESULT {
-        let me = me as *mut DxcIncludeHandlerWrapper;
+        let me = me.cast::<DxcIncludeHandlerWrapper>();
 
-        let filename = crate::utils::from_wide(filename as *mut _);
+        let filename = crate::utils::from_wide(filename);
 
         let source = unsafe { (*me).handler.load_source(filename) };
 
@@ -426,7 +425,7 @@ impl DxcLibrary {
 
         unsafe {
             self.inner.create_blob_with_encoding_from_pinned(
-                data.as_ptr() as *const c_void,
+                data.as_ptr().cast(),
                 data.len() as u32,
                 0, // Binary; no code page
                 blob.as_mut_ptr(),
@@ -442,7 +441,7 @@ impl DxcLibrary {
 
         unsafe {
             self.inner.create_blob_with_encoding_from_pinned(
-                text.as_ptr() as *const c_void,
+                text.as_ptr().cast(),
                 text.len() as u32,
                 CP_UTF8,
                 blob.as_mut_ptr(),
@@ -452,7 +451,7 @@ impl DxcLibrary {
         Ok(DxcBlobEncoding::new(blob))
     }
 
-    pub fn get_blob_as_string(&self, blob: &DxcBlobEncoding) -> Result<String> {
+    pub fn get_blob_as_string(&self, blob: &DxcBlob) -> Result<String> {
         let mut blob_utf8: ComPtr<IDxcBlobEncoding> = ComPtr::new();
 
         unsafe {
@@ -461,14 +460,7 @@ impl DxcLibrary {
         }
         .result()?;
 
-        let slice = unsafe {
-            std::slice::from_raw_parts(
-                blob_utf8.get_buffer_pointer() as *const u8,
-                blob_utf8.get_buffer_size(),
-            )
-        };
-
-        Ok(String::from_utf8(slice.to_vec()).unwrap())
+        Ok(String::from_utf8(DxcBlob::new((&blob_utf8).into()).to_vec()).unwrap())
     }
 }
 

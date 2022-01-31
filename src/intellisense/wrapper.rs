@@ -78,7 +78,7 @@ impl DxcIndex {
 
         for arg in args.iter() {
             let c_arg = CString::new(*arg).expect("Failed to convert `arg`");
-            cliargs.push(c_arg.as_ptr() as *const u8);
+            cliargs.push(c_arg.as_ptr().cast());
             c_args.push(c_arg);
         }
 
@@ -86,7 +86,7 @@ impl DxcIndex {
 
         unsafe {
             self.inner.parse_translation_unit(
-                c_source_filename.as_ptr() as *const u8,
+                c_source_filename.as_ptr().cast(),
                 cliargs.as_ptr(),
                 cliargs.len() as i32,
                 uf.as_ptr(),
@@ -168,7 +168,7 @@ impl DxcCursor {
                 DxcCursor::new(childcursor)
             })
             .collect::<Vec<_>>();
-        unsafe { CoTaskMemFree(result as *mut _) };
+        unsafe { CoTaskMemFree(result.cast()) };
         Ok(child_cursors)
     }
 
@@ -302,7 +302,7 @@ impl DxcCursor {
                 DxcCursor::new(childcursor)
             })
             .collect::<Vec<_>>();
-        unsafe { CoTaskMemFree(result as *mut _) };
+        unsafe { CoTaskMemFree(result.cast()) };
         Ok(child_cursors)
     }
 

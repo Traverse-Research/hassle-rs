@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::os::{SysFreeString, SysStringLen, BSTR, HRESULT, LPSTR, LPWSTR, WCHAR};
+use crate::os::{SysFreeString, SysStringLen, BSTR, HRESULT, LPCSTR, LPCWSTR, WCHAR};
 use crate::wrapper::*;
 use thiserror::Error;
 
@@ -10,7 +10,7 @@ pub(crate) fn to_wide(msg: &str) -> Vec<WCHAR> {
         .into_vec_with_nul()
 }
 
-pub(crate) fn from_wide(wide: LPWSTR) -> String {
+pub(crate) fn from_wide(wide: LPCWSTR) -> String {
     unsafe {
         widestring::WideCStr::from_ptr_str(wide)
             .to_string()
@@ -31,11 +31,11 @@ pub(crate) fn from_bstr(string: BSTR) -> String {
     }
 }
 
-pub(crate) fn from_lpstr(string: LPSTR) -> String {
+pub(crate) fn from_lpstr(string: LPCSTR) -> String {
     unsafe {
         let len = (0..).take_while(|&i| *string.offset(i) != 0).count();
 
-        let slice: &[u8] = std::slice::from_raw_parts(string as *const u8, len);
+        let slice: &[u8] = std::slice::from_raw_parts(string.cast(), len);
         std::str::from_utf8(slice).map(|s| s.to_owned()).unwrap()
     }
 }
@@ -140,7 +140,7 @@ pub fn compile_hlsl(
         Err(result) => {
             let error_blob = result.0.get_error_buffer()?;
             Err(HassleError::CompileError(
-                library.get_blob_as_string(&error_blob)?,
+                library.get_blob_as_string(&error_blob.into())?,
             ))
         }
         Ok(result) => {
@@ -151,7 +151,7 @@ pub fn compile_hlsl(
     }
 }
 
-/// Helper function to validate a DXIL binary independant from the compilation process,
+/// Helper function to validate a DXIL binary independent from the compilation process,
 /// this function expects `dxcompiler.dll` and `dxil.dll` to be available in the current
 /// execution environment.
 ///
@@ -170,7 +170,7 @@ pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
         Err(result) => {
             let error_blob = result.0.get_error_buffer()?;
             Err(HassleError::ValidationError(
-                library.get_blob_as_string(&error_blob)?,
+                library.get_blob_as_string(&error_blob.into())?,
             ))
         }
     }
