@@ -14,17 +14,17 @@ const DXIL_HEADER_CONTAINER_VERSION_OFFSET: usize = 20;
 const DXBC_FOURCC: u32 = u32::from_le_bytes([b'D', b'X', b'B', b'C']);
 
 fn read_fourcc(dxil: &[u8]) -> u32 {
-    let header: *const FileHeader = dxil.as_ptr() as *const _;
+    let header: *const FileHeader = dxil.as_ptr().cast();
     unsafe { (*header).fourcc }
 }
 
 fn read_file_length(dxil: &[u8]) -> u32 {
-    let header: *const FileHeader = dxil.as_ptr() as *const _;
+    let header: *const FileHeader = dxil.as_ptr().cast();
     unsafe { (*header).file_length }
 }
 
 fn write_hash_value(dxil: &mut [u8], state: [u32; 4]) {
-    let header: *mut FileHeader = dxil.as_mut_ptr() as *mut _;
+    let header: *mut FileHeader = dxil.as_mut_ptr().cast();
 
     unsafe {
         (*header).hash_value.copy_from_slice(&state);
@@ -34,7 +34,7 @@ fn write_hash_value(dxil: &mut [u8], state: [u32; 4]) {
 /// Helper function for signing DXIL binary blobs when
 /// `dxil.dll` might not be available (such as on Linux based
 /// platforms).
-/// This essentially performs the same functionality as `validate_dxil`
+/// This essentially performs the same functionality as [`crate::validate_dxil()`]
 /// but in a more cross platform way.
 ///
 /// Ported from <https://github.com/baldurk/renderdoc/blob/v1.x/renderdoc/driver/shaders/dxbc/dxbc_container.cpp#L832>

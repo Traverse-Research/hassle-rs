@@ -5,16 +5,9 @@ pub struct MinimalHeader {
 }
 
 fn get_digest(buffer: &[u8]) -> [u32; 4] {
-    let buffer_ptr: *const u8 = buffer.as_ptr();
-    let header_ptr: *const MinimalHeader = buffer_ptr as *const _;
-    let header_ref: &MinimalHeader = unsafe { &*header_ptr };
-    let digest: [u32; 4] = [
-        header_ref.hash_digest[0],
-        header_ref.hash_digest[1],
-        header_ref.hash_digest[2],
-        header_ref.hash_digest[3],
-    ];
-    digest
+    let header_ptr = buffer.as_ptr().cast::<MinimalHeader>();
+    let header_ref = unsafe { &*header_ptr };
+    header_ref.hash_digest
 }
 
 use hassle_rs::{compile_hlsl, fake_sign_dxil_in_place, validate_dxil};
@@ -33,27 +26,38 @@ fn main() {
 
         let without_digest = get_digest(&dxil);
 
-        let validated_dxil = validate_dxil(&dxil).unwrap();
-
-        let with_digest = get_digest(&validated_dxil);
-
         let result = fake_sign_dxil_in_place(&mut dxil);
         assert!(result);
 
         let fake_signed_digest = get_digest(&dxil);
 
-        println!(
-            "\tAfter compilation: {:?}\n\tAfter dxil.dll: {:?}\n\tAfter fake signing: {:?}",
-            without_digest, with_digest, fake_signed_digest
-        );
+        if cfg!(windows) {
+            let validated_dxil = validate_dxil(&dxil).unwrap();
 
-        if fake_signed_digest != with_digest {
-            println!("---- Mismatch in file {} ----", idx);
-            all_matches &= true;
+            let with_digest = get_digest(&validated_dxil);
+
+            println!(
+                "\tAfter compilation: {:?}\n\tAfter dxil.dll: {:?}\n\tAfter fake signing: {:?}",
+                without_digest, with_digest, fake_signed_digest
+            );
+
+            if fake_signed_digest != with_digest {
+                println!("---- Mismatch in file {} ----", idx);
+                all_matches &= false;
+            }
+        } else {
+            println!(
+                "\tAfter compilation: {:?}\n\tAfter fake signing: {:?}",
+                without_digest, fake_signed_digest
+            );
         }
     }
 
-    if all_matches {
-        println!("Success");
+    if cfg!(windows) {
+        if all_matches {
+            println!("Success");
+        }
+    } else {
+        println!("Warning: Signatures not validated against `dxil.dll` - this is only possible on Windows");
     }
 }
