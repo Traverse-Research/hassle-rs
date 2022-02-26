@@ -14,7 +14,7 @@ mod os_defs {
 
 #[cfg(not(windows))]
 mod os_defs {
-    pub type CHAR = i8;
+    pub type CHAR = std::os::raw::c_char;
     pub type UINT = u32;
     pub type WCHAR = widestring::WideChar;
     pub type OLECHAR = WCHAR;
@@ -81,3 +81,41 @@ mod os_defs {
 }
 
 pub use os_defs::*;
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+#[must_use]
+pub struct HRESULT(pub os_defs::HRESULT);
+impl HRESULT {
+    pub fn is_err(&self) -> bool {
+        self.0 < 0
+    }
+}
+
+impl From<i32> for HRESULT {
+    fn from(v: i32) -> Self {
+        Self(v)
+    }
+}
+
+impl std::fmt::Debug for HRESULT {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        <Self as std::fmt::Display>::fmt(self, f)
+    }
+}
+
+impl std::fmt::Display for HRESULT {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:#x}", self))
+    }
+}
+
+impl std::fmt::LowerHex for HRESULT {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let prefix = if f.alternate() { "0x" } else { "" };
+        let bare_hex = format!("{:x}", self.0.abs());
+        // https://stackoverflow.com/a/44712309
+        f.pad_integral(self.0 >= 0, prefix, &bare_hex)
+        // <i32 as std::fmt::LowerHex>::fmt(&self.0, f)
+    }
+}

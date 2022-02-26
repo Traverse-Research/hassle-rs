@@ -10,26 +10,15 @@ pub struct MinimalHeader {
 // zero_digest & get_digest from https://github.com/gwihlidal/dxil-signing/blob/master/rust/src/main.rs
 
 fn zero_digest(buffer: &mut [u8]) {
-    let buffer_ptr: *mut u8 = buffer.as_mut_ptr();
-    let header_ptr: *mut MinimalHeader = buffer_ptr as *mut _;
-    let header_mut: &mut MinimalHeader = unsafe { &mut *header_ptr };
-    header_mut.hash_digest[0] = 0x0;
-    header_mut.hash_digest[1] = 0x0;
-    header_mut.hash_digest[2] = 0x0;
-    header_mut.hash_digest[3] = 0x0;
+    let header_ptr = buffer.as_mut_ptr().cast::<MinimalHeader>();
+    let header_ref = unsafe { &mut *header_ptr };
+    header_ref.hash_digest = [0; 4];
 }
 
 fn get_digest(buffer: &[u8]) -> [u32; 4] {
-    let buffer_ptr: *const u8 = buffer.as_ptr();
-    let header_ptr: *const MinimalHeader = buffer_ptr as *const _;
-    let header_ref: &MinimalHeader = unsafe { &*header_ptr };
-    let digest: [u32; 4] = [
-        header_ref.hash_digest[0],
-        header_ref.hash_digest[1],
-        header_ref.hash_digest[2],
-        header_ref.hash_digest[3],
-    ];
-    digest
+    let header_ptr = buffer.as_ptr().cast::<MinimalHeader>();
+    let header_ref = unsafe { &*header_ptr };
+    header_ref.hash_digest
 }
 
 fn main() {

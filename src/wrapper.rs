@@ -6,35 +6,11 @@
 
 use crate::ffi::*;
 use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
-use crate::utils::{from_wide, to_wide, HassleError};
+use crate::utils::{from_wide, to_wide, HassleError, Result};
 use libloading::{Library, Symbol};
-use std::ffi::c_void;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use tinycom::ComPtr;
-
-#[macro_export]
-macro_rules! check_hr {
-    ($hr:expr, $v: expr) => {{
-        let hr = $hr;
-        if hr == 0 {
-            Ok($v)
-        } else {
-            Err(hr)
-        }
-    }};
-}
-
-macro_rules! check_hr_wrapped {
-    ($hr:expr, $v: expr) => {{
-        let hr = $hr;
-        if hr == 0 {
-            Ok($v)
-        } else {
-            Err(HassleError::Win32Error(hr))
-        }
-    }};
-}
 
 #[derive(Debug)]
 pub struct DxcBlob {
@@ -49,7 +25,7 @@ impl DxcBlob {
     pub fn as_slice<T>(&self) -> &[T] {
         unsafe {
             std::slice::from_raw_parts(
-                self.inner.get_buffer_pointer() as *const T,
+                self.inner.get_buffer_pointer().cast(),
                 self.inner.get_buffer_size() / std::mem::size_of::<T>(),
             )
         }
@@ -58,7 +34,7 @@ impl DxcBlob {
     pub fn as_mut_slice<T>(&mut self) -> &mut [T] {
         unsafe {
             std::slice::from_raw_parts_mut(
-                self.inner.get_buffer_pointer() as *mut T,
+                self.inner.get_buffer_pointer().cast(),
                 self.inner.get_buffer_size() / std::mem::size_of::<T>(),
             )
         }
@@ -111,25 +87,22 @@ impl DxcOperationResult {
         Self { inner }
     }
 
-    pub fn get_status(&self) -> Result<u32, HRESULT> {
+    pub fn get_status(&self) -> Result<u32> {
         let mut status: u32 = 0;
-        check_hr!(unsafe { self.inner.get_status(&mut status) }, status)
+        unsafe { self.inner.get_status(&mut status) }.result_with_success(status)
     }
 
-    pub fn get_result(&self) -> Result<DxcBlob, HRESULT> {
+    pub fn get_result(&self) -> Result<DxcBlob> {
         let mut blob: ComPtr<IDxcBlob> = ComPtr::new();
-        check_hr!(
-            unsafe { self.inner.get_result(blob.as_mut_ptr()) },
-            DxcBlob::new(blob)
-        )
+        unsafe { self.inner.get_result(blob.as_mut_ptr()) }.result()?;
+        Ok(DxcBlob::new(blob))
     }
 
-    pub fn get_error_buffer(&self) -> Result<DxcBlobEncoding, HRESULT> {
+    pub fn get_error_buffer(&self) -> Result<DxcBlobEncoding> {
         let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
-        check_hr!(
-            unsafe { self.inner.get_error_buffer(blob.as_mut_ptr()) },
-            DxcBlobEncoding::new(blob)
-        )
+
+        unsafe { self.inner.get_error_buffer(blob.as_mut_ptr()) }.result()?;
+        Ok(DxcBlobEncoding::new(blob))
     }
 }
 
@@ -144,14 +117,13 @@ struct DxcIncludeHandlerWrapperVtbl {
         &tinycom::IID,
         *mut *mut core::ffi::c_void,
     ) -> tinycom::HResult,
-    add_ref: extern "system" fn(*const tinycom::IUnknown) -> HRESULT,
-    release: extern "system" fn(*const tinycom::IUnknown) -> HRESULT,
+    add_ref: extern "system" fn(*const tinycom::IUnknown) -> tinycom::HResult,
+    release: extern "system" fn(*const tinycom::IUnknown) -> tinycom::HResult,
     #[cfg(not(windows))]
-    complete_object_destructor: extern "system" fn(*const tinycom::IUnknown) -> HRESULT,
+    complete_object_destructor: extern "system" fn(*const tinycom::IUnknown) -> tinycom::HResult,
     #[cfg(not(windows))]
-    deleting_destructor: extern "system" fn(*const tinycom::IUnknown) -> HRESULT,
-    load_source:
-        extern "system" fn(*mut tinycom::IUnknown, LPCWSTR, *mut *mut IDxcBlob) -> tinycom::HResult,
+    deleting_destructor: extern "system" fn(*const tinycom::IUnknown) -> tinycom::HResult,
+    load_source: extern "system" fn(*mut tinycom::IUnknown, LPCWSTR, *mut *mut IDxcBlob) -> tinycom::HResult,
 }
 
 #[repr(C)]
@@ -171,7 +143,7 @@ impl<'a, 'i> DxcIncludeHandlerWrapper<'a, 'i> {
         0 // dummy impl
     }
 
-    extern "system" fn dummy(_me: *const tinycom::IUnknown) -> HRESULT {
+    extern "system" fn dummy(_me: *const tinycom::IUnknown) -> tinycom::HResult {
         0 // dummy impl
     }
 
@@ -180,9 +152,9 @@ impl<'a, 'i> DxcIncludeHandlerWrapper<'a, 'i> {
         filename: LPCWSTR,
         include_source: *mut *mut IDxcBlob,
     ) -> tinycom::HResult {
-        let me = me as *mut DxcIncludeHandlerWrapper;
+        let me = me.cast::<DxcIncludeHandlerWrapper>();
 
-        let filename = crate::utils::from_wide(filename as *mut _);
+        let filename = crate::utils::from_wide(filename);
 
         let source = unsafe { (*me).handler.load_source(filename) };
 
@@ -205,6 +177,7 @@ impl<'a, 'i> DxcIncludeHandlerWrapper<'a, 'i> {
         } else {
             -2_147_024_894 // ERROR_FILE_NOT_FOUND / 0x80070002
         }
+        .into()
     }
 }
 
@@ -316,11 +289,9 @@ impl DxcCompiler {
         };
 
         let mut compile_error = 0u32;
-        unsafe {
-            result.get_status(&mut compile_error);
-        }
+        let status_hr = unsafe { result.get_status(&mut compile_error) };
 
-        if result_hr == 0 && compile_error == 0 {
+        if !result_hr.is_err() && !status_hr.is_err() && compile_error == 0 {
             Ok(DxcOperationResult::new(result))
         } else {
             Err((DxcOperationResult::new(result), result_hr))
@@ -371,11 +342,9 @@ impl DxcCompiler {
         };
 
         let mut compile_error = 0u32;
-        unsafe {
-            result.get_status(&mut compile_error);
-        }
+        let status_hr = unsafe { result.get_status(&mut compile_error) };
 
-        if result_hr == 0 && compile_error == 0 {
+        if !result_hr.is_err() && !status_hr.is_err() && compile_error == 0 {
             Ok((
                 DxcOperationResult::new(result),
                 from_wide(debug_filename),
@@ -421,26 +390,23 @@ impl DxcCompiler {
         };
 
         let mut compile_error = 0u32;
-        unsafe {
-            result.get_status(&mut compile_error);
-        }
+        let status_hr = unsafe { result.get_status(&mut compile_error) };
 
-        if result_hr == 0 && compile_error == 0 {
+        if !result_hr.is_err() && !status_hr.is_err() && compile_error == 0 {
             Ok(DxcOperationResult::new(result))
         } else {
             Err((DxcOperationResult::new(result), result_hr))
         }
     }
 
-    pub fn disassemble(&self, blob: &DxcBlob) -> Result<DxcBlobEncoding, HRESULT> {
+    pub fn disassemble(&self, blob: &DxcBlob) -> Result<DxcBlobEncoding> {
         let mut result_blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
-        check_hr!(
-            unsafe {
-                self.inner
-                    .disassemble(blob.inner.as_ptr(), result_blob.as_mut_ptr())
-            },
-            DxcBlobEncoding::new(result_blob)
-        )
+        unsafe {
+            self.inner
+                .disassemble(blob.inner.as_ptr(), result_blob.as_mut_ptr())
+        }
+        .result()?;
+        Ok(DxcBlobEncoding::new(result_blob))
     }
 }
 
@@ -454,57 +420,47 @@ impl DxcLibrary {
         Self { inner }
     }
 
-    pub fn create_blob_with_encoding(&self, data: &[u8]) -> Result<DxcBlobEncoding, HRESULT> {
+    pub fn create_blob_with_encoding(&self, data: &[u8]) -> Result<DxcBlobEncoding> {
         let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
-        check_hr!(
-            unsafe {
-                self.inner.create_blob_with_encoding_from_pinned(
-                    data.as_ptr() as *const c_void,
-                    data.len() as u32,
-                    0, // Binary; no code page
-                    blob.as_mut_ptr(),
-                )
-            },
-            DxcBlobEncoding::new(blob)
-        )
+
+        unsafe {
+            self.inner.create_blob_with_encoding_from_pinned(
+                data.as_ptr().cast(),
+                data.len() as u32,
+                0, // Binary; no code page
+                blob.as_mut_ptr(),
+            )
+        }
+        .result()?;
+        Ok(DxcBlobEncoding::new(blob))
     }
 
-    pub fn create_blob_with_encoding_from_str(
-        &self,
-        text: &str,
-    ) -> Result<DxcBlobEncoding, HRESULT> {
+    pub fn create_blob_with_encoding_from_str(&self, text: &str) -> Result<DxcBlobEncoding> {
         let mut blob: ComPtr<IDxcBlobEncoding> = ComPtr::new();
         const CP_UTF8: u32 = 65001; // UTF-8 translation
 
-        check_hr!(
-            unsafe {
-                self.inner.create_blob_with_encoding_from_pinned(
-                    text.as_ptr() as *const c_void,
-                    text.len() as u32,
-                    CP_UTF8,
-                    blob.as_mut_ptr(),
-                )
-            },
-            DxcBlobEncoding::new(blob)
-        )
+        unsafe {
+            self.inner.create_blob_with_encoding_from_pinned(
+                text.as_ptr().cast(),
+                text.len() as u32,
+                CP_UTF8,
+                blob.as_mut_ptr(),
+            )
+        }
+        .result()?;
+        Ok(DxcBlobEncoding::new(blob))
     }
 
-    pub fn get_blob_as_string(&self, blob: &DxcBlobEncoding) -> String {
+    pub fn get_blob_as_string(&self, blob: &DxcBlob) -> Result<String> {
         let mut blob_utf8: ComPtr<IDxcBlobEncoding> = ComPtr::new();
 
         unsafe {
             self.inner
                 .get_blob_as_utf8(blob.inner.as_ptr(), blob_utf8.as_mut_ptr())
-        };
+        }
+        .result()?;
 
-        let slice = unsafe {
-            std::slice::from_raw_parts(
-                blob_utf8.get_buffer_pointer() as *const u8,
-                blob_utf8.get_buffer_size(),
-            )
-        };
-
-        String::from_utf8(slice.to_vec()).unwrap()
+        Ok(String::from_utf8(DxcBlob::new((&blob_utf8).into()).to_vec()).unwrap())
     }
 }
 
@@ -518,7 +474,7 @@ fn dxcompiler_lib_name() -> &'static Path {
     Path::new("dxcompiler.dll")
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "android"))]
 fn dxcompiler_lib_name() -> &'static Path {
     Path::new("libdxcompiler.so")
 }
@@ -531,7 +487,7 @@ fn dxcompiler_lib_name() -> &'static Path {
 impl Dxc {
     /// `dxc_path` can point to a library directly or the directory containing the library,
     /// in which case the appended filename depends on the platform.
-    pub fn new(lib_path: Option<PathBuf>) -> Result<Self, HassleError> {
+    pub fn new(lib_path: Option<PathBuf>) -> Result<Self> {
         let lib_path = if let Some(lib_path) = lib_path {
             if lib_path.is_file() {
                 lib_path
@@ -550,34 +506,28 @@ impl Dxc {
         Ok(Self { dxc_lib })
     }
 
-    pub(crate) fn get_dxc_create_instance(
-        &self,
-    ) -> Result<Symbol<DxcCreateInstanceProc>, HassleError> {
+    pub(crate) fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>> {
         Ok(unsafe { self.dxc_lib.get(b"DxcCreateInstance\0")? })
     }
 
-    pub fn create_compiler(&self) -> Result<DxcCompiler, HassleError> {
+    pub fn create_compiler(&self) -> Result<DxcCompiler> {
         let mut compiler: ComPtr<IDxcCompiler2> = ComPtr::new();
-        check_hr_wrapped!(
-            self.get_dxc_create_instance()?(
-                &CLSID_DxcCompiler,
-                &IID_IDxcCompiler2,
-                compiler.as_mut_ptr(),
-            ),
-            DxcCompiler::new(compiler, self.create_library()?)
+
+        self.get_dxc_create_instance()?(
+            &CLSID_DxcCompiler,
+            &IID_IDxcCompiler2,
+            compiler.as_mut_ptr(),
         )
+        .result()?;
+        Ok(DxcCompiler::new(compiler, self.create_library()?))
     }
 
-    pub fn create_library(&self) -> Result<DxcLibrary, HassleError> {
+    pub fn create_library(&self) -> Result<DxcLibrary> {
         let mut library: ComPtr<IDxcLibrary> = ComPtr::new();
-        check_hr_wrapped!(
-            self.get_dxc_create_instance()?(
-                &CLSID_DxcLibrary,
-                &IID_IDxcLibrary,
-                library.as_mut_ptr(),
-            ),
-            DxcLibrary::new(library)
-        )
+
+        self.get_dxc_create_instance()?(&CLSID_DxcLibrary, &IID_IDxcLibrary, library.as_mut_ptr())
+            .result()?;
+        Ok(DxcLibrary::new(library))
     }
 }
 
@@ -593,28 +543,22 @@ impl DxcValidator {
         Self { inner }
     }
 
-    pub fn version(&self) -> Result<DxcValidatorVersion, HRESULT> {
+    pub fn version(&self) -> Result<DxcValidatorVersion> {
         let mut version: ComPtr<IDxcVersionInfo> = ComPtr::new();
 
-        let result_hr = unsafe {
+        HRESULT::from(unsafe {
             self.inner
                 .query_interface(&IID_IDxcVersionInfo, version.as_mut_ptr())
-        };
-
-        if result_hr != 0 {
-            return Err(result_hr);
-        }
+        })
+        .result()?;
 
         let mut major = 0;
         let mut minor = 0;
 
-        check_hr! {
-            unsafe { version.get_version(&mut major, &mut minor) },
-            (major, minor)
-        }
+        unsafe { version.get_version(&mut major, &mut minor) }.result_with_success((major, minor))
     }
 
-    pub fn validate(&self, blob: DxcBlob) -> Result<DxcBlob, (DxcOperationResult, HRESULT)> {
+    pub fn validate(&self, blob: DxcBlob) -> Result<DxcBlob, (DxcOperationResult, HassleError)> {
         let mut result: ComPtr<IDxcOperationResult> = ComPtr::new();
         let result_hr = unsafe {
             self.inner.validate(
@@ -625,12 +569,15 @@ impl DxcValidator {
         };
 
         let mut validate_status = 0u32;
-        unsafe { result.get_status(&mut validate_status) };
+        let status_hr = unsafe { result.get_status(&mut validate_status) };
 
-        if result_hr == 0 && validate_status == 0 {
+        if !result_hr.is_err() && !status_hr.is_err() && validate_status == 0 {
             Ok(blob)
         } else {
-            Err((DxcOperationResult::new(result), result_hr))
+            Err((
+                DxcOperationResult::new(result),
+                HassleError::Win32Error(result_hr),
+            ))
         }
     }
 }
@@ -642,7 +589,7 @@ pub struct Dxil {
 
 impl Dxil {
     #[cfg(not(windows))]
-    pub fn new(_: Option<PathBuf>) -> Result<Self, HassleError> {
+    pub fn new(_: Option<PathBuf>) -> Result<Self> {
         Err(HassleError::WindowsOnly(
             "DXIL Signing is only supported on Windows".to_string(),
         ))
@@ -651,7 +598,7 @@ impl Dxil {
     /// `dxil_path` can point to a library directly or the directory containing the library,
     /// in which case `dxil.dll` is appended.
     #[cfg(windows)]
-    pub fn new(lib_path: Option<PathBuf>) -> Result<Self, HassleError> {
+    pub fn new(lib_path: Option<PathBuf>) -> Result<Self> {
         let lib_path = if let Some(lib_path) = lib_path {
             if lib_path.is_file() {
                 lib_path
@@ -671,19 +618,19 @@ impl Dxil {
         Ok(Self { dxil_lib })
     }
 
-    fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>, HassleError> {
+    fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>> {
         Ok(unsafe { self.dxil_lib.get(b"DxcCreateInstance\0")? })
     }
 
-    pub fn create_validator(&self) -> Result<DxcValidator, HassleError> {
+    pub fn create_validator(&self) -> Result<DxcValidator> {
         let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
-        check_hr_wrapped!(
-            self.get_dxc_create_instance()?(
-                &CLSID_DxcValidator,
-                &IID_IDxcValidator,
-                validator.as_mut_ptr(),
-            ),
-            DxcValidator::new(validator)
+
+        self.get_dxc_create_instance()?(
+            &CLSID_DxcValidator,
+            &IID_IDxcValidator,
+            validator.as_mut_ptr(),
         )
+        .result()?;
+        Ok(DxcValidator::new(validator))
     }
 }
