@@ -21,7 +21,7 @@ default-target = "x86_64-pc-windows-msvc"
 
 [dependencies]
 libloading = "0.7.0"
-tinycom = { git = "https://github.com/legion-labs/tinycom-rs", branch = "main" }
+tinycom = "0.1.0"
 bitflags = "1.2.1"
 widestring = "0.5.0"
 thiserror = "1.0"
