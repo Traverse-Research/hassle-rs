@@ -602,8 +602,13 @@ impl Reflection {
         Self { inner }
     }
 
-    pub fn inner_ptr(&self) -> *const ID3D12ShaderReflection {
-        self.inner.as_ptr()
+    pub fn thread_group_size(&self) -> [u32; 3] {
+        let (mut size_x, mut size_y, mut size_z) = (0u32, 0u32, 0u32);
+        unsafe {
+            self.inner
+                .get_thread_group_size(&mut size_x, &mut size_y, &mut size_z)
+        };
+        [size_x, size_y, size_z]
     }
 }
 
