@@ -620,7 +620,7 @@ impl DxcReflector {
         Self { inner }
     }
 
-    pub fn reflect(&self, blob: DxcBlob) -> Result<Reflection, HassleError> {
+    pub fn reflect(&self, blob: DxcBlob) -> Result<Reflection> {
         let result_hr = unsafe { self.inner.load(blob.inner.as_ptr()) };
         if result_hr.is_err() {
             return Err(HassleError::Win32Error(result_hr));
