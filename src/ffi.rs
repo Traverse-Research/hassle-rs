@@ -16,6 +16,8 @@ pub type DxcCreateInstanceProc2 = extern "system" fn(
     ppv: *mut *mut c_void,
 ) -> HRESULT;
 
+pub const DFCC_DXIL: u32 = u32::from_le_bytes([b'D', b'X', b'I', b'L']);
+
 iid!(pub IID_IDxcBlob = 0x8BA5_FB08, 0x5195, 0x40e2, 0xAC, 0x58, 0x0D, 0x98, 0x9C, 0x3A, 0x01, 0x02);
 com_interface! {
     interface IDxcBlob: IDxcUnknownShim, IUnknown {
@@ -261,6 +263,33 @@ com_interface! {
         vtable: IDxcVersionInfo2Vtbl,
 
         fn get_commit_info(commit_count: *mut u32, commit_hash: *mut *mut u8) -> HRESULT;
+    }
+}
+
+iid!(pub IID_ID3D12ShaderReflection = 0x5a58_797d, 0xa72c, 0x478d, 0x8b, 0xa2, 0xef, 0xc6, 0xb0, 0xef, 0xe8, 0x8e);
+com_interface! {
+    interface ID3D12ShaderReflection: IUnknown {
+        iid: IID_ID3D12ShaderReflection,
+        vtable: ID3D12ShaderReflectionVtbl,
+        fn get_desc(p_desc: *mut c_void) -> HRESULT;
+        fn get_constant_buffer_by_index(index: u32) -> *mut c_void;
+        fn get_constant_buffer_by_name(name: *const c_void) -> *mut c_void;
+        fn get_resource_binding_desc(resource_index: u32, p_desc: *mut c_void) -> HRESULT;
+        fn get_input_parameter_desc(parameter_index: u32, p_desc: *mut c_void) -> HRESULT;
+        fn get_output_parameter_desc(parameter_index: u32, p_desc: *mut c_void) -> HRESULT;
+        fn get_patch_constant_parameter_desc(parameter_index: u32, p_desc: *mut c_void) -> HRESULT;
+        fn get_variable_by_name(name: *const c_void) -> *mut c_void;
+        fn get_resource_binding_desc_by_name(name: *const c_void, p_desc: *mut c_void) -> HRESULT;
+        fn get_mov_instruction_count() -> u32;
+        fn get_movc_instruction_count() -> u32;
+        fn get_conversion_instruction_count() -> u32;
+        fn get_bitwise_instruction_count() -> u32;
+        fn get_gs_input_primitive() -> u32;
+        fn is_sample_frequency_shader() -> bool;
+        fn get_num_interface_slots() -> u32;
+        fn get_min_feature_level(p_level: *mut c_void) -> HRESULT;
+        fn get_thread_group_size(size_x: *mut u32, size_y: *mut u32, size_z: *mut u32) -> u32;
+        fn get_requires_flags() -> u64;
     }
 }
 

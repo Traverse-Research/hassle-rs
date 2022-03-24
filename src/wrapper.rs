@@ -529,6 +529,18 @@ impl Dxc {
             .result()?;
         Ok(DxcLibrary::new(library))
     }
+
+    pub fn create_reflector(&self) -> Result<DxcReflector> {
+        let mut reflector: ComPtr<IDxcContainerReflection> = ComPtr::new();
+
+        self.get_dxc_create_instance()?(
+            &CLSID_DxcContainerReflection,
+            &IID_IDxcContainerReflection,
+            reflector.as_mut_ptr(),
+        )
+        .result()?;
+        Ok(DxcReflector::new(reflector))
+    }
 }
 
 #[derive(Debug)]
@@ -579,6 +591,55 @@ impl DxcValidator {
                 HassleError::Win32Error(result_hr),
             ))
         }
+    }
+}
+
+pub struct Reflection {
+    inner: ComPtr<ID3D12ShaderReflection>,
+}
+impl Reflection {
+    fn new(inner: ComPtr<ID3D12ShaderReflection>) -> Self {
+        Self { inner }
+    }
+
+    pub fn inner_ptr(&self) -> *const ID3D12ShaderReflection {
+        self.inner.as_ptr()
+    }
+}
+
+pub struct DxcReflector {
+    inner: ComPtr<IDxcContainerReflection>,
+}
+impl DxcReflector {
+    fn new(inner: ComPtr<IDxcContainerReflection>) -> Self {
+        Self { inner }
+    }
+
+    pub fn reflect(&self, blob: DxcBlob) -> Result<Reflection, HassleError> {
+        let result_hr = unsafe { self.inner.load(blob.inner.as_ptr()) };
+        if result_hr.is_err() {
+            return Err(HassleError::Win32Error(result_hr));
+        }
+
+        let mut shader_idx = 0;
+        let result_hr = unsafe { self.inner.find_first_part_kind(DFCC_DXIL, &mut shader_idx) };
+        if result_hr.is_err() {
+            return Err(HassleError::Win32Error(result_hr));
+        }
+
+        let mut reflection: ComPtr<ID3D12ShaderReflection> = ComPtr::new();
+        let result_hr = unsafe {
+            self.inner.get_part_reflection(
+                shader_idx,
+                &IID_ID3D12ShaderReflection,
+                reflection.as_mut_ptr(),
+            )
+        };
+        if result_hr.is_err() {
+            return Err(HassleError::Win32Error(result_hr));
+        }
+
+        Ok(Reflection::new(reflection))
     }
 }
 
