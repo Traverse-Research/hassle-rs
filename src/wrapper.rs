@@ -195,7 +195,8 @@ impl DxcCompiler {
     fn prep_defines(
         defines: &[(&str, Option<&str>)],
         wide_defines: &mut Vec<(Vec<WCHAR>, Vec<WCHAR>)>,
-        dxc_defines: &mut Vec<DxcDefine>,
+        // Temporary false-positive in Rust 1.60, Vec::push() below isn't available on slices.
+        #[allow(clippy::ptr_arg)] dxc_defines: &mut Vec<DxcDefine>,
     ) {
         for (name, value) in defines {
             if value.is_none() {
