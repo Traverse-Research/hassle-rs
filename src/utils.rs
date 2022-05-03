@@ -32,12 +32,10 @@ pub(crate) fn from_bstr(string: BSTR) -> String {
 }
 
 pub(crate) fn from_lpstr(string: LPCSTR) -> String {
-    unsafe {
-        let len = (0..).take_while(|&i| *string.offset(i) != 0).count();
+    let len = unsafe { (0..).take_while(|&i| *string.offset(i) != 0).count() };
 
-        let slice: &[u8] = std::slice::from_raw_parts(string.cast(), len);
-        std::str::from_utf8(slice).map(|s| s.to_owned()).unwrap()
-    }
+    let slice: &[u8] = unsafe { std::slice::from_raw_parts(string.cast(), len) };
+    std::str::from_utf8(slice).map(|s| s.to_owned()).unwrap()
 }
 
 struct DefaultIncludeHandler {}
