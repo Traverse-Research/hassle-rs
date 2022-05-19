@@ -68,7 +68,7 @@ Furthermore semantics around `BSTR` (only used in `intellisense`) have [changed 
 
 Licensed under MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses/MIT)
 
-## Contibutions
+## Contributions
 
  - Graham Wihlidal
  - Tiago Carvalho
