@@ -481,7 +481,7 @@ fn dxcompiler_lib_name() -> &'static Path {
 
 #[cfg(target_os = "macos")]
 fn dxcompiler_lib_name() -> &'static Path {
-    Path::new("./libdxcompiler.dynlib")
+    Path::new("./libdxcompiler.dylib")
 }
 
 impl Dxc {
