@@ -28,7 +28,7 @@ default-target = "x86_64-pc-windows-msvc"
 libloading = "0.7.0"
 com-rs = "0.2.1"
 bitflags = "1.2.1"
-widestring = "0.5.0"
+widestring = "1.0.1"
 thiserror = "1.0"
 
 [target.'cfg(windows)'.dependencies]
