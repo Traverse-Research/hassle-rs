@@ -57,7 +57,7 @@ pub fn fake_sign_dxil_in_place(dxil: &mut [u8]) -> bool {
     let (first_part, padding_part) = data.split_at(data.len() - left_over_len as usize);
 
     let mut ctx = Context::new();
-    ctx.consume(&first_part);
+    ctx.consume(first_part);
 
     let mut block = [0u8; 64];
 
@@ -74,12 +74,12 @@ pub fn fake_sign_dxil_in_place(dxil: &mut [u8]) -> bool {
         // write to last dword
         block[15 * 4..].copy_from_slice(&num_bits_part_2.to_le_bytes());
 
-        ctx.consume(&block);
+        ctx.consume(block);
     } else {
-        ctx.consume(&num_bits.to_le_bytes());
+        ctx.consume(num_bits.to_le_bytes());
 
         if left_over_len != 0 {
-            ctx.consume(&padding_part)
+            ctx.consume(padding_part)
         }
 
         let padding_bytes = (64 - left_over_len - 4) as usize;

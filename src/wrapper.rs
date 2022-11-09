@@ -492,7 +492,7 @@ impl Dxc {
             if lib_path.is_file() {
                 lib_path
             } else {
-                lib_path.join(&dxcompiler_lib_name())
+                lib_path.join(dxcompiler_lib_name())
             }
         } else {
             dxcompiler_lib_name().to_owned()
