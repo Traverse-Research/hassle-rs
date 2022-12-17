@@ -33,8 +33,8 @@ Outside of Windows (e.g. Unix) the emulated COM API needed its fair share of fix
 
 | Since `hassle-rs` | DXC release | Git commit |
 |-|-|-|
-| Unreleased (0.10.0?) | Unreleased | https://github.com/microsoft/DirectXShaderCompiler/commit/47f31378a9b51894b0465b33ac1d10ce6349a468 |
-| 0.5.1 (if using `intellisense`) | release-1.6.2012 | https://github.com/microsoft/DirectXShaderCompiler/commit/2ade6f84d6b95bfd96eec1d6d15e3aa3b519d180 |
+| 0.10.0 | [v1.7.2212](https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.7.2212) | https://github.com/microsoft/DirectXShaderCompiler/commit/47f31378a9b51894b0465b33ac1d10ce6349a468 |
+| 0.5.1 (if using `intellisense`) | [release-1.6.2012](https://github.com/microsoft/DirectXShaderCompiler/tree/release-1.6.2012) | https://github.com/microsoft/DirectXShaderCompiler/commit/2ade6f84d6b95bfd96eec1d6d15e3aa3b519d180 |
 
 When compiling on MacOS with `clang`, or Linux with `gcc`, be sure to have at least https://github.com/microsoft/DirectXShaderCompiler/commit/af14220b45d3ce46e0bad51ce79655e41d07c478 (also included in `release-1.6.2012`).
 
