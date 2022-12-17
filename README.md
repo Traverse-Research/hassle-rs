@@ -22,12 +22,36 @@ Add this to your `Cargo.toml`:
 hassle-rs = "0.9.0"
 ```
 
-Then acquire `dxcompiler.dll` on Windows or `libdxcompiler.so` on Linux directly from [AppVeyor](https://ci.appveyor.com/project/antiagainst/directxshadercompiler/branch/master/artifacts), or compile it from source according to the instructions in the [DirectXShaderCompiler](https://github.com/Microsoft/DirectXShaderCompiler) GitHub repository and make sure it's in the executable environment.
+Then acquire `dxcompiler.dll` on Windows or `libdxcompiler.so` on Linux directly from [AppVeyor](https://ci.appveyor.com/project/antiagainst/directxshadercompiler/branch/master/artifacts), or compile it from source according to [the instructions](https://github.com/microsoft/DirectXShaderCompiler/blob/main/docs/DxcOnUnix.rst#building-dxc) in the [DirectXShaderCompiler](https://github.com/Microsoft/DirectXShaderCompiler) GitHub repository and make sure it's in the executable environment. See our [support table](##Supported-DXC-versions-on-non-Windows) below for specific compatibility notes on non-Windows OSes.
 
 DxcValidator also requires `dxil.dll` which can be grabbed from any recent Windows 10 SDK flight.
 More info: https://www.wihlidal.com/blog/pipeline/2018-09-16-dxil-signing-post-compile/
 
-## Compile HLSL into SPIR-V:
+## Supported DXC versions on non-Windows
+
+Outside of Windows (e.g. Unix) the emulated COM API needed its fair share of fixes to match the layout on Windows. This results in repetitive API breakage that is hard to detect from within `hassle-rs`: be sure to math the `hassle-rs` release below to a minimum DXC commit to prevent runtime failures outside of Windows!
+
+| Since `hassle-rs` | DXC release | Git commit |
+|-|-|-|
+| 0.10.0 | [v1.7.2212](https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.7.2212) | https://github.com/microsoft/DirectXShaderCompiler/commit/47f31378a9b51894b0465b33ac1d10ce6349a468 |
+| 0.5.1 (if using `intellisense`) | [release-1.6.2012](https://github.com/microsoft/DirectXShaderCompiler/tree/release-1.6.2012) | https://github.com/microsoft/DirectXShaderCompiler/commit/2ade6f84d6b95bfd96eec1d6d15e3aa3b519d180 |
+
+When compiling on MacOS with `clang`, or Linux with `gcc`, be sure to have at least https://github.com/microsoft/DirectXShaderCompiler/commit/af14220b45d3ce46e0bad51ce79655e41d07c478 (also included in `release-1.6.2012`).
+
+<details>
+<summary>Interesting DXC commits pertaining Unix support</summary>
+
+These patches have had an effect on `hassle-rs` compatibility over time:
+
+- [`[Linux] WinAdapter: Remove virtual dtors from IUnknown to fix vtable ABI`](https://github.com/microsoft/DirectXShaderCompiler/commit/47f31378a9b51894b0465b33ac1d10ce6349a468)
+- [`Linux: Implement prefix-counted BSTR allocation in SysAllocStringLen`](https://github.com/microsoft/DirectXShaderCompiler/commit/2ade6f84d6b95bfd96eec1d6d15e3aa3b519d180)
+- [`[linux-port] Support full IID comparison on GCC`](https://github.com/microsoft/DirectXShaderCompiler/commit/af14220b45d3ce46e0bad51ce79655e41d07c478)
+
+</details>
+
+## Usage examples
+
+### Compile HLSL into SPIR-V
 
 ```rust
 let spirv = compile_hlsl(
@@ -43,7 +67,7 @@ let spirv = compile_hlsl(
 );
 ```
 
-## Compile HLSL into DXIL and validate it:
+### Compile HLSL into DXIL and validate it
 
 ```rust
 let dxil = compile_hlsl("test.cs.hlsl", test_cs, "main", "cs_6_5", args, &[]).unwrap();
@@ -53,16 +77,6 @@ if let Some(err) = result.err() {
     println!("validation failed: {}", err);
 }
 ```
-
-## macOS support
-
-One can build `libdxcompiler.dynlib` from source with [this commit](https://github.com/microsoft/DirectXShaderCompiler/pull/3062/commits/9f2b30aa333f22eed00bf37b3a9b94f5ff5d23fe) for `clang` or [the entire PR](https://github.com/microsoft/DirectXShaderCompiler/pull/3062) for `GCC`, by following [the DXC Unix build guide](https://github.com/microsoft/DirectXShaderCompiler/blob/master/docs/DxcOnUnix.rst#building-dxc). These patches [have been merged](https://github.com/microsoft/DirectXShaderCompiler/commit/af14220b45d3ce46e0bad51ce79655e41d07c478) to DXC and are available since `release-1.6.2012`.
-
-## Linux support
-
-Linux shares the same requirements as [macOS support](#macOS-support) when compiling from source but DXC provides prebuilt libraries for every commit on [AppVeyor](https://ci.appveyor.com/project/dnovillo/directxshadercompiler/history). These are linked from individual commits on GitHub too.
-
-Furthermore semantics around `BSTR` (only used in `intellisense`) have [changed since hassle-rs 0.5.1](https://github.com/Traverse-Research/hassle-rs/commit/94670248cc01614c3a9c9f4d5288afb4040544bd) and require `libdxcompiler.so` compiled from at least [this commit](https://github.com/microsoft/DirectXShaderCompiler/commit/2ade6f84d6b95bfd96eec1d6d15e3aa3b519d180), also included in `release-1.6.2012`. `Intellisense` on hassle-rs `0.5.0` and below is not compatible with these newer libraries.
 
 ## License
 
@@ -74,6 +88,7 @@ Licensed under MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses
  - Tiago Carvalho
  - Marijn Suijten
  - Tomasz Stachowiak
+ - Manon Oomen
 
 ## Contribution
 

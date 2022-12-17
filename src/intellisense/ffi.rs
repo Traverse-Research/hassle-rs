@@ -1,5 +1,4 @@
 use crate::os::{BSTR, HRESULT, LPCSTR, LPSTR};
-pub(crate) use crate::unknown::IDxcUnknownShim;
 use bitflags::bitflags;
 use com_rs::{com_interface, iid, IUnknown};
 
@@ -359,7 +358,7 @@ bitflags! {
 
 iid!(pub IID_IDxcDiagnostic = 0x4f76b234, 0x3659, 0x4d33, 0x99, 0xb0, 0x3b, 0x0d, 0xb9, 0x94, 0xb5, 0x64);
 com_interface! {
-    interface IDxcDiagnostic: IDxcUnknownShim, IUnknown {
+    interface IDxcDiagnostic: IUnknown{
         iid: IID_IDxcDiagnostic,
         vtable: IDxcDiagnosticVtbl,
         fn format_diagnostic(options: DxcDiagnosticDisplayOptions, result: *mut LPSTR) -> HRESULT;
@@ -376,7 +375,7 @@ com_interface! {
 
 iid!(pub IID_IDxcInclusion = 0x0c364d65, 0xdf44, 0x4412, 0x88, 0x8e, 0x4e, 0x55, 0x2f, 0xc5, 0xe3, 0xd6);
 com_interface! {
-    interface IDxcInclusion: IDxcUnknownShim, IUnknown {
+    interface IDxcInclusion: IUnknown{
         iid: IID_IDxcInclusion,
         vtable: IDxcInclusionVtbl,
         fn get_included_file(result: *mut *mut IDxcFile) -> HRESULT;
@@ -387,7 +386,7 @@ com_interface! {
 
 iid!(pub IID_IDxcToken = 0x7f90b9ff, 0xa275, 0x4932, 0x97, 0xd8, 0x3c, 0xfd, 0x23, 0x44, 0x82, 0xa2);
 com_interface! {
-    interface IDxcToken: IDxcUnknownShim, IUnknown {
+    interface IDxcToken: IUnknown{
         iid: IID_IDxcToken,
         vtable: IDxcTokenVtbl,
         fn get_kind(value: *mut DxcTokenKind) -> HRESULT;
@@ -399,7 +398,7 @@ com_interface! {
 
 iid!(pub IID_IDxcType = 0x2ec912fd, 0xb144, 0x4a15, 0xad, 0x0d, 0x1c, 0x54, 0x39, 0xc8, 0x1e, 0x46);
 com_interface! {
-    interface IDxcType: IDxcUnknownShim, IUnknown {
+    interface IDxcType: IUnknown{
         iid: IID_IDxcType,
         vtable: IDxcTypeVtbl,
         fn get_spelling(result: *mut LPSTR) -> HRESULT;
@@ -410,7 +409,7 @@ com_interface! {
 
 iid!(pub IID_IDxcSourceLocation = 0x8e7ddf1c, 0xd7d3, 0x4d69, 0xb2, 0x86, 0x85, 0xfc, 0xcb, 0xa1, 0xe0, 0xcf);
 com_interface! {
-    interface IDxcSourceLocation: IDxcUnknownShim, IUnknown {
+    interface IDxcSourceLocation: IUnknown{
         iid: IID_IDxcSourceLocation,
         vtable: IDxcSourceLocationVtbl,
         fn is_equal_to(other: *const IDxcSourceLocation, result: *mut bool) -> HRESULT;
@@ -421,7 +420,7 @@ com_interface! {
 
 iid!(pub IID_IDxcSourceRange = 0xf1359b36, 0xa53f, 0x4e81, 0xb5, 0x14, 0xb6, 0xb8, 0x41, 0x22, 0xa1, 0x3f);
 com_interface! {
-    interface IDxcSourceRange: IDxcUnknownShim, IUnknown {
+    interface IDxcSourceRange: IUnknown{
         iid: IID_IDxcSourceRange,
         vtable: IDxcSourceRangeVtbl,
         fn is_null(value: *mut bool) -> HRESULT;
@@ -433,7 +432,7 @@ com_interface! {
 
 iid!(pub IID_IDxcCursor = 0x1467b985, 0x288d, 0x4d2a, 0x80, 0xc1, 0xef, 0x89, 0xc4, 0x2c, 0x40, 0xbc);
 com_interface! {
-    interface IDxcCursor: IDxcUnknownShim, IUnknown {
+    interface IDxcCursor: IUnknown{
         iid: IID_IDxcCursor,
         vtable: IDxcCursorVtbl,
         fn get_extent(range: *mut *mut IDxcSourceRange) -> HRESULT;
@@ -462,7 +461,7 @@ com_interface! {
 
 iid!(pub IID_IDxcUnsavedFile = 0x8ec00f98, 0x07d0, 0x4e60, 0x9d, 0x7c, 0x5a, 0x50, 0xb5, 0xb0, 0x01, 0x7f);
 com_interface! {
-    interface IDxcUnsavedFile: IDxcUnknownShim, IUnknown {
+    interface IDxcUnsavedFile: IUnknown{
         iid: IID_IDxcUnsavedFile,
         vtable: IDxcUnsavedFileVtbl,
         fn get_file_name(file_name: *mut LPSTR) -> HRESULT;
@@ -473,7 +472,7 @@ com_interface! {
 
 iid!(pub IID_IDxcFile = 0xbb2fca9e, 0x1478, 0x47ba, 0xb0, 0x8c, 0x2c, 0x50, 0x2a, 0xda, 0x48, 0x95);
 com_interface! {
-    interface IDxcFile: IDxcUnknownShim, IUnknown {
+    interface IDxcFile: IUnknown{
         iid: IID_IDxcFile,
         vtable: IDxcFileVtbl,
         fn get_name(result: *mut LPSTR) -> HRESULT;
@@ -483,7 +482,7 @@ com_interface! {
 
 iid!(pub IID_IDxcTranslationUnit = 0x9677dee0, 0xc0e5, 0x46a1, 0x8b, 0x40, 0x3d, 0xb3, 0x16, 0x8b, 0xe6, 0x3d);
 com_interface! {
-    interface IDxcTranslationUnit: IDxcUnknownShim, IUnknown {
+    interface IDxcTranslationUnit: IUnknown{
         iid: IID_IDxcTranslationUnit,
         vtable: IDxcTranslationUnitVtbl,
         fn get_cursor(cursor: *mut *mut IDxcCursor) -> HRESULT;
@@ -506,7 +505,7 @@ com_interface! {
 
 iid!(pub IID_IDxcIndex = 0x937824a0, 0x7f5a, 0x4815, 0x9b, 0xa, 0x7c, 0xc0, 0x42, 0x4f, 0x41, 0x73);
 com_interface! {
-    interface IDxcIndex: IDxcUnknownShim, IUnknown {
+    interface IDxcIndex: IUnknown{
         iid: IID_IDxcIndex,
         vtable: IDxcIndexVtbl,
         fn set_global_options(options: DxcGlobalOptions) -> HRESULT;
@@ -524,7 +523,7 @@ com_interface! {
 
 iid!(pub IID_IDxcIntelliSense = 0xb1f99513, 0x46d6, 0x4112, 0x81, 0x69, 0xdd, 0x0d, 0x60, 0x53, 0xf1, 0x7d);
 com_interface! {
-    interface IDxcIntelliSense: IDxcUnknownShim, IUnknown {
+    interface IDxcIntelliSense: IUnknown{
         iid: IID_IDxcIntelliSense,
         vtable: IDxcIntelliSenseVtbl,
         fn create_index(index: *mut *mut IDxcIndex) -> HRESULT;

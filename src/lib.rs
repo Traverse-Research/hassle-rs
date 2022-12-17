@@ -37,8 +37,6 @@
 //! );
 //! ```
 
-pub(crate) mod unknown;
-
 pub mod fake_sign;
 pub mod ffi;
 pub mod os;
