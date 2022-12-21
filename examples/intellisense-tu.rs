@@ -9,7 +9,7 @@ fn main() {
 
     let args = vec![];
 
-    let dxc = Dxc::new(None).unwrap();
+    let dxc = unsafe { Dxc::linked_or_load() }.unwrap();
 
     let intellisense = dxc.create_intellisense().unwrap();
 

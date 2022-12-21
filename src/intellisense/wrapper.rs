@@ -425,11 +425,13 @@ impl Dxc {
     pub fn create_intellisense(&self) -> Result<DxcIntellisense> {
         let mut intellisense: ComPtr<IDxcIntelliSense> = ComPtr::new();
 
-        self.get_dxc_create_instance()?(
-            &CLSID_DxcIntelliSense,
-            &IID_IDxcIntelliSense,
-            intellisense.as_mut_ptr(),
-        )
+        unsafe {
+            (self.dxc_create_instance)(
+                &CLSID_DxcIntelliSense,
+                &IID_IDxcIntelliSense,
+                intellisense.as_mut_ptr(),
+            )
+        }
         .result()?;
         Ok(DxcIntellisense::new(intellisense))
     }

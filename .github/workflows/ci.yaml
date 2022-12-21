@@ -22,9 +22,15 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cargo check
-        run: cargo check --workspace --all-targets
       - name: Cargo fmt
         run: cargo fmt --all -- --check
-      - name: Cargo clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Cargo clippy (loaded)
+        run: cargo clippy --workspace --all-targets --no-default-features --features loaded -- -D warnings
+      - name: Cargo clippy (linked)
+        run: cargo clippy --workspace --all-targets --no-default-features --features linked -- -D warnings
+      - name: Cargo clippy (all features)
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Docs
+        env:
+          RUSTDOCFLAGS: -Dwarnings --cfg docsrs
+        run: cargo +nightly doc --no-deps --workspace --all-features --document-private-items

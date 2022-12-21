@@ -8,8 +8,10 @@ use crate::ffi::*;
 use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
 use crate::utils::{from_wide, to_wide, HassleError, Result};
 use com_rs::ComPtr;
-use libloading::{Library, Symbol};
-use std::path::{Path, PathBuf};
+#[cfg(feature = "loaded")]
+use libloading::Library;
+#[cfg(feature = "loaded")]
+use std::ffi::OsStr;
 use std::pin::Pin;
 
 #[derive(Debug)]
@@ -460,60 +462,102 @@ impl DxcLibrary {
     }
 }
 
-#[derive(Debug)]
 pub struct Dxc {
-    dxc_lib: Library,
-}
-
-#[cfg(target_os = "windows")]
-fn dxcompiler_lib_name() -> &'static Path {
-    Path::new("dxcompiler.dll")
-}
-
-#[cfg(any(target_os = "linux", target_os = "android"))]
-fn dxcompiler_lib_name() -> &'static Path {
-    Path::new("./libdxcompiler.so")
-}
-
-#[cfg(target_os = "macos")]
-fn dxcompiler_lib_name() -> &'static Path {
-    Path::new("./libdxcompiler.dylib")
+    pub(crate) dxc_create_instance: DxcCreateInstanceProc,
+    #[cfg(feature = "loaded")]
+    _dxc_lib: Option<Library>,
 }
 
 impl Dxc {
-    /// `dxc_path` can point to a library directly or the directory containing the library,
-    /// in which case the appended filename depends on the platform.
-    pub fn new(lib_path: Option<PathBuf>) -> Result<Self> {
-        let lib_path = if let Some(lib_path) = lib_path {
-            if lib_path.is_file() {
-                lib_path
-            } else {
-                lib_path.join(dxcompiler_lib_name())
-            }
-        } else {
-            dxcompiler_lib_name().to_owned()
-        };
-        let dxc_lib =
-            unsafe { Library::new(&lib_path) }.map_err(|e| HassleError::LoadLibraryError {
-                filename: lib_path,
-                inner: e,
-            })?;
+    /// Load DirectXShaderCompiler library for the current platform
+    ///
+    /// Prefer this over [`linked()`][Self::linked()] when your application can gracefully handle
+    /// environments that lack a DXC library on the search path, and when the build environment might not have DXC
+    /// development packages installed (e.g. the Vulkan SDK, or Arch-Linux's [`directx-shader-compiler`]).
+    ///
+    /// # Safety
+    /// `dlopen`ing native libraries is inherently unsafe. The safety guidelines
+    /// for [`Library::new()`] and [`Library::get()`] apply here.
+    ///
+    /// [`directx-shader-compiler`]: https://archlinux.org/packages/extra/x86_64/directx-shader-compiler/
+    #[cfg(feature = "loaded")]
+    pub unsafe fn load() -> Result<Self> {
+        #[cfg(windows)]
+        const LIB_PATH: &str = "dxcompiler.dll";
 
-        Ok(Self { dxc_lib })
+        #[cfg(all(unix, not(any(target_os = "macos", target_os = "ios"))))]
+        const LIB_PATH: &str = "libdxcompiler.so";
+
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
+        const LIB_PATH: &str = "libdxcompiler.dylib";
+
+        Self::load_from(LIB_PATH)
     }
 
-    pub(crate) fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>> {
-        Ok(unsafe { self.dxc_lib.get(b"DxcCreateInstance\0")? })
+    /// Load DirectXShaderCompiler library at `path`
+    ///
+    /// # Safety
+    /// `dlopen`ing native libraries is inherently unsafe. The safety guidelines
+    /// for [`Library::new()`] and [`Library::get()`] apply here.
+    #[cfg(feature = "loaded")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "loaded")))]
+    pub unsafe fn load_from(path: impl AsRef<OsStr>) -> Result<Self> {
+        use std::path::Path;
+        let dxc_lib = Library::new(&path).map_err(|e| HassleError::LoadLibraryError {
+            filename: Path::new(&path).to_path_buf(),
+            inner: e,
+        })?;
+
+        let dxc_create_instance = dxc_lib.get(b"DxcCreateInstance\0")?;
+
+        Ok(Self {
+            dxc_create_instance: *dxc_create_instance,
+            _dxc_lib: Some(dxc_lib),
+        })
+    }
+
+    /// Load entry point from DirectXShaderCompiler linked at compile time
+    ///
+    /// Compared to [`load()`][Self::load()], this is infallible, but requires that the build
+    /// environment have DXC (e.g. via the Vulkan SDK, or Arch-Linux's [`directx-shader-compiler`]),
+    /// and prevents the resulting binary from starting in environments that do not have the library
+    /// available.
+    ///
+    /// [`directx-shader-compiler`]: https://archlinux.org/packages/extra/x86_64/directx-shader-compiler/
+    #[cfg(feature = "linked")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "linked")))]
+    pub fn linked() -> Self {
+        Self {
+            dxc_create_instance: DxcCreateInstance,
+            #[cfg(feature = "loaded")]
+            _dxc_lib: None,
+        }
+    }
+
+    /// Returns the linked library if "linked" is enabled, the loaded library otherwise.
+    ///
+    /// The linked library is favoured as that will always be available
+    ///
+    /// # Safety
+    /// `dlopen`ing native libraries is inherently unsafe. The safety guidelines
+    /// for [`Library::new()`] and [`Library::get()`] apply here.
+    pub unsafe fn linked_or_load() -> Result<Self> {
+        #[cfg(feature = "linked")]
+        return Ok(Self::linked());
+        #[cfg(all(feature = "loaded", not(feature = "linked")))]
+        return Self::load();
     }
 
     pub fn create_compiler(&self) -> Result<DxcCompiler> {
         let mut compiler: ComPtr<IDxcCompiler2> = ComPtr::new();
 
-        self.get_dxc_create_instance()?(
-            &CLSID_DxcCompiler,
-            &IID_IDxcCompiler2,
-            compiler.as_mut_ptr(),
-        )
+        unsafe {
+            (self.dxc_create_instance)(
+                &CLSID_DxcCompiler,
+                &IID_IDxcCompiler2,
+                compiler.as_mut_ptr(),
+            )
+        }
         .result()?;
         Ok(DxcCompiler::new(compiler, self.create_library()?))
     }
@@ -521,19 +565,23 @@ impl Dxc {
     pub fn create_library(&self) -> Result<DxcLibrary> {
         let mut library: ComPtr<IDxcLibrary> = ComPtr::new();
 
-        self.get_dxc_create_instance()?(&CLSID_DxcLibrary, &IID_IDxcLibrary, library.as_mut_ptr())
-            .result()?;
+        unsafe {
+            (self.dxc_create_instance)(&CLSID_DxcLibrary, &IID_IDxcLibrary, library.as_mut_ptr())
+        }
+        .result()?;
         Ok(DxcLibrary::new(library))
     }
 
     pub fn create_reflector(&self) -> Result<DxcReflector> {
         let mut reflector: ComPtr<IDxcContainerReflection> = ComPtr::new();
 
-        self.get_dxc_create_instance()?(
-            &CLSID_DxcContainerReflection,
-            &IID_IDxcContainerReflection,
-            reflector.as_mut_ptr(),
-        )
+        unsafe {
+            (self.dxc_create_instance)(
+                &CLSID_DxcContainerReflection,
+                &IID_IDxcContainerReflection,
+                reflector.as_mut_ptr(),
+            )
+        }
         .result()?;
         Ok(DxcReflector::new(reflector))
     }
@@ -644,54 +692,63 @@ impl DxcReflector {
     }
 }
 
-#[derive(Debug)]
 pub struct Dxil {
-    dxil_lib: Library,
+    pub(crate) dxc_create_instance: DxcCreateInstanceProc,
+    #[cfg(feature = "loaded")]
+    _dxc_lib: Option<Library>,
 }
 
 impl Dxil {
-    #[cfg(not(windows))]
-    pub fn new(_: Option<PathBuf>) -> Result<Self> {
-        Err(HassleError::WindowsOnly(
+    /// Load `dxil.dll`
+    ///
+    /// # Safety
+    /// `dlopen`ing native libraries is inherently unsafe. The safety guidelines
+    /// for [`Library::new()`] and [`Library::get()`] apply here.
+    ///
+    /// [`directx-shader-compiler`]: https://archlinux.org/packages/extra/x86_64/directx-shader-compiler/
+    #[cfg(feature = "loaded")]
+    pub unsafe fn load() -> Result<Self> {
+        #[cfg(not(windows))]
+        return Err(HassleError::WindowsOnly(
             "DXIL Signing is only supported on Windows".to_string(),
-        ))
+        ));
+
+        #[cfg(windows)]
+        Self::load_from("dxil.dll")
     }
 
-    /// `dxil_path` can point to a library directly or the directory containing the library,
-    /// in which case `dxil.dll` is appended.
-    #[cfg(windows)]
-    pub fn new(lib_path: Option<PathBuf>) -> Result<Self> {
-        let lib_path = if let Some(lib_path) = lib_path {
-            if lib_path.is_file() {
-                lib_path
-            } else {
-                lib_path.join("dxil.dll")
-            }
-        } else {
-            PathBuf::from("dxil.dll")
-        };
+    /// Load DXIL library at `path`
+    ///
+    /// # Safety
+    /// `dlopen`ing native libraries is inherently unsafe. The safety guidelines
+    /// for [`Library::new()`] and [`Library::get()`] apply here.
+    #[cfg(feature = "loaded")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "loaded")))]
+    pub unsafe fn load_from(path: impl AsRef<OsStr>) -> Result<Self> {
+        use std::path::Path;
+        let dxc_lib = Library::new(&path).map_err(|e| HassleError::LoadLibraryError {
+            filename: Path::new(&path).to_path_buf(),
+            inner: e,
+        })?;
 
-        let dxil_lib =
-            unsafe { Library::new(&lib_path) }.map_err(|e| HassleError::LoadLibraryError {
-                filename: lib_path.to_owned(),
-                inner: e,
-            })?;
+        let dxc_create_instance = dxc_lib.get(b"DxcCreateInstance\0")?;
 
-        Ok(Self { dxil_lib })
-    }
-
-    fn get_dxc_create_instance(&self) -> Result<Symbol<DxcCreateInstanceProc>> {
-        Ok(unsafe { self.dxil_lib.get(b"DxcCreateInstance\0")? })
+        Ok(Self {
+            dxc_create_instance: *dxc_create_instance,
+            _dxc_lib: Some(dxc_lib),
+        })
     }
 
     pub fn create_validator(&self) -> Result<DxcValidator> {
         let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
 
-        self.get_dxc_create_instance()?(
-            &CLSID_DxcValidator,
-            &IID_IDxcValidator,
-            validator.as_mut_ptr(),
-        )
+        unsafe {
+            (self.dxc_create_instance)(
+                &CLSID_DxcValidator,
+                &IID_IDxcValidator,
+                validator.as_mut_ptr(),
+            )
+        }
         .result()?;
         Ok(DxcValidator::new(validator))
     }

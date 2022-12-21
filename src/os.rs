@@ -59,7 +59,7 @@ mod os_defs {
     /// # Safety
     /// `p` must be a valid pointer to a [`BSTR`] with size-prefix in the `4` leading bytes, or null.
     ///
-    /// https://docs.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr#remarks
+    /// <https://docs.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr#remarks>
     pub unsafe fn SysStringByteLen(p: BSTR) -> UINT {
         if p.is_null() {
             0
@@ -74,7 +74,7 @@ mod os_defs {
     /// # Safety
     /// `p` must be a valid pointer to a [`BSTR`] with size-prefix in the `4` leading bytes, or null.
     ///
-    /// https://docs.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr#remarks
+    /// <https://docs.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr#remarks>
     pub unsafe fn SysStringLen(p: BSTR) -> UINT {
         SysStringByteLen(p) / std::mem::size_of::<OLECHAR>() as UINT
     }

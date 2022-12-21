@@ -5,6 +5,7 @@
     clippy::too_many_arguments, // We're wrapping and API outside of our control
     clippy::uninlined_format_args, // Unfavourable format; implies unneeded MSRV bump
 )]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! # Hassle
 //!
@@ -38,6 +39,9 @@
 //! );
 //! ```
 
+#[cfg(not(any(feature = "linked", feature = "loaded")))]
+compile_error!("Either feature `linked` or `loaded` must be enabled");
+
 pub mod fake_sign;
 pub mod ffi;
 pub mod os;
@@ -47,5 +51,7 @@ pub mod wrapper;
 pub mod intellisense;
 
 pub use crate::ffi::*;
-pub use crate::utils::{compile_hlsl, fake_sign_dxil_in_place, validate_dxil, HassleError, Result};
+#[cfg(feature = "loaded")]
+pub use crate::utils::validate_dxil;
+pub use crate::utils::{compile_hlsl, fake_sign_dxil_in_place, HassleError, Result};
 pub use crate::wrapper::*;

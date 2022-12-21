@@ -6,14 +6,22 @@ use com_rs::{com_interface, iid, IUnknown, IID};
 use std::ffi::c_void;
 
 pub type DxcCreateInstanceProc =
-    extern "system" fn(rclsid: &IID, riid: &IID, ppv: *mut *mut c_void) -> HRESULT;
+    unsafe extern "system" fn(rclsid: &IID, riid: &IID, ppv: *mut *mut c_void) -> HRESULT;
 
-pub type DxcCreateInstanceProc2 = extern "system" fn(
+pub type DxcCreateInstanceProc2 = unsafe extern "system" fn(
     malloc: /* IMalloc */ *const c_void,
     rclsid: &IID,
     riid: &IID,
     ppv: *mut *mut c_void,
 ) -> HRESULT;
+
+#[cfg(feature = "linked")]
+#[link(name = "dxcompiler")]
+extern "system" {
+    #[allow(non_snake_case)]
+    // Must match DxcCreateInstanceProc
+    pub(crate) fn DxcCreateInstance(rclsid: &IID, riid: &IID, ppv: *mut *mut c_void) -> HRESULT;
+}
 
 pub const DFCC_DXIL: u32 = u32::from_le_bytes([b'D', b'X', b'I', b'L']);
 

@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use crate::os::{SysFreeString, SysStringLen, BSTR, HRESULT, LPCSTR, LPCWSTR, WCHAR};
 use crate::wrapper::*;
 use thiserror::Error;
@@ -64,12 +62,14 @@ pub enum HassleError {
     CompileError(String),
     #[error("Validation error: {0}")]
     ValidationError(String),
+    #[cfg(feature = "loaded")]
     #[error("Failed to load library {filename:?}: {inner:?}")]
     LoadLibraryError {
-        filename: PathBuf,
+        filename: std::path::PathBuf,
         #[source]
         inner: libloading::Error,
     },
+    #[cfg(feature = "loaded")]
     #[error("LibLoading error: {0:?}")]
     LibLoadingError(#[from] libloading::Error),
     #[error("Windows only")]
@@ -119,7 +119,7 @@ pub fn compile_hlsl(
     args: &[&str],
     defines: &[(&str, Option<&str>)],
 ) -> Result<Vec<u8>> {
-    let dxc = Dxc::new(None)?;
+    let dxc = unsafe { Dxc::linked_or_load()? };
 
     let compiler = dxc.create_compiler()?;
     let library = dxc.create_library()?;
@@ -155,10 +155,11 @@ pub fn compile_hlsl(
 /// this function expects `dxcompiler.dll` and `dxil.dll` to be available in the current
 /// execution environment.
 ///
-/// `dxil.dll` is only available on Windows.
+/// `dxil.dll` is only available on Windows, and can only be loaded.
+#[cfg(feature = "loaded")]
 pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
-    let dxc = Dxc::new(None)?;
-    let dxil = Dxil::new(None)?;
+    let dxc = unsafe { Dxc::linked_or_load() }?;
+    let dxil = unsafe { Dxil::load() }?;
 
     let validator = dxil.create_validator()?;
     let library = dxc.create_library()?;
