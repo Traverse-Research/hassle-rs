@@ -15,6 +15,12 @@ pub type DxcCreateInstanceProc2 = extern "system" fn(
     ppv: *mut *mut c_void,
 ) -> HRESULT;
 
+#[link(name = "dxcompiler")]
+extern "system" {
+    #[allow(non_snake_case)]
+    pub(crate) fn DxcCreateInstance(rclsid: &IID, riid: &IID, ppv: *mut *mut c_void) -> HRESULT;
+}
+
 pub const DFCC_DXIL: u32 = u32::from_le_bytes([b'D', b'X', b'I', b'L']);
 
 iid!(pub IID_IDxcBlob = 0x8BA5_FB08, 0x5195, 0x40e2, 0xAC, 0x58, 0x0D, 0x98, 0x9C, 0x3A, 0x01, 0x02);

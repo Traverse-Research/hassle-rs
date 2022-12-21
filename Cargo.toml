@@ -1,4 +1,5 @@
 [package]
+links = "dxcompiler"
 name = "hassle-rs"
 version = "0.10.0"
 authors = ["Traverse-Research <support@traverseresearch.nl>"]

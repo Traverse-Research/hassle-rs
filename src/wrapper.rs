@@ -509,11 +509,13 @@ impl Dxc {
     pub fn create_compiler(&self) -> Result<DxcCompiler> {
         let mut compiler: ComPtr<IDxcCompiler2> = ComPtr::new();
 
-        self.get_dxc_create_instance()?(
-            &CLSID_DxcCompiler,
-            &IID_IDxcCompiler2,
-            compiler.as_mut_ptr(),
-        )
+        unsafe {
+            DxcCreateInstance(
+                &CLSID_DxcCompiler,
+                &IID_IDxcCompiler2,
+                compiler.as_mut_ptr(),
+            )
+        }
         .result()?;
         Ok(DxcCompiler::new(compiler, self.create_library()?))
     }
@@ -521,7 +523,7 @@ impl Dxc {
     pub fn create_library(&self) -> Result<DxcLibrary> {
         let mut library: ComPtr<IDxcLibrary> = ComPtr::new();
 
-        self.get_dxc_create_instance()?(&CLSID_DxcLibrary, &IID_IDxcLibrary, library.as_mut_ptr())
+        unsafe { DxcCreateInstance(&CLSID_DxcLibrary, &IID_IDxcLibrary, library.as_mut_ptr()) }
             .result()?;
         Ok(DxcLibrary::new(library))
     }
@@ -529,11 +531,13 @@ impl Dxc {
     pub fn create_reflector(&self) -> Result<DxcReflector> {
         let mut reflector: ComPtr<IDxcContainerReflection> = ComPtr::new();
 
-        self.get_dxc_create_instance()?(
-            &CLSID_DxcContainerReflection,
-            &IID_IDxcContainerReflection,
-            reflector.as_mut_ptr(),
-        )
+        unsafe {
+            DxcCreateInstance(
+                &CLSID_DxcContainerReflection,
+                &IID_IDxcContainerReflection,
+                reflector.as_mut_ptr(),
+            )
+        }
         .result()?;
         Ok(DxcReflector::new(reflector))
     }
@@ -687,11 +691,13 @@ impl Dxil {
     pub fn create_validator(&self) -> Result<DxcValidator> {
         let mut validator: ComPtr<IDxcValidator> = ComPtr::new();
 
-        self.get_dxc_create_instance()?(
-            &CLSID_DxcValidator,
-            &IID_IDxcValidator,
-            validator.as_mut_ptr(),
-        )
+        unsafe {
+            DxcCreateInstance(
+                &CLSID_DxcValidator,
+                &IID_IDxcValidator,
+                validator.as_mut_ptr(),
+            )
+        }
         .result()?;
         Ok(DxcValidator::new(validator))
     }
