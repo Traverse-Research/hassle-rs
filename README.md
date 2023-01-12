@@ -24,7 +24,7 @@ hassle-rs = "0.9.0"
 
 Then acquire `dxcompiler.dll` on Windows or `libdxcompiler.so` on Linux directly from [AppVeyor](https://ci.appveyor.com/project/antiagainst/directxshadercompiler/branch/master/artifacts), or compile it from source according to [the instructions](https://github.com/microsoft/DirectXShaderCompiler/blob/main/docs/DxcOnUnix.rst#building-dxc) in the [DirectXShaderCompiler](https://github.com/Microsoft/DirectXShaderCompiler) GitHub repository and make sure it's in the executable environment. See our [support table](##Supported-DXC-versions-on-non-Windows) below for specific compatibility notes on non-Windows OSes.
 
-DxcValidator also requires `dxil.dll` which can be grabbed from any recent Windows 10 SDK flight.
+DxcValidator also requires `dxil.dll` which can be grabbed from any recent DXC release: https://github.com/microsoft/DirectXShaderCompiler/releases/latest
 More info: https://www.wihlidal.com/blog/pipeline/2018-09-16-dxil-signing-post-compile/
 
 ## Supported DXC versions on non-Windows
