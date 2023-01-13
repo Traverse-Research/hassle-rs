@@ -37,7 +37,7 @@ bitflags! {
 
 bitflags! {
     pub struct DxcTypeKind : u32 {
-        const Invalid = 0; // Reprents an invalid type (e.g., where no type is available).
+        const Invalid = 0; // Represents an invalid type (e.g., where no type is available).
         const Unexposed = 1; // A type whose specific kind is not exposed via this interface.
         // Builtin types
         const Void = 2;
@@ -466,7 +466,7 @@ com_interface! {
         vtable: IDxcUnsavedFileVtbl,
         fn get_file_name(file_name: *mut LPSTR) -> HRESULT;
         fn get_contents(contents: *mut LPSTR) -> HRESULT;
-        fn get_length(lenth : *mut u32) -> HRESULT;
+        fn get_length(length: *mut u32) -> HRESULT;
     }
 }
 
@@ -476,7 +476,7 @@ com_interface! {
         iid: IID_IDxcFile,
         vtable: IDxcFileVtbl,
         fn get_name(result: *mut LPSTR) -> HRESULT;
-        fn is_equal_to(other : *const IDxcFile, result: *mut bool) -> HRESULT;
+        fn is_equal_to(other: *const IDxcFile, result: *mut bool) -> HRESULT;
     }
 }
 
@@ -487,14 +487,14 @@ com_interface! {
         vtable: IDxcTranslationUnitVtbl,
         fn get_cursor(cursor: *mut *mut IDxcCursor) -> HRESULT;
         fn tokenize(range: *const IDxcSourceRange, tokens: *mut *mut *mut IDxcToken, token_count: *mut u32) -> HRESULT;
-        fn get_location( file: *mut IDxcFile, line: u32, column: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
-        fn get_num_diagnostics(value : *mut u32) -> HRESULT;
+        fn get_location(file: *mut IDxcFile, line: u32, column: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
+        fn get_num_diagnostics(value: *mut u32) -> HRESULT;
         fn get_diagnostic(index: u32, value: *mut *mut IDxcDiagnostic) -> HRESULT;
-        fn get_file(name : *const u8, result : *mut *mut IDxcFile) -> HRESULT;
-        fn get_file_name(result : *mut LPSTR) -> HRESULT;
-        fn reparse(unsaved_files : *mut *mut IDxcUnsavedFile, num_unsaved_files: u32) -> HRESULT;
-        fn get_cursor_for_location(location: *const IDxcSourceLocation, result : *mut *mut IDxcCursor) -> HRESULT;
-        fn get_location_for_offset(file : *const IDxcFile, offset: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
+        fn get_file(name: *const u8, result: *mut *mut IDxcFile) -> HRESULT;
+        fn get_file_name(result: *mut LPSTR) -> HRESULT;
+        fn reparse(unsaved_files: *mut *mut IDxcUnsavedFile, num_unsaved_files: u32) -> HRESULT;
+        fn get_cursor_for_location(location: *const IDxcSourceLocation, result: *mut *mut IDxcCursor) -> HRESULT;
+        fn get_location_for_offset(file: *const IDxcFile, offset: u32, result: *mut *mut IDxcSourceLocation) -> HRESULT;
         fn get_skipped_ranges(file: *const IDxcFile, result_count: *mut u32, result: *mut *mut *mut IDxcSourceRange) -> HRESULT;
         fn get_diagnostic_details(
             index: u32,  options: DxcDiagnosticDisplayOptions, error_code: *mut u32, error_line: *mut u32, error_column: *mut u32,
