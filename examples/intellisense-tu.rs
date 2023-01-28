@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use hassle_rs::*;
 
 fn main() {
