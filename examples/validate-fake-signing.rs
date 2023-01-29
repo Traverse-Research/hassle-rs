@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 #[repr(C)]
 pub struct MinimalHeader {
     four_cc: u32,
