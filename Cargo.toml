@@ -10,12 +10,7 @@ homepage = "https://github.com/Traverse-Research/hassle-rs"
 repository = "https://github.com/Traverse-Research/hassle-rs"
 keywords = ["shader", "pipeline", "hlsl", "dxc", "intellisense"]
 categories = ["rendering", "rendering::graphics-api"]
-include = [
-    "src/*.rs",
-    "src/intellisense/*.rs",
-    "src/fake_sign/*.rs",
-    "Cargo.toml",
-]
+include = ["src", "LICENSE"]
 documentation = "https://docs.rs/hassle-rs"
 
 [badges]
