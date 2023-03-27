@@ -22,24 +22,9 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-          components: rustfmt, clippy
       - name: Cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --workspace --all-targets
+        run: cargo check --workspace --all-targets
       - name: Cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
       - name: Cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
