@@ -16,12 +16,12 @@ documentation = "https://docs.rs/hassle-rs"
 [dependencies]
 bitflags = "2"
 com = { version = "0.6", features = ["production"] }
-libloading = "0.7.0"
-thiserror = "1.0"
-widestring = "1.0.1"
+libloading = "0.7"
+thiserror = "1.0.2"
+widestring = "1"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3.9", features = ["wtypes", "oleauto", "combaseapi"] }
+winapi = { version = "0.3", features = ["wtypes", "oleauto", "combaseapi"] }
 
 [target.'cfg(not(windows))'.dependencies]
 libc = "0.2"
