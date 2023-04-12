@@ -2,17 +2,24 @@ use crate::os::{BSTR, HRESULT, LPCSTR, LPSTR};
 use bitflags::bitflags;
 use com::{interfaces, interfaces::IUnknown, AbiTransferable, IID};
 
+/// Manual implementation of:
+/// ```ignore
+/// unsafe impl<T: bitflags::BitFlags> AbiTransferable for T {
+///     type Abi = T::Bits;
+///     // ...
+/// }
+/// ```
 macro_rules! abi_transferable {
     ($t:ident) => {
         unsafe impl AbiTransferable for $t {
             type Abi = u32;
 
             fn get_abi(&self) -> Self::Abi {
-                self.bits
+                self.bits()
             }
 
             fn set_abi(&mut self) -> *mut Self::Abi {
-                &mut self.bits
+                &mut self.bits()
             }
         }
     };
