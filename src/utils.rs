@@ -12,24 +12,20 @@ pub(crate) fn to_wide(msg: &str) -> Vec<WCHAR> {
 }
 
 pub(crate) fn from_wide(wide: LPCWSTR) -> String {
-    unsafe {
-        widestring::WideCStr::from_ptr_str(wide)
-            .to_string()
-            .expect("widestring decode failed")
-    }
+    unsafe { widestring::WideCStr::from_ptr_str(wide) }
+        .to_string()
+        .expect("widestring decode failed")
 }
 
 pub(crate) fn from_bstr(string: BSTR) -> String {
-    unsafe {
-        let len = SysStringLen(string) as usize;
+    let len = unsafe { SysStringLen(string) } as usize;
 
-        let result = widestring::WideStr::from_ptr(string, len)
-            .to_string()
-            .expect("widestring decode failed");
+    let result = unsafe { widestring::WideStr::from_ptr(string, len) }
+        .to_string()
+        .expect("widestring decode failed");
 
-        SysFreeString(string);
-        result
-    }
+    unsafe { SysFreeString(string) };
+    result
 }
 
 pub(crate) fn from_lpstr(string: LPCSTR) -> String {
