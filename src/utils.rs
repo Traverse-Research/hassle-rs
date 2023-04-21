@@ -1,3 +1,4 @@
+use std::ffi::CStr;
 use std::path::PathBuf;
 
 use crate::os::{SysFreeString, SysStringLen, BSTR, HRESULT, LPCSTR, LPCWSTR, WCHAR};
@@ -32,12 +33,10 @@ pub(crate) fn from_bstr(string: BSTR) -> String {
 }
 
 pub(crate) fn from_lpstr(string: LPCSTR) -> String {
-    unsafe {
-        let len = (0..).take_while(|&i| *string.offset(i) != 0).count();
-
-        let slice: &[u8] = std::slice::from_raw_parts(string.cast(), len);
-        std::str::from_utf8(slice).map(|s| s.to_owned()).unwrap()
-    }
+    unsafe { CStr::from_ptr(string) }
+        .to_str()
+        .unwrap()
+        .to_owned()
 }
 
 struct DefaultIncludeHandler {}
