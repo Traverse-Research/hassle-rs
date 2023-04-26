@@ -1,17 +1,18 @@
+use com::Interface;
+
 use crate::intellisense::ffi::*;
 use crate::os::{CoTaskMemFree, BSTR, LPSTR};
 use crate::utils::Result;
 use crate::wrapper::Dxc;
-use com_rs::ComPtr;
 use std::ffi::CString;
+use std::mem::ManuallyDrop;
 
-#[derive(Debug)]
 pub struct DxcIntellisense {
-    inner: ComPtr<IDxcIntelliSense>,
+    inner: IDxcIntelliSense,
 }
 
 impl DxcIntellisense {
-    fn new(inner: ComPtr<IDxcIntelliSense>) -> Self {
+    fn new(inner: IDxcIntelliSense) -> Self {
         Self { inner }
     }
 
@@ -22,36 +23,35 @@ impl DxcIntellisense {
     }
 
     pub fn create_index(&self) -> Result<DxcIndex> {
-        let mut index: ComPtr<IDxcIndex> = ComPtr::new();
-        unsafe { self.inner.create_index(index.as_mut_ptr()) }.result()?;
-        Ok(DxcIndex::new(index))
+        let mut index = None;
+        unsafe { self.inner.create_index(&mut index) }.result()?;
+        Ok(DxcIndex::new(index.unwrap()))
     }
 
     pub fn create_unsaved_file(&self, file_name: &str, contents: &str) -> Result<DxcUnsavedFile> {
         let c_file_name = CString::new(file_name).expect("Failed to convert `file_name`");
         let c_contents = CString::new(contents).expect("Failed to convert `contents`");
 
-        let mut file: ComPtr<IDxcUnsavedFile> = ComPtr::new();
+        let mut file = None;
         unsafe {
             self.inner.create_unsaved_file(
                 c_file_name.as_ptr(),
                 c_contents.as_ptr(),
                 contents.len() as u32,
-                file.as_mut_ptr(),
+                &mut file,
             )
         }
         .result()?;
-        Ok(DxcUnsavedFile::new(file))
+        Ok(DxcUnsavedFile::new(file.unwrap()))
     }
 }
 
-#[derive(Debug)]
 pub struct DxcIndex {
-    inner: ComPtr<IDxcIndex>,
+    inner: IDxcIndex,
 }
 
 impl DxcIndex {
-    fn new(inner: ComPtr<IDxcIndex>) -> Self {
+    fn new(inner: IDxcIndex) -> Self {
         Self { inner }
     }
 }
@@ -67,11 +67,10 @@ impl DxcIndex {
         let c_source_filename =
             CString::new(source_filename).expect("Failed to convert `source_filename`");
 
-        let mut uf = vec![];
-
-        for unsaved_file in unsaved_files {
-            uf.push(unsaved_file.inner.as_ptr());
-        }
+        let uf = unsaved_files
+            .iter()
+            .map(|unsaved_file| unsaved_file.inner.clone())
+            .collect::<Vec<_>>();
 
         let mut c_args: Vec<CString> = vec![];
         let mut cliargs = vec![];
@@ -82,7 +81,7 @@ impl DxcIndex {
             c_args.push(c_arg);
         }
 
-        let mut tu: ComPtr<IDxcTranslationUnit> = ComPtr::new();
+        let mut tu = None;
 
         unsafe {
             self.inner.parse_translation_unit(
@@ -92,17 +91,16 @@ impl DxcIndex {
                 uf.as_ptr(),
                 uf.len() as u32,
                 options,
-                tu.as_mut_ptr(),
+                &mut tu,
             )
         }
         .result()?;
-        Ok(DxcTranslationUnit::new(tu))
+        Ok(DxcTranslationUnit::new(tu.unwrap()))
     }
 }
 
-#[derive(Debug)]
 pub struct DxcUnsavedFile {
-    inner: ComPtr<IDxcUnsavedFile>,
+    inner: IDxcUnsavedFile,
 }
 
 impl DxcUnsavedFile {
@@ -111,46 +109,44 @@ impl DxcUnsavedFile {
         unsafe { self.inner.get_length(&mut length) }.result_with_success(length)
     }
 
-    fn new(inner: ComPtr<IDxcUnsavedFile>) -> Self {
+    fn new(inner: IDxcUnsavedFile) -> Self {
         DxcUnsavedFile { inner }
     }
 }
 
-#[derive(Debug)]
 pub struct DxcTranslationUnit {
-    inner: ComPtr<IDxcTranslationUnit>,
+    inner: IDxcTranslationUnit,
 }
 
 impl DxcTranslationUnit {
-    fn new(inner: ComPtr<IDxcTranslationUnit>) -> Self {
+    fn new(inner: IDxcTranslationUnit) -> Self {
         DxcTranslationUnit { inner }
     }
 
     pub fn get_file(&self, name: &[u8]) -> Result<DxcFile> {
-        let mut file: ComPtr<IDxcFile> = ComPtr::new();
-        unsafe { self.inner.get_file(name.as_ptr(), file.as_mut_ptr()) }.result()?;
-        Ok(DxcFile::new(file))
+        let mut file = None;
+        unsafe { self.inner.get_file(name.as_ptr(), &mut file) }.result()?;
+        Ok(DxcFile::new(file.unwrap()))
     }
 
     pub fn get_cursor(&self) -> Result<DxcCursor> {
-        let mut cursor: ComPtr<IDxcCursor> = ComPtr::new();
-        unsafe { self.inner.get_cursor(cursor.as_mut_ptr()) }.result()?;
-        Ok(DxcCursor::new(cursor))
+        let mut cursor = None;
+        unsafe { self.inner.get_cursor(&mut cursor) }.result()?;
+        Ok(DxcCursor::new(cursor.unwrap()))
     }
 }
 
-#[derive(Debug)]
 pub struct DxcCursor {
-    inner: ComPtr<IDxcCursor>,
+    inner: IDxcCursor,
 }
 
 impl DxcCursor {
-    fn new(inner: ComPtr<IDxcCursor>) -> Self {
+    fn new(inner: IDxcCursor) -> Self {
         DxcCursor { inner }
     }
 
     pub fn get_children(&self, skip: u32, max_count: u32) -> Result<Vec<DxcCursor>> {
-        let mut result: *mut *mut IDxcCursor = std::ptr::null_mut();
+        let mut result: *mut IDxcCursor = std::ptr::null_mut();
         let mut result_length: u32 = 0;
 
         unsafe {
@@ -160,14 +156,17 @@ impl DxcCursor {
         .result()?;
 
         // get_children allocates a buffer to pass the result in.
-        let child_cursors = unsafe { std::slice::from_raw_parts(result, result_length as usize) }
-            .iter()
-            .map(|&ptr| {
-                let mut childcursor = ComPtr::<IDxcCursor>::new();
-                *childcursor.as_mut_ptr() = ptr;
-                DxcCursor::new(childcursor)
-            })
-            .collect::<Vec<_>>();
+        // Create a vector so that we get ownership of the `IDxcCursor(s) (received from get_children), instead of
+        // having to clone (copy is intentionally not implemented) them and leaving unowned COM references alive.
+        // It is wrapped in ManuallyDrop to free the underlying pointer by hand using CoTaskMemFree.
+        // TODO: switch to Vec::from_raw_parts_in with custom deallocator when this is stabilized
+        let child_cursors = ManuallyDrop::new(unsafe {
+            Vec::from_raw_parts(result, result_length as usize, result_length as usize)
+        })
+        .drain(..)
+        .map(DxcCursor::new)
+        .collect::<Vec<_>>();
+
         unsafe { CoTaskMemFree(result.cast()) };
         Ok(child_cursors)
     }
@@ -187,15 +186,15 @@ impl DxcCursor {
     }
 
     pub fn get_extent(&self) -> Result<DxcSourceRange> {
-        let mut range: ComPtr<IDxcSourceRange> = ComPtr::new();
-        unsafe { self.inner.get_extent(range.as_mut_ptr()) }.result()?;
-        Ok(DxcSourceRange::new(range))
+        let mut range = None;
+        unsafe { self.inner.get_extent(&mut range) }.result()?;
+        Ok(DxcSourceRange::new(range.unwrap()))
     }
 
     pub fn get_location(&self) -> Result<DxcSourceLocation> {
-        let mut location: ComPtr<IDxcSourceLocation> = ComPtr::new();
-        unsafe { self.inner.get_location(location.as_mut_ptr()) }.result()?;
-        Ok(DxcSourceLocation::new(location))
+        let mut location = None;
+        unsafe { self.inner.get_location(&mut location) }.result()?;
+        Ok(DxcSourceLocation::new(location.unwrap()))
     }
 
     pub fn get_display_name(&self) -> Result<String> {
@@ -232,21 +231,21 @@ impl DxcCursor {
     }
 
     pub fn get_semantic_parent(&self) -> Result<DxcCursor> {
-        let mut inner = ComPtr::<IDxcCursor>::new();
-        unsafe { self.inner.get_semantic_parent(inner.as_mut_ptr()) }.result()?;
-        Ok(DxcCursor::new(inner))
+        let mut inner = None;
+        unsafe { self.inner.get_semantic_parent(&mut inner) }.result()?;
+        Ok(DxcCursor::new(inner.unwrap()))
     }
 
     pub fn get_lexical_parent(&self) -> Result<DxcCursor> {
-        let mut inner = ComPtr::<IDxcCursor>::new();
-        unsafe { self.inner.get_lexical_parent(inner.as_mut_ptr()) }.result()?;
-        Ok(DxcCursor::new(inner))
+        let mut inner = None;
+        unsafe { self.inner.get_lexical_parent(&mut inner) }.result()?;
+        Ok(DxcCursor::new(inner.unwrap()))
     }
 
     pub fn get_cursor_type(&self) -> Result<DxcType> {
-        let mut inner = ComPtr::<IDxcType>::new();
-        unsafe { self.inner.get_cursor_type(inner.as_mut_ptr()) }.result()?;
-        Ok(DxcType::new(inner))
+        let mut inner = None;
+        unsafe { self.inner.get_cursor_type(&mut inner) }.result()?;
+        Ok(DxcType::new(inner.unwrap()))
     }
 
     pub fn get_num_arguments(&self) -> Result<i32> {
@@ -256,21 +255,21 @@ impl DxcCursor {
     }
 
     pub fn get_argument_at(&self, index: i32) -> Result<DxcCursor> {
-        let mut inner = ComPtr::<IDxcCursor>::new();
-        unsafe { self.inner.get_argument_at(index, inner.as_mut_ptr()) }.result()?;
-        Ok(DxcCursor::new(inner))
+        let mut inner = None;
+        unsafe { self.inner.get_argument_at(index, &mut inner) }.result()?;
+        Ok(DxcCursor::new(inner.unwrap()))
     }
 
     pub fn get_referenced_cursor(&self) -> Result<DxcCursor> {
-        let mut inner = ComPtr::<IDxcCursor>::new();
-        unsafe { self.inner.get_referenced_cursor(inner.as_mut_ptr()) }.result()?;
-        Ok(DxcCursor::new(inner))
+        let mut inner = None;
+        unsafe { self.inner.get_referenced_cursor(&mut inner) }.result()?;
+        Ok(DxcCursor::new(inner.unwrap()))
     }
 
     pub fn get_definition_cursor(&self) -> Result<DxcCursor> {
-        let mut inner = ComPtr::<IDxcCursor>::new();
-        unsafe { self.inner.get_definition_cursor(inner.as_mut_ptr()) }.result()?;
-        Ok(DxcCursor::new(inner))
+        let mut inner = None;
+        unsafe { self.inner.get_definition_cursor(&mut inner) }.result()?;
+        Ok(DxcCursor::new(inner.unwrap()))
     }
 
     pub fn find_references_in_file(
@@ -279,12 +278,12 @@ impl DxcCursor {
         skip: u32,
         top: u32,
     ) -> Result<Vec<DxcCursor>> {
-        let mut result: *mut *mut IDxcCursor = std::ptr::null_mut();
+        let mut result: *mut IDxcCursor = std::ptr::null_mut();
         let mut result_length: u32 = 0;
 
         unsafe {
             self.inner.find_references_in_file(
-                file.inner.as_ptr(),
+                &file.inner,
                 skip,
                 top,
                 &mut result_length,
@@ -294,14 +293,17 @@ impl DxcCursor {
         .result()?;
 
         // find_references_in_file allocates a buffer to pass the result in.
-        let child_cursors = unsafe { std::slice::from_raw_parts(result, result_length as usize) }
-            .iter()
-            .map(|&ptr| {
-                let mut childcursor = ComPtr::<IDxcCursor>::new();
-                *childcursor.as_mut_ptr() = ptr;
-                DxcCursor::new(childcursor)
-            })
-            .collect::<Vec<_>>();
+        // Create a vector so that we get ownership of the `IDxcCursor(s) (received from find_references_in_file), instead
+        // of having to clone (copy is intentionally not implemented) them and leaving unowned COM references alive.
+        // It is wrapped in ManuallyDrop to free the underlying pointer by hand using CoTaskMemFree.
+        // TODO: switch to Vec::from_raw_parts_in with custom deallocator when this is stabilized
+        let child_cursors = ManuallyDrop::new(unsafe {
+            Vec::from_raw_parts(result, result_length as usize, result_length as usize)
+        })
+        .drain(..)
+        .map(DxcCursor::new)
+        .collect::<Vec<_>>();
+
         unsafe { CoTaskMemFree(result.cast()) };
         Ok(child_cursors)
     }
@@ -314,8 +316,7 @@ impl DxcCursor {
 
     pub fn is_equal_to(&self, other: &DxcCursor) -> Result<bool> {
         let mut result: bool = false;
-        unsafe { self.inner.is_equal_to(other.inner.as_ptr(), &mut result) }
-            .result_with_success(result)
+        unsafe { self.inner.is_equal_to(&other.inner, &mut result) }.result_with_success(result)
     }
 
     pub fn is_null(&mut self) -> Result<bool> {
@@ -329,13 +330,9 @@ impl DxcCursor {
     }
 
     pub fn get_snapped_child(&self, location: &DxcSourceLocation) -> Result<DxcCursor> {
-        let mut inner = ComPtr::<IDxcCursor>::new();
-        unsafe {
-            self.inner
-                .get_snapped_child(location.inner.as_ptr(), inner.as_mut_ptr())
-        }
-        .result()?;
-        Ok(DxcCursor::new(inner))
+        let mut inner = None;
+        unsafe { self.inner.get_snapped_child(&location.inner, &mut inner) }.result()?;
+        Ok(DxcCursor::new(inner.unwrap()))
     }
 
     pub fn get_source<'a>(&self, source: &'a str) -> Result<&'a str> {
@@ -352,13 +349,12 @@ impl DxcCursor {
     }
 }
 
-#[derive(Debug)]
 pub struct DxcType {
-    inner: ComPtr<IDxcType>,
+    inner: IDxcType,
 }
 
 impl DxcType {
-    fn new(inner: ComPtr<IDxcType>) -> Self {
+    fn new(inner: IDxcType) -> Self {
         DxcType { inner }
     }
 
@@ -369,13 +365,20 @@ impl DxcType {
     }
 }
 
-#[derive(Debug)]
 pub struct DxcSourceLocation {
-    inner: ComPtr<IDxcSourceLocation>,
+    inner: IDxcSourceLocation,
+}
+
+impl std::fmt::Debug for DxcSourceLocation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DxcSourceLocation")
+            .field("inner", &self.inner)
+            .finish()
+    }
 }
 
 impl DxcSourceLocation {
-    fn new(inner: ComPtr<IDxcSourceLocation>) -> Self {
+    fn new(inner: IDxcSourceLocation) -> Self {
         DxcSourceLocation { inner }
     }
 }
@@ -386,9 +389,16 @@ pub struct DxcSourceOffsets {
     pub end_offset: u32,
 }
 
-#[derive(Debug)]
 pub struct DxcSourceRange {
-    inner: ComPtr<IDxcSourceRange>,
+    inner: IDxcSourceRange,
+}
+
+impl std::fmt::Debug for DxcSourceRange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DxcSourceRange")
+            .field("inner", &self.inner)
+            .finish()
+    }
 }
 
 impl DxcSourceRange {
@@ -405,32 +415,31 @@ impl DxcSourceRange {
 }
 
 impl DxcSourceRange {
-    fn new(inner: ComPtr<IDxcSourceRange>) -> Self {
+    fn new(inner: IDxcSourceRange) -> Self {
         DxcSourceRange { inner }
     }
 }
 
-#[derive(Debug)]
 pub struct DxcFile {
-    inner: ComPtr<IDxcFile>,
+    inner: IDxcFile,
 }
 
 impl DxcFile {
-    fn new(inner: ComPtr<IDxcFile>) -> Self {
+    fn new(inner: IDxcFile) -> Self {
         DxcFile { inner }
     }
 }
 
 impl Dxc {
     pub fn create_intellisense(&self) -> Result<DxcIntellisense> {
-        let mut intellisense: ComPtr<IDxcIntelliSense> = ComPtr::new();
+        let mut intellisense = None;
 
         self.get_dxc_create_instance()?(
             &CLSID_DxcIntelliSense,
-            &IID_IDxcIntelliSense,
-            intellisense.as_mut_ptr(),
+            &IDxcIntelliSense::IID,
+            &mut intellisense,
         )
         .result()?;
-        Ok(DxcIntellisense::new(intellisense))
+        Ok(DxcIntellisense::new(intellisense.unwrap()))
     }
 }
