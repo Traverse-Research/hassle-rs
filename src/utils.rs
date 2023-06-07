@@ -1,3 +1,4 @@
+use std::ffi::CStr;
 use std::path::PathBuf;
 
 use crate::os::{SysFreeString, SysStringLen, BSTR, HRESULT, LPCSTR, LPCWSTR, WCHAR};
@@ -11,33 +12,27 @@ pub(crate) fn to_wide(msg: &str) -> Vec<WCHAR> {
 }
 
 pub(crate) fn from_wide(wide: LPCWSTR) -> String {
-    unsafe {
-        widestring::WideCStr::from_ptr_str(wide)
-            .to_string()
-            .expect("widestring decode failed")
-    }
+    unsafe { widestring::WideCStr::from_ptr_str(wide) }
+        .to_string()
+        .expect("widestring decode failed")
 }
 
 pub(crate) fn from_bstr(string: BSTR) -> String {
-    unsafe {
-        let len = SysStringLen(string) as usize;
+    let len = unsafe { SysStringLen(string) } as usize;
 
-        let result = widestring::WideStr::from_ptr(string, len)
-            .to_string()
-            .expect("widestring decode failed");
+    let result = unsafe { widestring::WideStr::from_ptr(string, len) }
+        .to_string()
+        .expect("widestring decode failed");
 
-        SysFreeString(string);
-        result
-    }
+    unsafe { SysFreeString(string) };
+    result
 }
 
 pub(crate) fn from_lpstr(string: LPCSTR) -> String {
-    unsafe {
-        let len = (0..).take_while(|&i| *string.offset(i) != 0).count();
-
-        let slice: &[u8] = std::slice::from_raw_parts(string.cast(), len);
-        std::str::from_utf8(slice).map(|s| s.to_owned()).unwrap()
-    }
+    unsafe { CStr::from_ptr(string) }
+        .to_str()
+        .unwrap()
+        .to_owned()
 }
 
 struct DefaultIncludeHandler {}

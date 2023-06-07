@@ -2,35 +2,44 @@ use crate::os::{BSTR, HRESULT, LPCSTR, LPSTR};
 use bitflags::bitflags;
 use com::{interfaces, interfaces::IUnknown, AbiTransferable, IID};
 
+/// Manual implementation of:
+/// ```ignore
+/// unsafe impl<T: bitflags::BitFlags> AbiTransferable for T {
+///     type Abi = T::Bits;
+///     // ...
+/// }
+/// ```
 macro_rules! abi_transferable {
     ($t:ident) => {
         unsafe impl AbiTransferable for $t {
             type Abi = u32;
 
             fn get_abi(&self) -> Self::Abi {
-                self.bits
+                self.bits()
             }
 
             fn set_abi(&mut self) -> *mut Self::Abi {
-                &mut self.bits
+                &mut self.bits()
             }
         }
     };
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct DxcGlobalOptions : u32 {
         const NONE = 0x0;
         const THREAD_BACKGROUND_PRIORITY_FOR_INDEXING = 0x1;
         const THREAD_BACKGROUND_PRIORITY_FOR_EDITING = 0x2;
         const THREAD_BACKGROUND_PRIORITY_FOR_ALL
-            = DxcGlobalOptions::THREAD_BACKGROUND_PRIORITY_FOR_INDEXING.bits
-            | DxcGlobalOptions::THREAD_BACKGROUND_PRIORITY_FOR_EDITING.bits;
+            = DxcGlobalOptions::THREAD_BACKGROUND_PRIORITY_FOR_INDEXING.bits()
+            | DxcGlobalOptions::THREAD_BACKGROUND_PRIORITY_FOR_EDITING.bits();
     }
 }
 abi_transferable!(DxcGlobalOptions);
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct DxcDiagnosticSeverity : u32 {
         const IGNORED = 0;
         const NOTE = 1;
@@ -41,6 +50,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct DxcTokenKind : u32 {
         const PUNCTUATION = 0;
         const KEYWORD = 1;
@@ -53,6 +63,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct DxcTypeKind : u32 {
         const Invalid = 0; // Represents an invalid type (e.g., where no type is available).
         const Unexposed = 1; // A type whose specific kind is not exposed via this interface.
@@ -85,8 +96,8 @@ bitflags! {
         const ObjCId = 27;
         const ObjCClass = 28;
         const ObjCSel = 29;
-        const FirstBuiltin = DxcTypeKind::Void.bits;
-        const LastBuiltin = DxcTypeKind::ObjCSel.bits;
+        const FirstBuiltin = DxcTypeKind::Void.bits();
+        const LastBuiltin = DxcTypeKind::ObjCSel.bits();
 
         const Complex = 100;
         const Pointer = 101;
@@ -110,6 +121,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct DxcCursorFormatting : u32 {
         const DEFAULT = 0x0;
         const USE_LANGUAGE_OPTIONS = 0x1;
@@ -121,6 +133,7 @@ bitflags! {
 abi_transferable!(DxcCursorFormatting);
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct DxcTranslationUnitFlags : u32 {
         const NONE = 0x0;
         const DETAILED_PREPROCESSING_RECORD = 0x01;
@@ -137,6 +150,7 @@ bitflags! {
 abi_transferable!(DxcTranslationUnitFlags);
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct DxcDiagnosticDisplayOptions : u32 {
         const DISPLAY_SOURCE_LOCATION = 0x01;
         const DISPLAY_COLUMN = 0x02;
@@ -150,6 +164,7 @@ bitflags! {
 abi_transferable!(DxcDiagnosticDisplayOptions);
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct DxcCursorKindFlags : u32 {
         const NONE = 0;
         const DECLARATION = 0x1;
@@ -165,6 +180,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct DxcCursorKind : u32 {
         const UNEXPOSED_DECL = 1;
         const STRUCT_DECL = 2;
@@ -206,8 +222,8 @@ bitflags! {
         const OBJ_C_DYNAMIC_DECL = 38;
         const CXX_ACCESS_SPECIFIER = 39;
 
-        const FIRST_DECL = DxcCursorKind::UNEXPOSED_DECL.bits;
-        const LAST_DECL = DxcCursorKind::CXX_ACCESS_SPECIFIER.bits;
+        const FIRST_DECL = DxcCursorKind::UNEXPOSED_DECL.bits();
+        const LAST_DECL = DxcCursorKind::CXX_ACCESS_SPECIFIER.bits();
 
         const FIRST_REF = 40;
         const OBJ_C_SUPER_CLASS_REF = 40;
@@ -221,13 +237,13 @@ bitflags! {
         const LABEL_REF = 48;
         const OVERLOADED_DECL_REF = 49;
         const VARIABLE_REF = 50;
-        const LAST_REF = DxcCursorKind::VARIABLE_REF.bits;
+        const LAST_REF = DxcCursorKind::VARIABLE_REF.bits();
         const FIRST_INVALID = 70;
         const INVALID_FILE = 70;
         const NO_DECL_FOUND = 71;
         const NOT_IMPLEMENTED = 72;
         const INVALID_CODE = 73;
-        const LAST_INVALID = DxcCursorKind::INVALID_CODE.bits;
+        const LAST_INVALID = DxcCursorKind::INVALID_CODE.bits();
         const FIRST_EXPR = 100;
         const UNEXPOSED_EXPR = 100;
         const DECL_REF_EXPR = 101;
@@ -276,7 +292,7 @@ bitflags! {
         const LAMBDA_EXPR = 144;
         const OBJ_C_BOOL_LITERAL_EXPR = 145;
         const OBJ_C_SELF_EXPR = 146;
-        const LAST_EXPR = DxcCursorKind::OBJ_C_SELF_EXPR.bits;
+        const LAST_EXPR = DxcCursorKind::OBJ_C_SELF_EXPR.bits();
         const FIRST_STMT = 200;
         const UNEXPOSED_STMT = 200;
         const LABEL_STMT = 201;
@@ -294,7 +310,7 @@ bitflags! {
         const BREAK_STMT = 213;
         const RETURN_STMT = 214;
         const GCC_ASM_STMT = 215;
-        const ASM_STMT = DxcCursorKind::GCC_ASM_STMT.bits;
+        const ASM_STMT = DxcCursorKind::GCC_ASM_STMT.bits();
 
         const OBJ_C_AT_TRY_STMT = 216;
         const OBJ_C_AT_CATCH_STMT = 217;
@@ -337,7 +353,7 @@ bitflags! {
         const OMP_TASKGROUP_DIRECTIVE = 254;
         const OMP_CANCELLATION_POINT_DIRECTIVE = 255;
         const OMP_CANCEL_DIRECTIVE = 256;
-        const LAST_STMT = DxcCursorKind::OMP_CANCEL_DIRECTIVE.bits;
+        const LAST_STMT = DxcCursorKind::OMP_CANCEL_DIRECTIVE.bits();
 
         const TRANSLATION_UNIT = 300;
 
@@ -360,19 +376,19 @@ bitflags! {
         const CUDA_GLOBAL_ATTR = 414;
         const CUDA_HOST_ATTR = 415;
         const CUDA_SHARED_ATTR = 416;
-        const LAST_ATTR = DxcCursorKind::CUDA_SHARED_ATTR.bits;
+        const LAST_ATTR = DxcCursorKind::CUDA_SHARED_ATTR.bits();
 
         const PREPROCESSING_DIRECTIVE = 500;
         const MACRO_DEFINITION = 501;
         const MACRO_EXPANSION = 502;
-        const MACRO_INSTANTIATION = DxcCursorKind::MACRO_EXPANSION.bits;
+        const MACRO_INSTANTIATION = DxcCursorKind::MACRO_EXPANSION.bits();
         const INCLUSION_DIRECTIVE = 503;
-        const FIRST_PREPROCESSING = DxcCursorKind::PREPROCESSING_DIRECTIVE.bits;
-        const LAST_PREPROCESSING = DxcCursorKind::INCLUSION_DIRECTIVE.bits;
+        const FIRST_PREPROCESSING = DxcCursorKind::PREPROCESSING_DIRECTIVE.bits();
+        const LAST_PREPROCESSING = DxcCursorKind::INCLUSION_DIRECTIVE.bits();
 
         const MODULE_IMPORT_DECL = 600;
-        const FIRST_EXTRA_DECL = DxcCursorKind::MODULE_IMPORT_DECL.bits;
-        const LAST_EXTRA_DECL = DxcCursorKind::MODULE_IMPORT_DECL.bits;
+        const FIRST_EXTRA_DECL = DxcCursorKind::MODULE_IMPORT_DECL.bits();
+        const LAST_EXTRA_DECL = DxcCursorKind::MODULE_IMPORT_DECL.bits();
     }
 }
 
