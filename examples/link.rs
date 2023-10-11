@@ -1,5 +1,5 @@
-use hassle_rs::*;
 use hassle_rs::utils::DefaultIncludeHandler;
+use hassle_rs::*;
 use rspirv::binary::Disassemble;
 
 fn main() {
@@ -15,7 +15,9 @@ fn main() {
     };
 
     let exports = compiler.compile(
-        &library.create_blob_with_encoding_from_str(include_str!("exports.hlsl")).unwrap(),
+        &library
+            .create_blob_with_encoding_from_str(include_str!("exports.hlsl"))
+            .unwrap(),
         "exports.hlsl",
         "",
         "lib_6_6",
@@ -24,7 +26,9 @@ fn main() {
         &[],
     );
     let use_exports = compiler.compile(
-        &library.create_blob_with_encoding_from_str(include_str!("use-export.hlsl")).unwrap(),
+        &library
+            .create_blob_with_encoding_from_str(include_str!("use-export.hlsl"))
+            .unwrap(),
         "use-exports.hlsl",
         "",
         "lib_6_6",
@@ -36,11 +40,11 @@ fn main() {
     let exports = exports.ok().unwrap().get_result().unwrap();
     let use_exports = use_exports.ok().unwrap().get_result().unwrap();
 
-
     if spirv {
         let mut exports = rspirv::dr::load_bytes(exports).unwrap();
         let mut use_exports = rspirv::dr::load_bytes(use_exports).unwrap();
-        let linked = spirv_linker::link(&mut [&mut exports, &mut use_exports], &Default::default()).unwrap();
+        let linked =
+            spirv_linker::link(&mut [&mut exports, &mut use_exports], &Default::default()).unwrap();
         println!("{}", exports.disassemble());
         println!("{}", use_exports.disassemble());
         println!("{}", linked.disassemble());
@@ -62,8 +66,11 @@ fn main() {
             // Could very well happen that one needs to recompile or download a dxcompiler.dll
             Err(result) => {
                 let error_blob = result.0.get_error_buffer().unwrap();
-                
-                panic!("Failed to link to SPIR-V: {}", library.get_blob_as_string(&error_blob.into()).unwrap());
+
+                panic!(
+                    "Failed to link to SPIR-V: {}",
+                    library.get_blob_as_string(&error_blob.into()).unwrap()
+                );
             }
         }
     }
