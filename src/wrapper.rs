@@ -218,6 +218,89 @@ impl DxcIncludeHandlerWrapper {
     }
 }
 
+pub struct DxcLinker {
+    inner: IDxcLinker,
+    library: DxcLibrary,
+}
+
+impl DxcLinker {
+    fn new(inner: IDxcLinker, library: DxcLibrary) -> Self {
+        Self { inner, library }
+    }
+
+    pub fn register_library(&self, lib_name: &str, lib: &DxcBlob) -> Result<(), HRESULT> {
+        let lib_name = to_wide(lib_name);
+
+        let hr = unsafe {
+            self.inner
+                .register_library(lib_name.as_ptr(), lib.inner.clone())
+        };
+
+        if hr.is_err() {
+            Err(hr)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn link(
+        &self,
+        entry_point: &str,
+        target_profile: &str,
+        lib_names: &[&str],
+        arguments: &[&str],
+    ) -> Result<DxcOperationResult, (DxcOperationResult, HRESULT)> {
+        let entry_point = to_wide(entry_point);
+        let target_profile = to_wide(target_profile);
+
+        let mut lib_names_wide = vec![];
+        let mut lib_names_ptr = vec![];
+
+        for lib_name in lib_names {
+            lib_names_wide.push(to_wide(lib_name));
+        }
+
+        for wide in &lib_names_wide {
+            lib_names_ptr.push(wide.as_ptr())
+        }
+
+        let mut arguments_wide = vec![];
+        let mut arguments_ptr = vec![];
+        for arg in arguments {
+            arguments_wide.push(to_wide(arg));
+        }
+
+        for wide in &arguments_wide {
+            arguments_ptr.push(wide.as_ptr());
+        }
+
+        let mut result = None;
+
+        let hr = unsafe {
+            self.inner.link(
+                entry_point.as_ptr(),
+                target_profile.as_ptr(),
+                lib_names_ptr.as_ptr(),
+                lib_names_ptr.len() as u32,
+                arguments_ptr.as_ptr(),
+                arguments_ptr.len() as u32,
+                &mut result,
+            )
+        };
+
+        let result = result.unwrap();
+
+        let mut linker_error = 0u32;
+        let status_hr = unsafe { result.get_status(&mut linker_error) };
+
+        if !hr.is_err() && !status_hr.is_err() && linker_error == 0 {
+            Ok(DxcOperationResult::new(result))
+        } else {
+            Err((DxcOperationResult::new(result), hr))
+        }
+    }
+}
+
 pub struct DxcCompiler {
     inner: IDxcCompiler2,
     library: DxcLibrary,
@@ -530,6 +613,17 @@ impl Dxc {
 
     pub(crate) fn get_dxc_create_instance<T>(&self) -> Result<Symbol<DxcCreateInstanceProc<T>>> {
         Ok(unsafe { self.dxc_lib.get(b"DxcCreateInstance\0")? })
+    }
+
+    pub fn create_linker(&self) -> Result<DxcLinker> {
+        let mut linker = None;
+
+        self.get_dxc_create_instance()?(&CLSID_DxcLinker, &IDxcLinker::IID, &mut linker)
+            .result()?;
+        Ok(DxcLinker::new(
+            linker.unwrap(),
+            self.create_library().unwrap(),
+        ))
     }
 
     pub fn create_compiler(&self) -> Result<DxcCompiler> {

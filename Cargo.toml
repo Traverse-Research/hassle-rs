@@ -29,3 +29,4 @@ libc = "0.2"
 
 [dev-dependencies]
 rspirv = "0.11"
+spirv-linker = "0.1"
