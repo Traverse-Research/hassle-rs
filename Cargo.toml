@@ -28,4 +28,4 @@ winapi = { version = "0.3", features = ["wtypes", "oleauto", "combaseapi"] }
 libc = "0.2"
 
 [dev-dependencies]
-rspirv = "0.11"
+rspirv = "0.12"
