@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         # https://github.com/actions/cache/blob/main/examples.md#rust---cargo
         with:
           path: |
