@@ -5,6 +5,328 @@ use crate::os::{HRESULT, LPCWSTR, LPWSTR};
 use com::{interfaces, interfaces::IUnknown, IID};
 use std::ffi::c_void;
 
+pub use crate::ffi_enums::*;
+
+pub fn shader_version_program_type(version: u32) -> D3D12_SHADER_VERSION_TYPE {
+    // see https://learn.microsoft.com/en-us/windows/win32/api/d3d12shader/ns-d3d12shader-d3d12_shader_desc
+    D3D12_SHADER_VERSION_TYPE(((version & 0xFFFF0000u32) >> 16) as i32)
+}
+
+pub fn shader_version_major_version(version: u32) -> u32 {
+    // see https://learn.microsoft.com/en-us/windows/win32/api/d3d12shader/ns-d3d12shader-d3d12_shader_desc
+    (version & 0x000000F0) >> 4
+}
+
+pub fn shader_version_minor_version(version: u32) -> u32 {
+    // see https://learn.microsoft.com/en-us/windows/win32/api/d3d12shader/ns-d3d12shader-d3d12_shader_desc
+    version & 0x0000000F
+}
+
+#[allow(non_camel_case_types, non_snake_case)]
+pub struct D3D12_SIGNATURE_PARAMETER_DESC
+{
+    pub SemanticName: *mut std::ffi::c_char,        // Name of the semantic
+    pub SemanticIndex: u32,                         // Index of the semantic
+    pub Register: u32,                              // Number of member variables
+    pub SystemValueType: D3D_NAME,                  // A predefined system value, or D3D_NAME_UNDEFINED if not applicable
+    pub ComponentType: D3D_REGISTER_COMPONENT_TYPE, // Scalar type (e.g. uint, float, etc.)
+    pub Mask: u8,                                   // Mask to indicate which components of the register
+                                                    // are used (combination of D3D10_COMPONENT_MASK values)
+    pub ReadWriteMask: u8,                          // Mask to indicate whether a given component is
+                                                    // never written (if this is an output signature) or
+                                                    // always read (if this is an input signature).
+                                                    // (combination of D3D_MASK_* values)
+    pub Stream: u32,                                // Stream index
+    pub MinPrecision: D3D_MIN_PRECISION,            // Minimum desired interpolation precision
+}
+
+#[allow(non_camel_case_types, non_snake_case)]
+#[repr(C)]
+pub struct D3D12_SHADER_BUFFER_DESC
+{
+    pub Name: *mut std::ffi::c_char,            // Name of the constant buffer
+    pub Type: D3D_CBUFFER_TYPE,                 // Indicates type of buffer content
+    pub Variables: u32,                         // Number of member variables
+    pub Size: u32,                              // Size of CB (in bytes)
+    pub uFlags: u32,                            // Buffer description flags
+}
+
+#[allow(non_camel_case_types, non_snake_case)]
+pub struct D3D12_SHADER_VARIABLE_DESC
+{
+    pub Name: *mut std::ffi::c_char,            // Name of the variable
+    pub StartOffset: u32,                       // Offset in constant buffer's backing store
+    pub Size: u32,                              // Size of variable (in bytes)
+    pub uFlags: u32,                            // Variable flags
+    pub DefaultValue: *mut std::ffi::c_void,    // Raw pointer to default value
+    pub StartTexture: u32,                      // First texture index (or -1 if no textures used)
+    pub TextureSize: u32,                       // Number of texture slots possibly used.
+    pub StartSampler: u32,                      // First sampler index (or -1 if no textures used)
+    pub SamplerSize: u32,                       // Number of sampler slots possibly used.
+}
+
+#[allow(non_camel_case_types, non_snake_case)]
+#[repr(C)]
+pub struct D3D12_SHADER_TYPE_DESC
+{
+    pub Class: D3D_SHADER_VARIABLE_CLASS,       // Variable class (e.g. object, matrix, etc.)
+    pub Type: D3D_SHADER_VARIABLE_TYPE,         // Variable type (e.g. float, sampler, etc.)
+    pub Rows: u32,                              // Number of rows (for matrices, 1 for other numeric, 0 if not applicable)
+    pub Columns: u32,                           // Number of columns (for vectors & matrices, 1 for other numeric, 0 if not applicable)
+    pub Elements: u32,                          // Number of elements (0 if not an array)
+    pub Members: u32,                           // Number of members (0 if not a structure)
+    pub Offset: u32,                            // Offset from the start of structure (0 if not a structure member)
+    pub Name: *mut std::ffi::c_char,            // Name of type, can be NULL
+}
+
+#[allow(non_camel_case_types, non_snake_case)]
+#[repr(C)]
+pub struct D3D12_SHADER_DESC
+{
+    pub Version: u32,                                           // Shader version
+    pub Creator: *mut std::ffi::c_char,                         // Creator string
+    pub Flags: u32,                                             // Shader compilation/parse flags
+    pub ConstantBuffers: u32,                                   // Number of constant buffers
+    pub BoundResources: u32,                                    // Number of bound resources
+    pub InputParameters: u32,                                   // Number of parameters in the input signature
+    pub OutputParameters: u32,                                  // Number of parameters in the output signature
+    pub InstructionCount: u32,                                  // Number of emitted instructions
+    pub TempRegisterCount: u32,                                 // Number of temporary registers used
+    pub TempArrayCount: u32,                                    // Number of temporary arrays used
+    pub DefCount: u32,                                          // Number of constant defines
+    pub DclCount: u32,                                          // Number of declarations (input + output)
+    pub TextureNormalInstructions: u32,                         // Number of non-categorized texture instructions
+    pub TextureLoadInstructions: u32,                           // Number of texture load instructions
+    pub TextureCompInstructions: u32,                           // Number of texture comparison instructions
+    pub TextureBiasInstructions: u32,                           // Number of texture bias instructions
+    pub TextureGradientInstructions: u32,                       // Number of texture gradient instructions
+    pub FloatInstructionCount: u32,                             // Number of floating point arithmetic instructions used
+    pub IntInstructionCount: u32,                               // Number of signed integer arithmetic instructions used
+    pub UintInstructionCount: u32,                              // Number of unsigned integer arithmetic instructions used
+    pub StaticFlowControlCount: u32,                            // Number of static flow control instructions used
+    pub DynamicFlowControlCount: u32,                           // Number of dynamic flow control instructions used
+    pub MacroInstructionCount: u32,                             // Number of macro instructions used
+    pub ArrayInstructionCount: u32,                             // Number of array instructions used
+    pub CutInstructionCount: u32,                               // Number of cut instructions used
+    pub EmitInstructionCount: u32,                              // Number of emit instructions used
+    pub GSOutputTopology: D3D_PRIMITIVE_TOPOLOGY,               // Geometry shader output topology
+    pub GSMaxOutputVertexCount: u32,                            // Geometry shader maximum output vertex count
+    pub InputPrimitive: D3D_PRIMITIVE_TOPOLOGY,                 // GS/HS input primitive
+    pub PatchConstantParameters: u32,                           // Number of parameters in the patch constant signature
+    pub cGSInstanceCount: u32,                                  // Number of Geometry shader instances
+    pub cControlPoints: u32,                                    // Number of control points in the HS->DS stage
+    pub HSOutputPrimitive: D3D_TESSELLATOR_OUTPUT_PRIMITIVE,    // Primitive output by the tessellator
+    pub HSPartitioning: D3D_TESSELLATOR_PARTITIONING,           // Partitioning mode of the tessellator
+    pub TessellatorDomain: D3D_TESSELLATOR_DOMAIN,              // Domain of the tessellator (quad, tri, isoline)
+    pub cBarrierInstructions: u32,                              // Number of barrier instructions in a compute shader
+    pub cInterlockedInstructions: u32,                          // Number of interlocked instructions
+    pub cTextureStoreInstructions: u32,                         // Number of texture writes
+}
+
+#[allow(non_camel_case_types, non_snake_case)]
+#[repr(C)]
+pub struct D3D12_SHADER_INPUT_BIND_DESC
+{
+    pub Name: *mut std::ffi::c_char,            // Name of the resource
+    pub Type: D3D_SHADER_INPUT_TYPE,            // Type of resource (e.g. texture, cbuffer, etc.)
+    pub BindPoint: u32,                         // Starting bind point
+    pub BindCount: u32,                         // Number of contiguous bind points (for arrays)
+    pub uFlags: u32,                            // Input binding flags
+    pub ReturnType: D3D_RESOURCE_RETURN_TYPE,   // Return type (if texture)
+    pub Dimension: D3D_SRV_DIMENSION,           // Dimension (if texture)
+    pub NumSamples: u32,                        // Number of samples (0 if not MS texture)
+    pub Space: u32,                             // Register space
+    pub uID: u32,                               // Range ID in the bytecode
+}
+
+//
+// The following structs are psuedo-com objects that have no QueryInterface, AddRef, or RemoveRef
+// calls. So we have to manually specify them. They are not reference counted and are only valid
+// as long as the underlying "owning" reflection object remains available. The safe wrappers hold
+// onto both one of these structs and a ref-counted pointer to the owning COM object.
+//
+#[allow(non_snake_case)]
+#[repr(C)]
+pub(crate) struct ID3D12ShaderReflectionTypeVTable {
+    pub GetDesc: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>, *mut D3D12_SHADER_TYPE_DESC) -> HRESULT,
+    pub GetMemberTypeByIndex: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>, index: u32) -> ID3D12ShaderReflectionType,
+    pub GetMemberTypeByName: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>, name: *const std::ffi::c_char) -> ID3D12ShaderReflectionType,
+    pub GetMemberTypeName: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>, index: u32) -> *const std::ffi::c_char,
+    pub IsEqual: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>, ty: ID3D12ShaderReflectionType) -> HRESULT,
+    pub GetSubType: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>) -> ID3D12ShaderReflectionType,
+    pub GetBaseClass: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>) -> ID3D12ShaderReflectionType,
+    pub GetNumInterfaces: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>) -> u32,
+    pub GetInterfaceByIndex: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>, index: u32) -> ID3D12ShaderReflectionType,
+    pub IsOfType: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>, other: ID3D12ShaderReflectionType) -> HRESULT,
+    pub ImplementsInterface: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>, other: ID3D12ShaderReflectionType) -> HRESULT,
+}
+
+pub(crate) type ID3D12ShaderReflectionTypeVPtr = ::core::ptr::NonNull<ID3D12ShaderReflectionTypeVTable>;
+
+#[repr(transparent)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct ID3D12ShaderReflectionType {
+    inner: ::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>,
+}
+
+impl ID3D12ShaderReflectionType {
+    pub(crate) unsafe fn get_desc(
+        &self,
+        desc: impl Into<*mut D3D12_SHADER_TYPE_DESC>
+    ) -> HRESULT {
+        (self.inner.as_ref().as_ref().GetDesc)(self.inner, desc.into())
+    }
+
+    pub(crate) unsafe fn get_member_type_by_index(
+        &self,
+        index: u32
+    ) -> ID3D12ShaderReflectionType {
+        (self.inner.as_ref().as_ref().GetMemberTypeByIndex)(self.inner, index)
+    }
+
+    pub(crate) unsafe fn get_member_type_by_name(
+        &self,
+        name: *const std::ffi::c_char
+    ) -> ID3D12ShaderReflectionType {
+        (self.inner.as_ref().as_ref().GetMemberTypeByName)(self.inner, name)
+    }
+
+    pub(crate) unsafe fn get_member_type_name(
+        &self,
+        index: u32
+    ) -> *const std::ffi::c_char {
+        (self.inner.as_ref().as_ref().GetMemberTypeName)(self.inner, index)
+    }
+
+    pub(crate) unsafe fn is_equal(
+        &self,
+        ty: ID3D12ShaderReflectionType
+    ) -> HRESULT {
+        (self.inner.as_ref().as_ref().IsEqual)(self.inner, ty)
+    }
+
+    pub(crate) unsafe fn get_sub_type(
+        &self
+    ) -> ID3D12ShaderReflectionType {
+        (self.inner.as_ref().as_ref().GetSubType)(self.inner)
+    }
+
+
+    pub(crate) unsafe fn get_base_class(
+        &self
+    ) -> ID3D12ShaderReflectionType {
+        (self.inner.as_ref().as_ref().GetBaseClass)(self.inner)
+    }
+
+    pub(crate) unsafe fn get_num_interfaces(
+        &self,
+    ) -> u32 {
+        (self.inner.as_ref().as_ref().GetNumInterfaces)(self.inner)
+    }
+
+    pub(crate) unsafe fn get_interface_by_index(
+        &self,
+        index: u32
+    ) -> ID3D12ShaderReflectionType {
+        (self.inner.as_ref().as_ref().GetInterfaceByIndex)(self.inner, index)
+    }
+
+    pub(crate) unsafe fn is_of_type(
+        &self,
+        ty: ID3D12ShaderReflectionType
+    ) -> HRESULT {
+        (self.inner.as_ref().as_ref().IsOfType)(self.inner, ty)
+    }
+
+    pub(crate) unsafe fn implements_interface(
+        &self,
+        ty: ID3D12ShaderReflectionType
+    ) -> HRESULT {
+        (self.inner.as_ref().as_ref().ImplementsInterface)(self.inner, ty)
+    }
+}
+
+#[allow(non_snake_case)]
+#[repr(C)]
+pub(crate) struct ID3D12ShaderReflectionVariableVTable {
+    pub GetDesc: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionVariableVPtr>, *mut D3D12_SHADER_VARIABLE_DESC) -> HRESULT,
+    pub GetType: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionVariableVPtr> ) -> ID3D12ShaderReflectionType,
+    pub GetBuffer: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionVariableVPtr>) -> ID3D12ShaderReflectionConstantBuffer,
+    pub GetInterfaceSlot: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionVariableVPtr>, u32) -> u32,
+}
+
+pub(crate) type ID3D12ShaderReflectionVariableVPtr = ::core::ptr::NonNull<ID3D12ShaderReflectionVariableVTable>;
+
+#[repr(transparent)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct ID3D12ShaderReflectionVariable {
+    inner: ::core::ptr::NonNull<ID3D12ShaderReflectionVariableVPtr>,
+}
+impl ID3D12ShaderReflectionVariable {
+    pub(crate) unsafe fn get_desc(
+        &self,
+        p_desc: impl Into<*mut D3D12_SHADER_VARIABLE_DESC>
+    ) -> HRESULT {
+        (self.inner.as_ref().as_ref().GetDesc)(self.inner, p_desc.into())
+    }
+
+    pub(crate) unsafe fn get_type(&self) -> ID3D12ShaderReflectionType {
+        (self.inner.as_ref().as_ref().GetType)(self.inner)
+    }
+
+    pub(crate) unsafe fn get_buffer(
+        &self
+    ) -> ID3D12ShaderReflectionConstantBuffer {
+        (self.inner.as_ref().as_ref().GetBuffer)(self.inner)
+    }
+
+    pub(crate) unsafe fn get_interface_slot(
+        &self,
+        array_index: u32
+    ) -> u32 {
+        (self.inner.as_ref().as_ref().GetInterfaceSlot)(self.inner, array_index)
+    }
+}
+
+#[allow(non_snake_case)]
+#[repr(C)]
+pub(crate) struct ID3D12ShaderReflectionConstantBufferVTable {
+    pub GetDesc: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionConstantBufferVPtr>, *mut D3D12_SHADER_BUFFER_DESC) -> HRESULT,
+    pub GetVariableByIndex: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionConstantBufferVPtr>, u32) -> ID3D12ShaderReflectionVariable,
+    pub GetVariableByName: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionConstantBufferVPtr>, *const std::ffi::c_char) -> ID3D12ShaderReflectionVariable,
+}
+
+pub(crate) type ID3D12ShaderReflectionConstantBufferVPtr = ::core::ptr::NonNull<ID3D12ShaderReflectionConstantBufferVTable>;
+
+#[repr(transparent)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct ID3D12ShaderReflectionConstantBuffer {
+    inner: ::core::ptr::NonNull<ID3D12ShaderReflectionConstantBufferVPtr>,
+}
+
+impl ID3D12ShaderReflectionConstantBuffer {
+    pub(crate) unsafe fn get_desc(
+        &self,
+        p_desc: impl Into<*mut D3D12_SHADER_BUFFER_DESC>
+    ) -> HRESULT {
+        (self.inner.as_ref().as_ref().GetDesc)(self.inner, p_desc.into())
+    }
+
+    pub(crate) unsafe fn get_variable_by_index(
+        &self,
+        index: u32
+    ) -> ID3D12ShaderReflectionVariable {
+        (self.inner.as_ref().as_ref().GetVariableByIndex)(self.inner, index)
+    }
+
+    pub(crate) unsafe fn get_variable_by_name(
+        &self,
+        name: impl Into<*const std::ffi::c_char>
+    ) -> ID3D12ShaderReflectionVariable {
+        (self.inner.as_ref().as_ref().GetVariableByName)(self.inner, name.into())
+    }
+}
+
 pub type DxcCreateInstanceProc<T> =
     extern "system" fn(rclsid: &IID, riid: &IID, ppv: *mut Option<T>) -> HRESULT;
 
@@ -183,6 +505,7 @@ interfaces! {
     }
 }
 
+// From dxcapi.h for use with IDxcValidator
 pub const DXC_VALIDATOR_FLAGS_DEFAULT: u32 = 0;
 pub const DXC_VALIDATOR_FLAGS_IN_PLACE_EDIT: u32 = 1; // Validator is allowed to update shader blob in-place.
 pub const DXC_VALIDATOR_FLAGS_ROOT_SIGNATURE_ONLY: u32 = 2;
@@ -235,45 +558,50 @@ interfaces! {
         ) -> HRESULT;
     }
 
+    //NOTE: Unlike the other interfaces which are coming from dxcapi.h, this comes from
+    // d3d12shader.h. Some of the returned values are COM-like objects that have a vtable similar
+    // to COM with QueryInterface, AddRef and RemoveRef, but don't have IUnknown as a base. The
+    // COM helper library doesn't deal well with this, so we have to manually implement interfaces
+    // for those types.
     #[uuid("5a58797d-a72c-478d-8ba2-efc6b0efe88e")]
     pub(crate) unsafe interface ID3D12ShaderReflection: IUnknown {
-        pub(crate) fn get_desc(&self, p_desc: *mut c_void) -> HRESULT;
-        pub(crate) fn get_constant_buffer_by_index(&self, index: u32) -> *mut c_void;
-        pub(crate) fn get_constant_buffer_by_name(&self, name: *const c_void) -> *mut c_void;
+        pub(crate) fn get_desc(&self, p_desc: *mut D3D12_SHADER_DESC) -> HRESULT;
+        pub(crate) fn get_constant_buffer_by_index(&self, index: u32) -> ID3D12ShaderReflectionConstantBuffer;
+        pub(crate) fn get_constant_buffer_by_name(&self, name: *const std::ffi::c_char) -> ID3D12ShaderReflectionConstantBuffer;
         pub(crate) fn get_resource_binding_desc(
             &self,
             resource_index: u32,
-            p_desc: *mut c_void,
+            p_desc: *mut D3D12_SHADER_INPUT_BIND_DESC,
         ) -> HRESULT;
         pub(crate) fn get_input_parameter_desc(
             &self,
             parameter_index: u32,
-            p_desc: *mut c_void,
+            p_desc: *mut D3D12_SIGNATURE_PARAMETER_DESC,
         ) -> HRESULT;
         pub(crate) fn get_output_parameter_desc(
             &self,
             parameter_index: u32,
-            p_desc: *mut c_void,
+            p_desc: *mut D3D12_SIGNATURE_PARAMETER_DESC,
         ) -> HRESULT;
         pub(crate) fn get_patch_constant_parameter_desc(
             &self,
             parameter_index: u32,
-            p_desc: *mut c_void,
+            p_desc: *mut D3D12_SIGNATURE_PARAMETER_DESC,
         ) -> HRESULT;
-        pub(crate) fn get_variable_by_name(&self, name: *const c_void) -> *mut c_void;
+        pub(crate) fn get_variable_by_name(&self, name: *const std::ffi::c_char) -> ID3D12ShaderReflectionVariable;
         pub(crate) fn get_resource_binding_desc_by_name(
             &self,
-            name: *const c_void,
-            p_desc: *mut c_void,
+            name: *const std::ffi::c_char,
+            p_desc: *mut D3D12_SIGNATURE_PARAMETER_DESC,
         ) -> HRESULT;
         pub(crate) fn get_mov_instruction_count(&self) -> u32;
         pub(crate) fn get_movc_instruction_count(&self) -> u32;
         pub(crate) fn get_conversion_instruction_count(&self) -> u32;
         pub(crate) fn get_bitwise_instruction_count(&self) -> u32;
-        pub(crate) fn get_gs_input_primitive(&self) -> u32;
+        pub(crate) fn get_gs_input_primitive(&self) -> D3D_PRIMITIVE;
         pub(crate) fn is_sample_frequency_shader(&self) -> bool;
         pub(crate) fn get_num_interface_slots(&self) -> u32;
-        pub(crate) fn get_min_feature_level(&self, p_level: *mut c_void) -> HRESULT;
+        pub(crate) fn get_min_feature_level(&self, p_level: *mut D3D_FEATURE_LEVEL) -> HRESULT;
         pub(crate) fn get_thread_group_size(
             &self,
             size_x: *mut u32,
@@ -315,6 +643,7 @@ interfaces! {
     }
 }
 
+// From dxcapi.h for use with IDxcVersionInfo
 pub const DXC_VERSION_INFO_FLAGS_NONE: u32 = 0;
 pub const DXC_VERSION_INFO_FLAGS_DEBUG: u32 = 1; // Matches VS_FF_DEBUG
 pub const DXC_VERSION_INFO_FLAGS_INTERNAL: u32 = 2; // Internal Validator (non-signing)

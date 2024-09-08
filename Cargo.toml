@@ -2,7 +2,7 @@
 name = "hassle-rs"
 version = "0.11.0"
 authors = ["Traverse-Research <support@traverseresearch.nl>"]
-edition = "2018"
+edition = "2021"
 description = "HLSL compiler library, this crate provides an FFI layer and idiomatic rust wrappers for the new DXC HLSL compiler and validator."
 license = "MIT"
 readme = "README.md"
