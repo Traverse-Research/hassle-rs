@@ -24,6 +24,7 @@ pub fn shader_version_minor_version(version: u32) -> u32 {
 
 #[rustfmt::skip]
 #[allow(non_camel_case_types, non_snake_case)]
+#[repr(C)]
 pub struct D3D12_SIGNATURE_PARAMETER_DESC
 {
     pub SemanticName: *mut std::ffi::c_char,        // Name of the semantic
@@ -55,6 +56,7 @@ pub struct D3D12_SHADER_BUFFER_DESC
 
 #[rustfmt::skip]
 #[allow(non_camel_case_types, non_snake_case)]
+#[repr(C)]
 pub struct D3D12_SHADER_VARIABLE_DESC
 {
     pub Name: *mut std::ffi::c_char,            // Name of the variable
