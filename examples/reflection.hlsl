@@ -1,8 +1,11 @@
-// From the D3D12 Multithreading sample
+// This HLSL file is an example vertex/pixel shader pair for showing usage of DXC's reflection API
+//
+// It originates from the D3D12 Multithreading sample
 // https://github.com/microsoft/DirectX-Graphics-Samples/blob/master/Samples/Desktop/D3D12Multithreading/src/shaders.hlsl
 //
 // Some modifications have been made. They are summarized here and have a "EDIT: ..." comment
 // in the code below with the original line:
+//  - Added a ConstantBuffer<T> that matches the original cbuffer
 //  - Modified a ternary into a select() to address DXC compile error
 //  - Modified a usage of the SceneConstantBuffer cbuffer to use SomeConstants
 //    instead so that SomeConstants isn't stripped from reflection due to being unused.
@@ -38,6 +41,7 @@ struct LightState
     float4x4 projection;
 };
 
+//EDIT: Added a ConstantBuffer<T> that mimics the original cbuffer
 struct ConstantBufferContents {
     float4x4 model;
     float4x4 view;
@@ -48,6 +52,7 @@ struct ConstantBufferContents {
 };
 
 ConstantBuffer<ConstantBufferContents> SomeConstants : register(b1);
+//EDIT: End additional code
 
 cbuffer SceneConstantBuffer : register(b0)
 {
@@ -148,7 +153,8 @@ float4 CalcUnshadowedAmountPCF2x2(int lightIndex, float4 vPosWorld)
     vShadowDepths.w = shadowMap.Sample(sampleClamp, vShadowTexCoord + vTexelUnits);
 
     // What weighted fraction of the 4 samples are nearer to the light than this pixel?
-    // EDIT: This line was `float4 vShadowTests = (vShadowDepths >= vLightSpaceDepth) ? 1.0f : 0.0f;`
+    //EDIT: Fix compile error in dxc, original line below and commented out
+    //float4 vShadowTests = (vShadowDepths >= vLightSpaceDepth) ? 1.0f : 0.0f;
     float4 vShadowTests = select((vShadowDepths >= vLightSpaceDepth), 1.0f, 0.0f);
     return dot(vBilinearWeights, vShadowTests);
 }
@@ -160,7 +166,8 @@ PSInput VSMain(float3 position : POSITION, float3 normal : NORMAL, float2 uv : T
     float4 newPosition = float4(position, 1.0f);
 
     normal.z *= -1.0f;
-    // EDIT: from 'newPosition = mul(newPosition, SomeConstants.model);'
+    //EDIT: Use ConstantsBuffer so it isn't stripped by dxc, original line below and commented out
+    //newPosition = mul(newPosition, model);
     newPosition = mul(newPosition, SomeConstants.model);
 
     result.worldpos = newPosition;
