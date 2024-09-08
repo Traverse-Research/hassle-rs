@@ -40,6 +40,8 @@
 
 pub mod fake_sign;
 pub mod ffi;
+#[rustfmt::skip]
+mod ffi_enums;
 pub mod os;
 pub mod utils;
 pub mod wrapper;

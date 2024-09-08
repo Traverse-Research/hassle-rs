@@ -1,0 +1,203 @@
+// This HLSL file is an example vertex/pixel shader pair for showing usage of DXC's reflection API
+//
+// It originates from the D3D12 Multithreading sample
+// https://github.com/microsoft/DirectX-Graphics-Samples/blob/master/Samples/Desktop/D3D12Multithreading/src/shaders.hlsl
+//
+// Some modifications have been made. They are summarized here and have a "EDIT: ..." comment
+// in the code below with the original line:
+//  - Added a ConstantBuffer<T> that matches the original cbuffer
+//  - Modified a ternary into a select() to address DXC compile error
+//  - Modified a usage of the SceneConstantBuffer cbuffer to use SomeConstants
+//    instead so that SomeConstants isn't stripped from reflection due to being unused.
+
+//*********************************************************
+//
+// Copyright (c) Microsoft. All rights reserved.
+// This code is licensed under the MIT License (MIT).
+// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
+// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
+// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
+// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
+//
+//*********************************************************
+
+Texture2D shadowMap : register(t0);
+Texture2D diffuseMap : register(t1);
+Texture2D normalMap : register(t2);
+
+SamplerState sampleWrap : register(s0);
+SamplerState sampleClamp : register(s1);
+
+#define NUM_LIGHTS 3
+#define SHADOW_DEPTH_BIAS 0.00005f
+
+struct LightState
+{
+    float3 position;
+    float3 direction;
+    float4 color;
+    float4 falloff;
+    float4x4 view;
+    float4x4 projection;
+};
+
+//EDIT: Added a ConstantBuffer<T> that mimics the original cbuffer
+struct ConstantBufferContents {
+    float4x4 model;
+    float4x4 view;
+    float4x4 projection;
+    float4 ambientColor;
+    bool sampleShadowMap;
+    LightState lights[NUM_LIGHTS];
+};
+
+ConstantBuffer<ConstantBufferContents> SomeConstants : register(b1);
+//EDIT: End additional code
+
+cbuffer SceneConstantBuffer : register(b0)
+{
+    float4x4 model;
+    float4x4 view;
+    float4x4 projection;
+    float4 ambientColor;
+    bool sampleShadowMap;
+    LightState lights[NUM_LIGHTS];
+};
+
+struct PSInput
+{
+    float4 position : SV_POSITION;
+    float4 worldpos : POSITION;
+    float2 uv : TEXCOORD0;
+    float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+};
+
+
+//--------------------------------------------------------------------------------------
+// Sample normal map, convert to signed, apply tangent-to-world space transform.
+//--------------------------------------------------------------------------------------
+float3 CalcPerPixelNormal(float2 vTexcoord, float3 vVertNormal, float3 vVertTangent)
+{
+    // Compute tangent frame.
+    vVertNormal = normalize(vVertNormal);
+    vVertTangent = normalize(vVertTangent);
+
+    float3 vVertBinormal = normalize(cross(vVertTangent, vVertNormal));
+    float3x3 mTangentSpaceToWorldSpace = float3x3(vVertTangent, vVertBinormal, vVertNormal);
+
+    // Compute per-pixel normal.
+    float3 vBumpNormal = (float3)normalMap.Sample(sampleWrap, vTexcoord);
+    vBumpNormal = 2.0f * vBumpNormal - 1.0f;
+
+    return mul(vBumpNormal, mTangentSpaceToWorldSpace);
+}
+
+//--------------------------------------------------------------------------------------
+// Diffuse lighting calculation, with angle and distance falloff.
+//--------------------------------------------------------------------------------------
+float4 CalcLightingColor(float3 vLightPos, float3 vLightDir, float4 vLightColor, float4 vFalloffs, float3 vPosWorld, float3 vPerPixelNormal)
+{
+    float3 vLightToPixelUnNormalized = vPosWorld - vLightPos;
+
+    // Dist falloff = 0 at vFalloffs.x, 1 at vFalloffs.x - vFalloffs.y
+    float fDist = length(vLightToPixelUnNormalized);
+
+    float fDistFalloff = saturate((vFalloffs.x - fDist) / vFalloffs.y);
+
+    // Normalize from here on.
+    float3 vLightToPixelNormalized = vLightToPixelUnNormalized / fDist;
+
+    // Angle falloff = 0 at vFalloffs.z, 1 at vFalloffs.z - vFalloffs.w
+    float fCosAngle = dot(vLightToPixelNormalized, vLightDir / length(vLightDir));
+    float fAngleFalloff = saturate((fCosAngle - vFalloffs.z) / vFalloffs.w);
+
+    // Diffuse contribution.
+    float fNDotL = saturate(-dot(vLightToPixelNormalized, vPerPixelNormal));
+
+    return vLightColor * fNDotL * fDistFalloff * fAngleFalloff;
+}
+
+//--------------------------------------------------------------------------------------
+// Test how much pixel is in shadow, using 2x2 percentage-closer filtering.
+//--------------------------------------------------------------------------------------
+float4 CalcUnshadowedAmountPCF2x2(int lightIndex, float4 vPosWorld)
+{
+    // Compute pixel position in light space.
+    float4 vLightSpacePos = vPosWorld;
+    vLightSpacePos = mul(vLightSpacePos, lights[lightIndex].view);
+    vLightSpacePos = mul(vLightSpacePos, lights[lightIndex].projection);
+
+    vLightSpacePos.xyz /= vLightSpacePos.w;
+
+    // Translate from homogeneous coords to texture coords.
+    float2 vShadowTexCoord = 0.5f * vLightSpacePos.xy + 0.5f;
+    vShadowTexCoord.y = 1.0f - vShadowTexCoord.y;
+
+    // Depth bias to avoid pixel self-shadowing.
+    float vLightSpaceDepth = vLightSpacePos.z - SHADOW_DEPTH_BIAS;
+
+    // Find sub-pixel weights.
+    float2 vShadowMapDims = float2(1280.0f, 720.0f); // need to keep in sync with .cpp file
+    float4 vSubPixelCoords = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    vSubPixelCoords.xy = frac(vShadowMapDims * vShadowTexCoord);
+    vSubPixelCoords.zw = 1.0f - vSubPixelCoords.xy;
+    float4 vBilinearWeights = vSubPixelCoords.zxzx * vSubPixelCoords.wwyy;
+
+    // 2x2 percentage closer filtering.
+    float2 vTexelUnits = 1.0f / vShadowMapDims;
+    float4 vShadowDepths;
+    vShadowDepths.x = shadowMap.Sample(sampleClamp, vShadowTexCoord);
+    vShadowDepths.y = shadowMap.Sample(sampleClamp, vShadowTexCoord + float2(vTexelUnits.x, 0.0f));
+    vShadowDepths.z = shadowMap.Sample(sampleClamp, vShadowTexCoord + float2(0.0f, vTexelUnits.y));
+    vShadowDepths.w = shadowMap.Sample(sampleClamp, vShadowTexCoord + vTexelUnits);
+
+    // What weighted fraction of the 4 samples are nearer to the light than this pixel?
+    //EDIT: Fix compile error in dxc, original line below and commented out
+    //float4 vShadowTests = (vShadowDepths >= vLightSpaceDepth) ? 1.0f : 0.0f;
+    float4 vShadowTests = select((vShadowDepths >= vLightSpaceDepth), 1.0f, 0.0f);
+    return dot(vBilinearWeights, vShadowTests);
+}
+
+PSInput VSMain(float3 position : POSITION, float3 normal : NORMAL, float2 uv : TEXCOORD0, float3 tangent : TANGENT)
+{
+    PSInput result;
+
+    float4 newPosition = float4(position, 1.0f);
+
+    normal.z *= -1.0f;
+    //EDIT: Use ConstantsBuffer so it isn't stripped by dxc, original line below and commented out
+    //newPosition = mul(newPosition, model);
+    newPosition = mul(newPosition, SomeConstants.model);
+
+    result.worldpos = newPosition;
+
+    newPosition = mul(newPosition, view);
+    newPosition = mul(newPosition, projection);
+
+    result.position = newPosition;
+    result.uv = uv;
+    result.normal = normal;
+    result.tangent = tangent;
+
+    return result;
+}
+
+float4 PSMain(PSInput input) : SV_TARGET
+{
+    float4 diffuseColor = diffuseMap.Sample(sampleWrap, input.uv);
+    float3 pixelNormal = CalcPerPixelNormal(input.uv, input.normal, input.tangent);
+    float4 totalLight = ambientColor;
+
+    for (int i = 0; i < NUM_LIGHTS; i++)
+    {
+        float4 lightPass = CalcLightingColor(lights[i].position, lights[i].direction, lights[i].color, lights[i].falloff, input.worldpos.xyz, pixelNormal);
+        if (sampleShadowMap && i == 0)
+        {
+            lightPass *= CalcUnshadowedAmountPCF2x2(i, input.worldpos);
+        }
+        totalLight += lightPass;
+    }
+
+    return diffuseColor * saturate(totalLight);
+}
