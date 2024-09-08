@@ -613,7 +613,8 @@ impl DxcValidator {
 
 unsafe fn ffi_char_ptr_to_cstring(s: *mut std::ffi::c_char) -> CString {
     if s.is_null() {
-        CString::from(c"")
+        // Empty string seems like a reasonable way to deal with a null pointer here
+        CString::default()
     } else {
         CString::from(CStr::from_ptr(s))
     }

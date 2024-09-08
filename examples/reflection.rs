@@ -1,4 +1,4 @@
-use std::env::var;
+use std::ffi::CString;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let source_copy = include_str!("copy.hlsl");
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let shader_desc = reflected.get_desc()?;
             println!("desc: {:?}", shader_desc);
         }
-        Err((result, hresult)) => {
+        Err((result, _hresult)) => {
             println!("failed to compile shader");
             let error_blob = result.get_error_buffer()?;
             let error_string = library.get_blob_as_string(&error_blob.into())?;
@@ -101,10 +101,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
 
-            let cb = reflected.get_constant_buffer_by_name(c"SomeConstants").get_desc()?;
+            let cb = reflected.get_constant_buffer_by_name(CString::new("SomeConstants").unwrap().as_ref()).get_desc()?;
             println!("found by name {:?}", cb);
 
-            let some_constants_type = reflected.get_constant_buffer_by_name(c"SomeConstants").get_variable_by_index(0)?.get_type();
+            let some_constants_type = reflected.get_constant_buffer_by_name(CString::new("SomeConstants").unwrap().as_ref()).get_variable_by_index(0)?.get_type();
             let some_constants_type_desc = some_constants_type.get_desc()?;
 
 
@@ -116,7 +116,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("member {:?}", member_type.get_desc());
             }
         }
-        Err((result, hresult)) => {
+        Err((result, _hresult)) => {
             println!("failed to compile shader");
             let error_blob = result.get_error_buffer()?;
             let error_string = library.get_blob_as_string(&error_blob.into())?;
