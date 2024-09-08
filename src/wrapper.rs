@@ -620,6 +620,7 @@ unsafe fn ffi_char_ptr_to_cstring(s: *mut std::ffi::c_char) -> CString {
     }
 }
 
+#[rustfmt::skip]
 #[allow(non_camel_case_types, non_snake_case)]
 #[derive(Clone, Debug)]
 pub struct D3D12SignatureParameterDesc
@@ -655,6 +656,7 @@ impl D3D12SignatureParameterDesc {
     }
 }
 
+#[rustfmt::skip]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug)]
 pub struct D3D12ShaderBufferDesc
@@ -678,6 +680,7 @@ impl D3D12ShaderBufferDesc {
     }
 }
 
+#[rustfmt::skip]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug)]
 pub struct D3D12ShaderVariableDesc
@@ -709,6 +712,7 @@ impl D3D12ShaderVariableDesc {
     }
 }
 
+#[rustfmt::skip]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug)]
 pub struct D3D12ShaderTypeDesc
@@ -738,6 +742,7 @@ impl D3D12ShaderTypeDesc {
     }
 }
 
+#[rustfmt::skip]
 #[allow(non_snake_case)]
 #[derive(Clone, Debug)]
 pub struct D3D12ShaderDesc
@@ -827,6 +832,7 @@ impl D3D12ShaderDesc {
     }
 }
 
+#[rustfmt::skip]
 #[allow(non_camel_case_types, non_snake_case)]
 #[repr(C)]
 #[derive(Clone, Debug)]
@@ -869,8 +875,11 @@ pub struct D3D12ShaderReflectionType {
 impl D3D12ShaderReflectionType {
     pub fn get_desc(&self) -> Result<D3D12ShaderTypeDesc> {
         unsafe {
-            let mut shader_type_desc_ffi: D3D12_SHADER_TYPE_DESC = MaybeUninit::zeroed().assume_init();
-            let result = self.inner.get_desc(&mut shader_type_desc_ffi as *mut D3D12_SHADER_TYPE_DESC);
+            let mut shader_type_desc_ffi: D3D12_SHADER_TYPE_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self
+                .inner
+                .get_desc(&mut shader_type_desc_ffi as *mut D3D12_SHADER_TYPE_DESC);
 
             if result.is_err() {
                 return Err(HassleError::Win32Error(result));
@@ -880,45 +889,36 @@ impl D3D12ShaderReflectionType {
         }
     }
 
-    pub fn get_member_type_by_index(
-        &self,
-        index: u32,
-    ) -> D3D12ShaderReflectionType {
+    pub fn get_member_type_by_index(&self, index: u32) -> D3D12ShaderReflectionType {
         unsafe {
             let ty = self.inner.get_member_type_by_index(index);
             D3D12ShaderReflectionType {
                 inner: ty,
-                owner: self.owner.clone()
+                owner: self.owner.clone(),
             }
         }
     }
 
     pub fn get_member_type_by_name<'a>(
         &self,
-        name: impl Into<&'a CStr>
+        name: impl Into<&'a CStr>,
     ) -> D3D12ShaderReflectionType {
         unsafe {
             let ty = self.inner.get_member_type_by_name(name.into().as_ptr());
             D3D12ShaderReflectionType {
                 inner: ty,
-                owner: self.owner.clone()
+                owner: self.owner.clone(),
             }
         }
     }
-    pub fn get_member_type_name(
-        &self,
-        index: u32,
-    ) -> CString {
+    pub fn get_member_type_name(&self, index: u32) -> CString {
         unsafe {
             let type_name = self.inner.get_member_type_name(index);
             CString::from(CStr::from_ptr(type_name))
         }
     }
 
-    pub fn is_equal(
-        &self,
-        other: &D3D12ShaderReflectionType
-    ) -> Result<bool> {
+    pub fn is_equal(&self, other: &D3D12ShaderReflectionType) -> Result<bool> {
         unsafe {
             let result = self.inner.is_equal(other.inner);
 
@@ -930,55 +930,41 @@ impl D3D12ShaderReflectionType {
         }
     }
 
-    pub fn get_sub_type(
-        &self
-    ) -> D3D12ShaderReflectionType {
+    pub fn get_sub_type(&self) -> D3D12ShaderReflectionType {
         unsafe {
             let ty = self.inner.get_sub_type();
             D3D12ShaderReflectionType {
                 inner: ty,
-                owner: self.owner.clone()
+                owner: self.owner.clone(),
             }
         }
     }
 
-    pub fn get_base_class(
-        &self
-    ) -> D3D12ShaderReflectionType {
+    pub fn get_base_class(&self) -> D3D12ShaderReflectionType {
         unsafe {
             let ty = self.inner.get_base_class();
             D3D12ShaderReflectionType {
                 inner: ty,
-                owner: self.owner.clone()
+                owner: self.owner.clone(),
             }
         }
     }
 
-    pub fn get_num_interfaces(
-        &self
-    ) -> u32 {
-        unsafe {
-            self.inner.get_num_interfaces()
-        }
+    pub fn get_num_interfaces(&self) -> u32 {
+        unsafe { self.inner.get_num_interfaces() }
     }
 
-    pub fn get_interface_by_index(
-        &self,
-        index: u32
-    ) -> D3D12ShaderReflectionType {
+    pub fn get_interface_by_index(&self, index: u32) -> D3D12ShaderReflectionType {
         unsafe {
             let ty = self.inner.get_interface_by_index(index);
             D3D12ShaderReflectionType {
                 inner: ty,
-                owner: self.owner.clone()
+                owner: self.owner.clone(),
             }
         }
     }
 
-    pub fn is_of_type(
-        &self,
-        other: &D3D12ShaderReflectionType
-    ) -> Result<bool> {
+    pub fn is_of_type(&self, other: &D3D12ShaderReflectionType) -> Result<bool> {
         unsafe {
             let result = self.inner.is_of_type(other.inner);
 
@@ -990,10 +976,7 @@ impl D3D12ShaderReflectionType {
         }
     }
 
-    pub fn implements_interface(
-        &self,
-        other: &D3D12ShaderReflectionType
-    ) -> Result<bool> {
+    pub fn implements_interface(&self, other: &D3D12ShaderReflectionType) -> Result<bool> {
         unsafe {
             let result = self.inner.implements_interface(other.inner);
 
@@ -1014,8 +997,11 @@ pub struct D3D12ShaderReflectionVariable {
 impl D3D12ShaderReflectionVariable {
     pub fn get_desc(&self) -> Result<D3D12ShaderVariableDesc> {
         unsafe {
-            let mut shader_variable_desc_ffi: D3D12_SHADER_VARIABLE_DESC = MaybeUninit::zeroed().assume_init();
-            let result = self.inner.get_desc(&mut shader_variable_desc_ffi as *mut D3D12_SHADER_VARIABLE_DESC);
+            let mut shader_variable_desc_ffi: D3D12_SHADER_VARIABLE_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self
+                .inner
+                .get_desc(&mut shader_variable_desc_ffi as *mut D3D12_SHADER_VARIABLE_DESC);
 
             if result.is_err() {
                 return Err(HassleError::Win32Error(result));
@@ -1029,7 +1015,7 @@ impl D3D12ShaderReflectionVariable {
         unsafe {
             D3D12ShaderReflectionType {
                 inner: self.inner.get_type(),
-                owner: self.owner.clone()
+                owner: self.owner.clone(),
             }
         }
     }
@@ -1038,15 +1024,13 @@ impl D3D12ShaderReflectionVariable {
         unsafe {
             D3D12ShaderReflectionConstantBuffer {
                 inner: self.inner.get_buffer(),
-                owner: self.owner.clone()
+                owner: self.owner.clone(),
             }
         }
     }
 
     pub fn get_interface_slot(&self, array_index: u32) -> u32 {
-        unsafe {
-            self.inner.get_interface_slot(array_index)
-        }
+        unsafe { self.inner.get_interface_slot(array_index) }
     }
 }
 
@@ -1058,8 +1042,11 @@ pub struct D3D12ShaderReflectionConstantBuffer {
 impl D3D12ShaderReflectionConstantBuffer {
     pub fn get_desc(&self) -> Result<D3D12ShaderBufferDesc> {
         unsafe {
-            let mut shader_buffer_desc_ffi: D3D12_SHADER_BUFFER_DESC = MaybeUninit::zeroed().assume_init();
-            let result = self.inner.get_desc(&mut shader_buffer_desc_ffi as *mut D3D12_SHADER_BUFFER_DESC);
+            let mut shader_buffer_desc_ffi: D3D12_SHADER_BUFFER_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self
+                .inner
+                .get_desc(&mut shader_buffer_desc_ffi as *mut D3D12_SHADER_BUFFER_DESC);
 
             if result.is_err() {
                 return Err(HassleError::Win32Error(result));
@@ -1075,18 +1062,21 @@ impl D3D12ShaderReflectionConstantBuffer {
 
             Ok(D3D12ShaderReflectionVariable {
                 inner: variable_ffi,
-                owner: self.owner.clone()
+                owner: self.owner.clone(),
             })
         }
     }
 
-    pub fn get_variable_by_name<'a>(&self, name: impl Into<&'a CStr>) -> Result<D3D12ShaderReflectionVariable> {
+    pub fn get_variable_by_name<'a>(
+        &self,
+        name: impl Into<&'a CStr>,
+    ) -> Result<D3D12ShaderReflectionVariable> {
         unsafe {
             let variable_ffi = self.inner.get_variable_by_name(name.into().as_ptr());
 
             Ok(D3D12ShaderReflectionVariable {
                 inner: variable_ffi,
-                owner: self.owner.clone()
+                owner: self.owner.clone(),
             })
         }
     }
@@ -1103,7 +1093,9 @@ impl Reflection {
     pub fn get_desc(&self) -> Result<D3D12ShaderDesc> {
         unsafe {
             let mut shader_desc_ffi: D3D12_SHADER_DESC = MaybeUninit::zeroed().assume_init();
-            let result = self.inner.get_desc(&mut shader_desc_ffi as *mut D3D12_SHADER_DESC);
+            let result = self
+                .inner
+                .get_desc(&mut shader_desc_ffi as *mut D3D12_SHADER_DESC);
 
             if result.is_err() {
                 return Err(HassleError::Win32Error(result));
@@ -1118,17 +1110,20 @@ impl Reflection {
             let constant_buffer = self.inner.get_constant_buffer_by_index(index);
             D3D12ShaderReflectionConstantBuffer {
                 inner: constant_buffer,
-                owner: self.inner.clone()
+                owner: self.inner.clone(),
             }
         }
     }
 
-    pub fn get_constant_buffer_by_name<'a>(&self, name: impl Into<&'a CStr>) -> D3D12ShaderReflectionConstantBuffer {
+    pub fn get_constant_buffer_by_name<'a>(
+        &self,
+        name: impl Into<&'a CStr>,
+    ) -> D3D12ShaderReflectionConstantBuffer {
         unsafe {
             let constant_buffer = self.inner.get_constant_buffer_by_name(name.into().as_ptr());
             D3D12ShaderReflectionConstantBuffer {
                 inner: constant_buffer,
-                owner: self.inner.clone()
+                owner: self.inner.clone(),
             }
         }
     }
@@ -1138,14 +1133,20 @@ impl Reflection {
         resource_index: u32,
     ) -> Result<D3D12ShaderInputBindDesc> {
         unsafe {
-            let mut shader_input_bind_desc_ffi: D3D12_SHADER_INPUT_BIND_DESC = MaybeUninit::zeroed().assume_init();
-            let result = self.inner.get_resource_binding_desc(resource_index, &mut shader_input_bind_desc_ffi as *mut D3D12_SHADER_INPUT_BIND_DESC);
+            let mut shader_input_bind_desc_ffi: D3D12_SHADER_INPUT_BIND_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self.inner.get_resource_binding_desc(
+                resource_index,
+                &mut shader_input_bind_desc_ffi as *mut D3D12_SHADER_INPUT_BIND_DESC,
+            );
 
             if result.is_err() {
                 return Err(HassleError::Win32Error(result));
             }
 
-            Ok(D3D12ShaderInputBindDesc::from_ffi(&shader_input_bind_desc_ffi))
+            Ok(D3D12ShaderInputBindDesc::from_ffi(
+                &shader_input_bind_desc_ffi,
+            ))
         }
     }
 
@@ -1154,14 +1155,20 @@ impl Reflection {
         parameter_index: u32,
     ) -> Result<D3D12SignatureParameterDesc> {
         unsafe {
-            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC = MaybeUninit::zeroed().assume_init();
-            let result = self.inner.get_input_parameter_desc(parameter_index, &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC);
+            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self.inner.get_input_parameter_desc(
+                parameter_index,
+                &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC,
+            );
 
             if result.is_err() {
                 return Err(HassleError::Win32Error(result));
             }
 
-            Ok(D3D12SignatureParameterDesc::from_ffi(&signature_parameter_desc_ffi))
+            Ok(D3D12SignatureParameterDesc::from_ffi(
+                &signature_parameter_desc_ffi,
+            ))
         }
     }
 
@@ -1170,14 +1177,20 @@ impl Reflection {
         parameter_index: u32,
     ) -> Result<D3D12SignatureParameterDesc> {
         unsafe {
-            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC = MaybeUninit::zeroed().assume_init();
-            let result = self.inner.get_output_parameter_desc(parameter_index, &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC);
+            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self.inner.get_output_parameter_desc(
+                parameter_index,
+                &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC,
+            );
 
             if result.is_err() {
                 return Err(HassleError::Win32Error(result));
             }
 
-            Ok(D3D12SignatureParameterDesc::from_ffi(&signature_parameter_desc_ffi))
+            Ok(D3D12SignatureParameterDesc::from_ffi(
+                &signature_parameter_desc_ffi,
+            ))
         }
     }
 
@@ -1186,49 +1199,78 @@ impl Reflection {
         parameter_index: u32,
     ) -> Result<D3D12SignatureParameterDesc> {
         unsafe {
-            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC = MaybeUninit::zeroed().assume_init();
-            let result = self.inner.get_patch_constant_parameter_desc(parameter_index, &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC);
+            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self.inner.get_patch_constant_parameter_desc(
+                parameter_index,
+                &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC,
+            );
 
             if result.is_err() {
                 return Err(HassleError::Win32Error(result));
             }
 
-            Ok(D3D12SignatureParameterDesc::from_ffi(&signature_parameter_desc_ffi))
+            Ok(D3D12SignatureParameterDesc::from_ffi(
+                &signature_parameter_desc_ffi,
+            ))
         }
     }
 
     pub fn get_variable_by_name<'a>(
         &self,
-        name: impl Into<&'a CStr>
+        name: impl Into<&'a CStr>,
     ) -> D3D12ShaderReflectionVariable {
         unsafe {
             let variable = self.inner.get_variable_by_name(name.into().as_ptr());
             D3D12ShaderReflectionVariable {
                 inner: variable,
-                owner: self.inner.clone()
+                owner: self.inner.clone(),
             }
         }
     }
 
-    pub fn get_resource_binding_desc_by_name<'a>(&self, name: impl Into<&'a CStr>) -> Result<D3D12SignatureParameterDesc> {
+    pub fn get_resource_binding_desc_by_name<'a>(
+        &self,
+        name: impl Into<&'a CStr>,
+    ) -> Result<D3D12SignatureParameterDesc> {
         unsafe {
-            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC = MaybeUninit::zeroed().assume_init();
-            let result = self.inner.get_resource_binding_desc_by_name(name.into().as_ptr(), &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC);
+            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self.inner.get_resource_binding_desc_by_name(
+                name.into().as_ptr(),
+                &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC,
+            );
 
             if result.is_err() {
                 return Err(HassleError::Win32Error(result));
             }
 
-            Ok(D3D12SignatureParameterDesc::from_ffi(&signature_parameter_desc_ffi))
+            Ok(D3D12SignatureParameterDesc::from_ffi(
+                &signature_parameter_desc_ffi,
+            ))
         }
     }
-    pub(crate) fn get_mov_instruction_count(&self) -> u32 { unsafe { self.inner.get_mov_instruction_count() } }
-    pub(crate) fn get_movc_instruction_count(&self) -> u32 { unsafe { self.inner.get_movc_instruction_count() } }
-    pub(crate) fn get_conversion_instruction_count(&self) -> u32 { unsafe { self.inner.get_conversion_instruction_count() } }
-    pub(crate) fn get_bitwise_instruction_count(&self) -> u32 { unsafe { self.inner.get_bitwise_instruction_count() } }
-    pub(crate) fn get_gs_input_primitive(&self) -> D3D_PRIMITIVE { unsafe { self.inner.get_gs_input_primitive() } }
-    pub(crate) fn is_sample_frequency_shader(&self) -> bool { unsafe { self.inner.is_sample_frequency_shader() } }
-    pub(crate) fn get_num_interface_slots(&self) -> u32 { unsafe { self.inner.get_num_interface_slots() } }
+    pub(crate) fn get_mov_instruction_count(&self) -> u32 {
+        unsafe { self.inner.get_mov_instruction_count() }
+    }
+    pub(crate) fn get_movc_instruction_count(&self) -> u32 {
+        unsafe { self.inner.get_movc_instruction_count() }
+    }
+    pub(crate) fn get_conversion_instruction_count(&self) -> u32 {
+        unsafe { self.inner.get_conversion_instruction_count() }
+    }
+    pub(crate) fn get_bitwise_instruction_count(&self) -> u32 {
+        unsafe { self.inner.get_bitwise_instruction_count() }
+    }
+    pub(crate) fn get_gs_input_primitive(&self) -> D3D_PRIMITIVE {
+        unsafe { self.inner.get_gs_input_primitive() }
+    }
+    pub(crate) fn is_sample_frequency_shader(&self) -> bool {
+        unsafe { self.inner.is_sample_frequency_shader() }
+    }
+    pub(crate) fn get_num_interface_slots(&self) -> u32 {
+        unsafe { self.inner.get_num_interface_slots() }
+    }
 
     pub fn thread_group_size(&self) -> [u32; 3] {
         let (mut size_x, mut size_y, mut size_z) = (0u32, 0u32, 0u32);
@@ -1239,7 +1281,9 @@ impl Reflection {
         [size_x, size_y, size_z]
     }
 
-    pub(crate) fn get_requires_flags(&self) -> u64 { unsafe { self.inner.get_requires_flags() } }
+    pub(crate) fn get_requires_flags(&self) -> u64 {
+        unsafe { self.inner.get_requires_flags() }
+    }
 }
 
 pub struct DxcReflector {

@@ -22,6 +22,7 @@ pub fn shader_version_minor_version(version: u32) -> u32 {
     version & 0x0000000F
 }
 
+#[rustfmt::skip]
 #[allow(non_camel_case_types, non_snake_case)]
 pub struct D3D12_SIGNATURE_PARAMETER_DESC
 {
@@ -40,6 +41,7 @@ pub struct D3D12_SIGNATURE_PARAMETER_DESC
     pub MinPrecision: D3D_MIN_PRECISION,            // Minimum desired interpolation precision
 }
 
+#[rustfmt::skip]
 #[allow(non_camel_case_types, non_snake_case)]
 #[repr(C)]
 pub struct D3D12_SHADER_BUFFER_DESC
@@ -51,6 +53,7 @@ pub struct D3D12_SHADER_BUFFER_DESC
     pub uFlags: u32,                            // Buffer description flags
 }
 
+#[rustfmt::skip]
 #[allow(non_camel_case_types, non_snake_case)]
 pub struct D3D12_SHADER_VARIABLE_DESC
 {
@@ -65,6 +68,7 @@ pub struct D3D12_SHADER_VARIABLE_DESC
     pub SamplerSize: u32,                       // Number of sampler slots possibly used.
 }
 
+#[rustfmt::skip]
 #[allow(non_camel_case_types, non_snake_case)]
 #[repr(C)]
 pub struct D3D12_SHADER_TYPE_DESC
@@ -79,6 +83,7 @@ pub struct D3D12_SHADER_TYPE_DESC
     pub Name: *mut std::ffi::c_char,            // Name of type, can be NULL
 }
 
+#[rustfmt::skip]
 #[allow(non_camel_case_types, non_snake_case)]
 #[repr(C)]
 pub struct D3D12_SHADER_DESC
@@ -123,6 +128,7 @@ pub struct D3D12_SHADER_DESC
     pub cTextureStoreInstructions: u32,                         // Number of texture writes
 }
 
+#[rustfmt::skip]
 #[allow(non_camel_case_types, non_snake_case)]
 #[repr(C)]
 pub struct D3D12_SHADER_INPUT_BIND_DESC
@@ -145,6 +151,7 @@ pub struct D3D12_SHADER_INPUT_BIND_DESC
 // as long as the underlying "owning" reflection object remains available. The safe wrappers hold
 // onto both one of these structs and a ref-counted pointer to the owning COM object.
 //
+#[rustfmt::skip]
 #[allow(non_snake_case)]
 #[repr(C)]
 pub(crate) struct ID3D12ShaderReflectionTypeVTable {
@@ -161,7 +168,8 @@ pub(crate) struct ID3D12ShaderReflectionTypeVTable {
     pub ImplementsInterface: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionTypeVPtr>, other: ID3D12ShaderReflectionType) -> HRESULT,
 }
 
-pub(crate) type ID3D12ShaderReflectionTypeVPtr = ::core::ptr::NonNull<ID3D12ShaderReflectionTypeVTable>;
+pub(crate) type ID3D12ShaderReflectionTypeVPtr =
+    ::core::ptr::NonNull<ID3D12ShaderReflectionTypeVTable>;
 
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -170,82 +178,55 @@ pub(crate) struct ID3D12ShaderReflectionType {
 }
 
 impl ID3D12ShaderReflectionType {
-    pub(crate) unsafe fn get_desc(
-        &self,
-        desc: impl Into<*mut D3D12_SHADER_TYPE_DESC>
-    ) -> HRESULT {
+    pub(crate) unsafe fn get_desc(&self, desc: impl Into<*mut D3D12_SHADER_TYPE_DESC>) -> HRESULT {
         (self.inner.as_ref().as_ref().GetDesc)(self.inner, desc.into())
     }
 
-    pub(crate) unsafe fn get_member_type_by_index(
-        &self,
-        index: u32
-    ) -> ID3D12ShaderReflectionType {
+    pub(crate) unsafe fn get_member_type_by_index(&self, index: u32) -> ID3D12ShaderReflectionType {
         (self.inner.as_ref().as_ref().GetMemberTypeByIndex)(self.inner, index)
     }
 
     pub(crate) unsafe fn get_member_type_by_name(
         &self,
-        name: *const std::ffi::c_char
+        name: *const std::ffi::c_char,
     ) -> ID3D12ShaderReflectionType {
         (self.inner.as_ref().as_ref().GetMemberTypeByName)(self.inner, name)
     }
 
-    pub(crate) unsafe fn get_member_type_name(
-        &self,
-        index: u32
-    ) -> *const std::ffi::c_char {
+    pub(crate) unsafe fn get_member_type_name(&self, index: u32) -> *const std::ffi::c_char {
         (self.inner.as_ref().as_ref().GetMemberTypeName)(self.inner, index)
     }
 
-    pub(crate) unsafe fn is_equal(
-        &self,
-        ty: ID3D12ShaderReflectionType
-    ) -> HRESULT {
+    pub(crate) unsafe fn is_equal(&self, ty: ID3D12ShaderReflectionType) -> HRESULT {
         (self.inner.as_ref().as_ref().IsEqual)(self.inner, ty)
     }
 
-    pub(crate) unsafe fn get_sub_type(
-        &self
-    ) -> ID3D12ShaderReflectionType {
+    pub(crate) unsafe fn get_sub_type(&self) -> ID3D12ShaderReflectionType {
         (self.inner.as_ref().as_ref().GetSubType)(self.inner)
     }
 
-
-    pub(crate) unsafe fn get_base_class(
-        &self
-    ) -> ID3D12ShaderReflectionType {
+    pub(crate) unsafe fn get_base_class(&self) -> ID3D12ShaderReflectionType {
         (self.inner.as_ref().as_ref().GetBaseClass)(self.inner)
     }
 
-    pub(crate) unsafe fn get_num_interfaces(
-        &self,
-    ) -> u32 {
+    pub(crate) unsafe fn get_num_interfaces(&self) -> u32 {
         (self.inner.as_ref().as_ref().GetNumInterfaces)(self.inner)
     }
 
-    pub(crate) unsafe fn get_interface_by_index(
-        &self,
-        index: u32
-    ) -> ID3D12ShaderReflectionType {
+    pub(crate) unsafe fn get_interface_by_index(&self, index: u32) -> ID3D12ShaderReflectionType {
         (self.inner.as_ref().as_ref().GetInterfaceByIndex)(self.inner, index)
     }
 
-    pub(crate) unsafe fn is_of_type(
-        &self,
-        ty: ID3D12ShaderReflectionType
-    ) -> HRESULT {
+    pub(crate) unsafe fn is_of_type(&self, ty: ID3D12ShaderReflectionType) -> HRESULT {
         (self.inner.as_ref().as_ref().IsOfType)(self.inner, ty)
     }
 
-    pub(crate) unsafe fn implements_interface(
-        &self,
-        ty: ID3D12ShaderReflectionType
-    ) -> HRESULT {
+    pub(crate) unsafe fn implements_interface(&self, ty: ID3D12ShaderReflectionType) -> HRESULT {
         (self.inner.as_ref().as_ref().ImplementsInterface)(self.inner, ty)
     }
 }
 
+#[rustfmt::skip]
 #[allow(non_snake_case)]
 #[repr(C)]
 pub(crate) struct ID3D12ShaderReflectionVariableVTable {
@@ -255,7 +236,8 @@ pub(crate) struct ID3D12ShaderReflectionVariableVTable {
     pub GetInterfaceSlot: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionVariableVPtr>, u32) -> u32,
 }
 
-pub(crate) type ID3D12ShaderReflectionVariableVPtr = ::core::ptr::NonNull<ID3D12ShaderReflectionVariableVTable>;
+pub(crate) type ID3D12ShaderReflectionVariableVPtr =
+    ::core::ptr::NonNull<ID3D12ShaderReflectionVariableVTable>;
 
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -265,7 +247,7 @@ pub(crate) struct ID3D12ShaderReflectionVariable {
 impl ID3D12ShaderReflectionVariable {
     pub(crate) unsafe fn get_desc(
         &self,
-        p_desc: impl Into<*mut D3D12_SHADER_VARIABLE_DESC>
+        p_desc: impl Into<*mut D3D12_SHADER_VARIABLE_DESC>,
     ) -> HRESULT {
         (self.inner.as_ref().as_ref().GetDesc)(self.inner, p_desc.into())
     }
@@ -274,20 +256,16 @@ impl ID3D12ShaderReflectionVariable {
         (self.inner.as_ref().as_ref().GetType)(self.inner)
     }
 
-    pub(crate) unsafe fn get_buffer(
-        &self
-    ) -> ID3D12ShaderReflectionConstantBuffer {
+    pub(crate) unsafe fn get_buffer(&self) -> ID3D12ShaderReflectionConstantBuffer {
         (self.inner.as_ref().as_ref().GetBuffer)(self.inner)
     }
 
-    pub(crate) unsafe fn get_interface_slot(
-        &self,
-        array_index: u32
-    ) -> u32 {
+    pub(crate) unsafe fn get_interface_slot(&self, array_index: u32) -> u32 {
         (self.inner.as_ref().as_ref().GetInterfaceSlot)(self.inner, array_index)
     }
 }
 
+#[rustfmt::skip]
 #[allow(non_snake_case)]
 #[repr(C)]
 pub(crate) struct ID3D12ShaderReflectionConstantBufferVTable {
@@ -296,7 +274,8 @@ pub(crate) struct ID3D12ShaderReflectionConstantBufferVTable {
     pub GetVariableByName: unsafe extern "system" fn(::core::ptr::NonNull<ID3D12ShaderReflectionConstantBufferVPtr>, *const std::ffi::c_char) -> ID3D12ShaderReflectionVariable,
 }
 
-pub(crate) type ID3D12ShaderReflectionConstantBufferVPtr = ::core::ptr::NonNull<ID3D12ShaderReflectionConstantBufferVTable>;
+pub(crate) type ID3D12ShaderReflectionConstantBufferVPtr =
+    ::core::ptr::NonNull<ID3D12ShaderReflectionConstantBufferVTable>;
 
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -307,21 +286,21 @@ pub(crate) struct ID3D12ShaderReflectionConstantBuffer {
 impl ID3D12ShaderReflectionConstantBuffer {
     pub(crate) unsafe fn get_desc(
         &self,
-        p_desc: impl Into<*mut D3D12_SHADER_BUFFER_DESC>
+        p_desc: impl Into<*mut D3D12_SHADER_BUFFER_DESC>,
     ) -> HRESULT {
         (self.inner.as_ref().as_ref().GetDesc)(self.inner, p_desc.into())
     }
 
     pub(crate) unsafe fn get_variable_by_index(
         &self,
-        index: u32
+        index: u32,
     ) -> ID3D12ShaderReflectionVariable {
         (self.inner.as_ref().as_ref().GetVariableByIndex)(self.inner, index)
     }
 
     pub(crate) unsafe fn get_variable_by_name(
         &self,
-        name: impl Into<*const std::ffi::c_char>
+        name: impl Into<*const std::ffi::c_char>,
     ) -> ID3D12ShaderReflectionVariable {
         (self.inner.as_ref().as_ref().GetVariableByName)(self.inner, name.into())
     }

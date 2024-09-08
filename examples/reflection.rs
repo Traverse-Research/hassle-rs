@@ -39,7 +39,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let error_blob = result.get_error_buffer()?;
             let error_string = library.get_blob_as_string(&error_blob.into())?;
             println!("{}", error_string);
-
         }
     }
 
@@ -86,7 +85,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 for i in 0..constant_buffer_desc.Variables {
                     let variable = constant_buffer.get_variable_by_index(i)?;
                     let variable_desc = variable.get_desc()?;
-                    println!("var {}: {:?} +{} {:?}", i, variable_desc.Name, variable_desc.StartOffset, variable_desc);
+                    println!(
+                        "var {}: {:?} +{} {:?}",
+                        i, variable_desc.Name, variable_desc.StartOffset, variable_desc
+                    );
 
                     let variable_type = variable.get_type();
                     let variable_type_desc = variable_type.get_desc()?;
@@ -101,17 +103,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
 
-            let cb = reflected.get_constant_buffer_by_name(CString::new("SomeConstants").unwrap().as_ref()).get_desc()?;
+            let cb = reflected
+                .get_constant_buffer_by_name(CString::new("SomeConstants").unwrap().as_ref())
+                .get_desc()?;
             println!("found by name {:?}", cb);
 
-            let some_constants_type = reflected.get_constant_buffer_by_name(CString::new("SomeConstants").unwrap().as_ref()).get_variable_by_index(0)?.get_type();
+            let some_constants_type = reflected
+                .get_constant_buffer_by_name(CString::new("SomeConstants").unwrap().as_ref())
+                .get_variable_by_index(0)?
+                .get_type();
             let some_constants_type_desc = some_constants_type.get_desc()?;
 
-
-            println!("type name {:?} var count {:?}", some_constants_type_desc.Name, some_constants_type_desc.Members);
+            println!(
+                "type name {:?} var count {:?}",
+                some_constants_type_desc.Name, some_constants_type_desc.Members
+            );
             for i in 0..some_constants_type_desc.Members {
-
-                println!("member type name {:?}", some_constants_type.get_member_type_name(i));
+                println!(
+                    "member type name {:?}",
+                    some_constants_type.get_member_type_name(i)
+                );
                 let member_type = some_constants_type.get_member_type_by_index(i);
                 println!("member {:?}", member_type.get_desc());
             }
@@ -121,7 +132,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let error_blob = result.get_error_buffer()?;
             let error_string = library.get_blob_as_string(&error_blob.into())?;
             println!("{}", error_string);
-
         }
     }
 
