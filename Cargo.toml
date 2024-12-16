@@ -18,7 +18,7 @@ bitflags = "2"
 com = { version = "0.6", features = ["production"] }
 # libloading 0.8 switches from `winapi` to `windows-sys`; permit either
 libloading = ">=0.7,<0.9"
-thiserror = "1.0.2"
+thiserror = "2.0.7"
 widestring = "1"
 
 [target.'cfg(windows)'.dependencies]
