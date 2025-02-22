@@ -13,6 +13,7 @@ use std::cell::RefCell;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::str::FromStr;
 
 pub struct DxcBlob {
     inner: IDxcBlob,
@@ -492,18 +493,18 @@ pub struct Dxc {
 }
 
 #[cfg(target_os = "windows")]
-fn dxcompiler_lib_name() -> &'static Path {
-    Path::new("dxcompiler.dll")
+fn dxcompiler_lib_name() -> &'static str {
+    "dxcompiler.dll"
 }
 
 #[cfg(any(target_os = "linux", target_os = "android"))]
-fn dxcompiler_lib_name() -> &'static Path {
-    Path::new("./libdxcompiler.so")
+fn dxcompiler_lib_name() -> &'static str {
+    "libdxcompiler.so"
 }
 
 #[cfg(target_os = "macos")]
-fn dxcompiler_lib_name() -> &'static Path {
-    Path::new("./libdxcompiler.dylib")
+fn dxcompiler_lib_name() -> &'static str {
+    "libdxcompiler.dylib"
 }
 
 impl Dxc {
@@ -517,7 +518,19 @@ impl Dxc {
                 lib_path.join(dxcompiler_lib_name())
             }
         } else {
-            dxcompiler_lib_name().to_owned()
+            #[cfg(target_os = "windows")]
+            {
+                dxcompiler_lib_name().to_owned()
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                let p1 = PathBuf::from_str(&format!("./{}", dxcompiler_lib_name())).unwrap();
+                if let Ok(true) = std::fs::exists(&p1) {
+                    p1
+                } else {
+                    PathBuf::from_str(dxcompiler_lib_name()).unwrap()
+                }
+            }
         };
         let dxc_lib =
             unsafe { Library::new(&lib_path) }.map_err(|e| HassleError::LoadLibraryError {
@@ -669,27 +682,40 @@ impl DxcReflector {
 pub struct Dxil {
     dxil_lib: Library,
 }
+#[cfg(target_os = "windows")]
+fn dxil_lib_name() -> &'static str {
+    "dxil.dll"
+}
 
+#[cfg(any(target_os = "linux", target_os = "android"))]
+fn dxil_lib_name() -> &'static str {
+    "libdxil.so"
+}
+
+#[cfg(target_os = "macos")]
+fn dxil_lib_name() -> &'static str {
+    "libdxil.dylib"
+}
 impl Dxil {
-    #[cfg(not(windows))]
+    /*#[cfg(not(windows))]
     pub fn new(_: Option<PathBuf>) -> Result<Self> {
         Err(HassleError::WindowsOnly(
             "DXIL Signing is only supported on Windows".to_string(),
         ))
-    }
+    }*/
 
     /// `dxil_path` can point to a library directly or the directory containing the library,
     /// in which case `dxil.dll` is appended.
-    #[cfg(windows)]
+    // #[cfg(windows)]
     pub fn new(lib_path: Option<PathBuf>) -> Result<Self> {
         let lib_path = if let Some(lib_path) = lib_path {
             if lib_path.is_file() {
                 lib_path
             } else {
-                lib_path.join("dxil.dll")
+                lib_path.join(dxil_lib_name())
             }
         } else {
-            PathBuf::from("dxil.dll")
+            PathBuf::from(dxil_lib_name())
         };
 
         let dxil_lib =
