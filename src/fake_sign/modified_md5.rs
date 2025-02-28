@@ -67,7 +67,7 @@ impl Context {
     /// Consume data.
     #[cfg(target_pointer_width = "64")]
     pub fn consume<T: AsRef<[u8]>>(&mut self, data: T) {
-        for chunk in data.as_ref().chunks(core::u32::MAX as usize) {
+        for chunk in data.as_ref().chunks(u32::MAX as usize) {
             consume(self, chunk);
         }
     }
@@ -113,9 +113,6 @@ fn transform(state: &mut [u32; 4], input: &[u32; 16]) {
     macro_rules! add(
         ($a:expr, $b:expr) => ($a.wrapping_add($b));
     );
-    macro_rules! rotate(
-        ($x:expr, $n:expr) => (($x << $n) | ($x >> (32 - $n)));
-    );
     {
         macro_rules! F(
             ($x:expr, $y:expr, $z:expr) => (($x & $y) | (!$x & $z));
@@ -123,7 +120,7 @@ fn transform(state: &mut [u32; 4], input: &[u32; 16]) {
         macro_rules! T(
             ($a:expr, $b:expr, $c:expr, $d:expr, $x:expr, $s:expr, $ac:expr) => ({
                 $a = add!(add!(add!($a, F!($b, $c, $d)), $x), $ac);
-                $a = rotate!($a, $s);
+                $a = $a.rotate_left($s);
                 $a = add!($a, $b);
             });
         );
@@ -155,7 +152,7 @@ fn transform(state: &mut [u32; 4], input: &[u32; 16]) {
         macro_rules! T(
             ($a:expr, $b:expr, $c:expr, $d:expr, $x:expr, $s:expr, $ac:expr) => ({
                 $a = add!(add!(add!($a, F!($b, $c, $d)), $x), $ac);
-                $a = rotate!($a, $s);
+                $a = $a.rotate_left($s);
                 $a = add!($a, $b);
             });
         );
@@ -187,7 +184,7 @@ fn transform(state: &mut [u32; 4], input: &[u32; 16]) {
         macro_rules! T(
             ($a:expr, $b:expr, $c:expr, $d:expr, $x:expr, $s:expr, $ac:expr) => ({
                 $a = add!(add!(add!($a, F!($b, $c, $d)), $x), $ac);
-                $a = rotate!($a, $s);
+                $a = $a.rotate_left($s);
                 $a = add!($a, $b);
             });
         );
@@ -219,7 +216,7 @@ fn transform(state: &mut [u32; 4], input: &[u32; 16]) {
         macro_rules! T(
             ($a:expr, $b:expr, $c:expr, $d:expr, $x:expr, $s:expr, $ac:expr) => ({
                 $a = add!(add!(add!($a, F!($b, $c, $d)), $x), $ac);
-                $a = rotate!($a, $s);
+                $a = $a.rotate_left($s);
                 $a = add!($a, $b);
             });
         );

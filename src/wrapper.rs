@@ -210,6 +210,7 @@ impl DxcIncludeHandlerWrapper {
         library: &'_ DxcLibrary,
         include_handler: &'_ mut dyn DxcIncludeHandler,
     ) -> LocalClassAllocation<DxcIncludeHandlerWrapper> {
+        #[allow(clippy::missing_transmute_annotations)]
         LocalClassAllocation::new(Self::allocate(
             std::mem::transmute(library),
             RefCell::new(std::mem::transmute(include_handler)),
