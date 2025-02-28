@@ -24,20 +24,30 @@ impl DxcBlob {
     }
 
     pub fn as_slice<T>(&self) -> &[T] {
-        unsafe {
-            std::slice::from_raw_parts(
-                self.inner.get_buffer_pointer().cast(),
-                self.inner.get_buffer_size() / std::mem::size_of::<T>(),
-            )
+        let bytes = unsafe { self.inner.get_buffer_size() };
+        if bytes == 0 {
+            &[]
+        } else {
+            unsafe {
+                std::slice::from_raw_parts(
+                    self.inner.get_buffer_pointer().cast(),
+                    bytes / size_of::<T>(),
+                )
+            }
         }
     }
 
     pub fn as_mut_slice<T>(&mut self) -> &mut [T] {
-        unsafe {
-            std::slice::from_raw_parts_mut(
-                self.inner.get_buffer_pointer().cast(),
-                self.inner.get_buffer_size() / std::mem::size_of::<T>(),
-            )
+        let bytes = unsafe { self.inner.get_buffer_size() };
+        if bytes == 0 {
+            &mut []
+        } else {
+            unsafe {
+                std::slice::from_raw_parts_mut(
+                    self.inner.get_buffer_pointer().cast(),
+                    bytes / size_of::<T>(),
+                )
+            }
         }
     }
 
