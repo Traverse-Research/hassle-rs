@@ -133,7 +133,7 @@ pub fn compile_hlsl(
         Err(result) => {
             let error_blob = result.0.get_error_buffer()?;
             Err(HassleError::CompileError(
-                library.get_blob_as_string(&error_blob.into())?,
+                library.get_blob_as_string(&error_blob)?,
             ))
         }
         Ok(result) => {
@@ -163,7 +163,7 @@ pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
         Err(result) => {
             let error_blob = result.0.get_error_buffer()?;
             Err(HassleError::ValidationError(
-                library.get_blob_as_string(&error_blob.into())?,
+                library.get_blob_as_string(&error_blob)?,
             ))
         }
     }

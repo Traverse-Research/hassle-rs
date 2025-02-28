@@ -10,10 +10,13 @@ use crate::utils::{from_wide, to_wide, HassleError, Result};
 use com::{class, interfaces::IUnknown, production::Class, production::ClassAllocation, Interface};
 use libloading::{library_filename, Library, Symbol};
 use std::cell::RefCell;
+use std::convert::TryFrom;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::pin::Pin;
 
+#[derive(Debug)]
+#[repr(transparent)]
 pub struct DxcBlob {
     inner: IDxcBlob,
 }
@@ -71,6 +74,8 @@ impl AsMut<[u8]> for DxcBlob {
     }
 }
 
+#[derive(Debug)]
+#[repr(transparent)]
 pub struct DxcBlobEncoding {
     inner: IDxcBlobEncoding,
 }
@@ -82,8 +87,28 @@ impl DxcBlobEncoding {
 }
 
 impl From<DxcBlobEncoding> for DxcBlob {
-    fn from(encoded_blob: DxcBlobEncoding) -> Self {
-        DxcBlob::new(encoded_blob.inner.query_interface::<IDxcBlob>().unwrap())
+    fn from(blob: DxcBlobEncoding) -> Self {
+        // Implemented by transmute because IDxcBlob is a supertrait of IDxcBlobEncoding
+        unsafe { std::mem::transmute(blob) }
+    }
+}
+
+impl TryFrom<DxcBlob> for DxcBlobEncoding {
+    type Error = ();
+
+    fn try_from(blob: DxcBlob) -> Result<Self, Self::Error> {
+        blob.inner
+            .query_interface::<IDxcBlobEncoding>()
+            .map(DxcBlobEncoding::new)
+            .ok_or(())
+    }
+}
+
+impl Deref for DxcBlobEncoding {
+    type Target = DxcBlob;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { std::mem::transmute(self) }
     }
 }
 
@@ -486,6 +511,7 @@ impl DxcLibrary {
         Ok(DxcBlobEncoding::new(blob.unwrap()))
     }
 
+    /// Convert or return matching encoded text blob as UTF-8.
     pub fn get_blob_as_string(&self, blob: &DxcBlob) -> Result<String> {
         let mut blob_utf8 = None;
 
@@ -493,7 +519,7 @@ impl DxcLibrary {
 
         let blob_utf8 = blob_utf8.unwrap();
 
-        Ok(String::from_utf8(DxcBlob::new(blob_utf8.query_interface().unwrap()).to_vec()).unwrap())
+        Ok(String::from_utf8(DxcBlobEncoding::new(blob_utf8).to_vec()).unwrap())
     }
 }
 
