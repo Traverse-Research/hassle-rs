@@ -520,7 +520,7 @@ impl Dxc {
         } else {
             #[cfg(target_os = "windows")]
             {
-                dxcompiler_lib_name().to_owned()
+                PathBuf::from_str(dxcompiler_lib_name())
             }
             #[cfg(not(target_os = "windows"))]
             {
