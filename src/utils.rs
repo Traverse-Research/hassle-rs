@@ -67,8 +67,6 @@ pub enum HassleError {
     },
     #[error("LibLoading error: {0:?}")]
     LibLoadingError(#[from] libloading::Error),
-    #[error("Windows only")]
-    WindowsOnly(String),
 }
 
 pub type Result<T, E = HassleError> = std::result::Result<T, E>;

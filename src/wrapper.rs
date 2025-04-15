@@ -650,16 +650,8 @@ pub struct Dxil {
 }
 
 impl Dxil {
-    #[cfg(not(windows))]
-    pub fn new(_: Option<PathBuf>) -> Result<Self> {
-        Err(HassleError::WindowsOnly(
-            "DXIL Signing is only supported on Windows".to_string(),
-        ))
-    }
-
     /// `lib_path` is an optional path to the library.  Otherwise
     /// [`libloading::library_filename("dxil")`] is used.
-    #[cfg(windows)]
     pub fn new(lib_path: Option<PathBuf>) -> Result<Self> {
         let lib_path = lib_path.unwrap_or_else(|| PathBuf::from(library_filename("dxil")));
 
