@@ -106,7 +106,7 @@ impl std::fmt::Debug for HRESULT {
 
 impl std::fmt::Display for HRESULT {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{:#x}", self))
+        write!(f, "{:#x}", self)
     }
 }
 
