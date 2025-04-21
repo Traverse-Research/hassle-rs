@@ -35,7 +35,8 @@ pub(crate) fn from_lpstr(string: LPCSTR) -> String {
         .to_owned()
 }
 
-struct DefaultIncludeHandler {}
+#[derive(Default)]
+pub struct DefaultIncludeHandler;
 
 impl DxcIncludeHandler for DefaultIncludeHandler {
     fn load_source(&mut self, filename: String) -> Option<String> {

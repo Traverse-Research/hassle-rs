@@ -10,6 +10,8 @@ use crate::utils::{from_wide, to_wide, HassleError, Result};
 use com::{class, interfaces::IUnknown, production::Class, production::ClassAllocation, Interface};
 use libloading::{library_filename, Library, Symbol};
 use std::cell::RefCell;
+use std::ffi::{CStr, CString};
+use std::mem::MaybeUninit;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::pin::Pin;
@@ -588,12 +590,665 @@ impl DxcValidator {
     }
 }
 
+unsafe fn ffi_char_ptr_to_cstring(s: *mut std::ffi::c_char) -> CString {
+    if s.is_null() {
+        // Empty string seems like a reasonable way to deal with a null pointer here
+        CString::default()
+    } else {
+        CString::from(CStr::from_ptr(s))
+    }
+}
+
+#[rustfmt::skip]
+#[allow(non_camel_case_types, non_snake_case)]
+#[derive(Clone, Debug)]
+pub struct D3D12SignatureParameterDesc
+{
+    pub SemanticName: CString,                      // Name of the semantic
+    pub SemanticIndex: u32,                         // Index of the semantic
+    pub Register: u32,                              // Number of member variables
+    pub SystemValueType: D3D_NAME,                  // A predefined system value, or D3D_NAME_UNDEFINED if not applicable
+    pub ComponentType: D3D_REGISTER_COMPONENT_TYPE, // Scalar type (e.g. uint, float, etc.)
+    pub Mask: u8,                                   // Mask to indicate which components of the register
+                                                    // are used (combination of D3D10_COMPONENT_MASK values)
+    pub ReadWriteMask: u8,                          // Mask to indicate whether a given component is
+                                                    // never written (if this is an output signature) or
+                                                    // always read (if this is an input signature).
+                                                    // (combination of D3D_MASK_* values)
+    pub Stream: u32,                                // Stream index
+    pub MinPrecision: D3D_MIN_PRECISION,            // Minimum desired interpolation precision
+}
+
+impl D3D12SignatureParameterDesc {
+    pub unsafe fn from_ffi(signature_parameter_desc_ffi: &D3D12_SIGNATURE_PARAMETER_DESC) -> Self {
+        D3D12SignatureParameterDesc {
+            SemanticName: ffi_char_ptr_to_cstring(signature_parameter_desc_ffi.SemanticName),
+            SemanticIndex: signature_parameter_desc_ffi.SemanticIndex,
+            Register: signature_parameter_desc_ffi.Register,
+            SystemValueType: signature_parameter_desc_ffi.SystemValueType,
+            ComponentType: signature_parameter_desc_ffi.ComponentType,
+            Mask: signature_parameter_desc_ffi.Mask,
+            ReadWriteMask: signature_parameter_desc_ffi.ReadWriteMask,
+            Stream: signature_parameter_desc_ffi.Stream,
+            MinPrecision: signature_parameter_desc_ffi.MinPrecision,
+        }
+    }
+}
+
+#[rustfmt::skip]
+#[allow(non_snake_case)]
+#[derive(Clone, Debug)]
+pub struct D3D12ShaderBufferDesc
+{
+    pub Name: CString,                         // Name of the constant buffer
+    pub Type: D3D_CBUFFER_TYPE,                // Indicates type of buffer content
+    pub Variables: u32,                        // Number of member variables
+    pub Size: u32,                             // Size of CB (in bytes)
+    pub uFlags: u32,                           // Buffer description flags
+}
+
+impl D3D12ShaderBufferDesc {
+    pub unsafe fn from_ffi(shader_buffer_desc_ffi: &D3D12_SHADER_BUFFER_DESC) -> Self {
+        D3D12ShaderBufferDesc {
+            Name: ffi_char_ptr_to_cstring(shader_buffer_desc_ffi.Name),
+            Type: shader_buffer_desc_ffi.Type,
+            Variables: shader_buffer_desc_ffi.Variables,
+            Size: shader_buffer_desc_ffi.Size,
+            uFlags: shader_buffer_desc_ffi.uFlags,
+        }
+    }
+}
+
+#[rustfmt::skip]
+#[allow(non_snake_case)]
+#[derive(Clone, Debug)]
+pub struct D3D12ShaderVariableDesc
+{
+    pub Name: CString,                          // Name of the variable
+    pub StartOffset: u32,                       // Offset in constant buffer's backing store
+    pub Size: u32,                              // Size of variable (in bytes)
+    pub uFlags: u32,                            // Variable flags
+    pub DefaultValue: *mut std::ffi::c_void,    // Raw pointer to default value
+    pub StartTexture: u32,                      // First texture index (or -1 if no textures used)
+    pub TextureSize: u32,                       // Number of texture slots possibly used.
+    pub StartSampler: u32,                      // First sampler index (or -1 if no textures used)
+    pub SamplerSize: u32,                       // Number of sampler slots possibly used.
+}
+
+impl D3D12ShaderVariableDesc {
+    pub unsafe fn from_ffi(shader_variable_desc_ffi: &D3D12_SHADER_VARIABLE_DESC) -> Self {
+        D3D12ShaderVariableDesc {
+            Name: ffi_char_ptr_to_cstring(shader_variable_desc_ffi.Name),
+            StartOffset: shader_variable_desc_ffi.StartOffset,
+            Size: shader_variable_desc_ffi.Size,
+            uFlags: shader_variable_desc_ffi.uFlags,
+            DefaultValue: shader_variable_desc_ffi.DefaultValue,
+            StartTexture: shader_variable_desc_ffi.StartTexture,
+            TextureSize: shader_variable_desc_ffi.TextureSize,
+            StartSampler: shader_variable_desc_ffi.StartSampler,
+            SamplerSize: shader_variable_desc_ffi.SamplerSize,
+        }
+    }
+}
+
+#[rustfmt::skip]
+#[allow(non_snake_case)]
+#[derive(Clone, Debug)]
+pub struct D3D12ShaderTypeDesc
+{
+    pub Class: D3D_SHADER_VARIABLE_CLASS,       // Variable class (e.g. object, matrix, etc.)
+    pub Type: D3D_SHADER_VARIABLE_TYPE,         // Variable type (e.g. float, sampler, etc.)
+    pub Rows: u32,                              // Number of rows (for matrices, 1 for other numeric, 0 if not applicable)
+    pub Columns: u32,                           // Number of columns (for vectors & matrices, 1 for other numeric, 0 if not applicable)
+    pub Elements: u32,                          // Number of elements (0 if not an array)
+    pub Members: u32,                           // Number of members (0 if not a structure)
+    pub Offset: u32,                            // Offset from the start of structure (0 if not a structure member)
+    pub Name: CString,                          // Name of type, can be NULL
+}
+
+impl D3D12ShaderTypeDesc {
+    pub unsafe fn from_ffi(shader_type_desc_ffi: &D3D12_SHADER_TYPE_DESC) -> Self {
+        D3D12ShaderTypeDesc {
+            Class: shader_type_desc_ffi.Class,
+            Type: shader_type_desc_ffi.Type,
+            Rows: shader_type_desc_ffi.Rows,
+            Columns: shader_type_desc_ffi.Columns,
+            Elements: shader_type_desc_ffi.Elements,
+            Members: shader_type_desc_ffi.Members,
+            Offset: shader_type_desc_ffi.Offset,
+            Name: ffi_char_ptr_to_cstring(shader_type_desc_ffi.Name),
+        }
+    }
+}
+
+#[rustfmt::skip]
+#[allow(non_snake_case)]
+#[derive(Clone, Debug)]
+pub struct D3D12ShaderDesc
+{
+    pub Version: u32,                                           // Shader version
+    pub Creator: CString,                                       // Creator string
+    pub Flags: u32,                                             // Shader compilation/parse flags
+    pub ConstantBuffers: u32,                                   // Number of constant buffers
+    pub BoundResources: u32,                                    // Number of bound resources
+    pub InputParameters: u32,                                   // Number of parameters in the input signature
+    pub OutputParameters: u32,                                  // Number of parameters in the output signature
+    pub InstructionCount: u32,                                  // Number of emitted instructions
+    pub TempRegisterCount: u32,                                 // Number of temporary registers used
+    pub TempArrayCount: u32,                                    // Number of temporary arrays used
+    pub DefCount: u32,                                          // Number of constant defines
+    pub DclCount: u32,                                          // Number of declarations (input + output)
+    pub TextureNormalInstructions: u32,                         // Number of non-categorized texture instructions
+    pub TextureLoadInstructions: u32,                           // Number of texture load instructions
+    pub TextureCompInstructions: u32,                           // Number of texture comparison instructions
+    pub TextureBiasInstructions: u32,                           // Number of texture bias instructions
+    pub TextureGradientInstructions: u32,                       // Number of texture gradient instructions
+    pub FloatInstructionCount: u32,                             // Number of floating point arithmetic instructions used
+    pub IntInstructionCount: u32,                               // Number of signed integer arithmetic instructions used
+    pub UintInstructionCount: u32,                              // Number of unsigned integer arithmetic instructions used
+    pub StaticFlowControlCount: u32,                            // Number of static flow control instructions used
+    pub DynamicFlowControlCount: u32,                           // Number of dynamic flow control instructions used
+    pub MacroInstructionCount: u32,                             // Number of macro instructions used
+    pub ArrayInstructionCount: u32,                             // Number of array instructions used
+    pub CutInstructionCount: u32,                               // Number of cut instructions used
+    pub EmitInstructionCount: u32,                              // Number of emit instructions used
+    pub GSOutputTopology: D3D_PRIMITIVE_TOPOLOGY,               // Geometry shader output topology
+    pub GSMaxOutputVertexCount: u32,                            // Geometry shader maximum output vertex count
+    pub InputPrimitive: D3D_PRIMITIVE_TOPOLOGY,                 // GS/HS input primitive
+    pub PatchConstantParameters: u32,                           // Number of parameters in the patch constant signature
+    pub cGSInstanceCount: u32,                                  // Number of Geometry shader instances
+    pub cControlPoints: u32,                                    // Number of control points in the HS->DS stage
+    pub HSOutputPrimitive: D3D_TESSELLATOR_OUTPUT_PRIMITIVE,    // Primitive output by the tessellator
+    pub HSPartitioning: D3D_TESSELLATOR_PARTITIONING,           // Partitioning mode of the tessellator
+    pub TessellatorDomain: D3D_TESSELLATOR_DOMAIN,              // Domain of the tessellator (quad, tri, isoline)
+    pub cBarrierInstructions: u32,                              // Number of barrier instructions in a compute shader
+    pub cInterlockedInstructions: u32,                          // Number of interlocked instructions
+    pub cTextureStoreInstructions: u32,                         // Number of texture writes
+}
+
+impl D3D12ShaderDesc {
+    pub unsafe fn from_ffi(shader_desc_ffi: &D3D12_SHADER_DESC) -> Self {
+        D3D12ShaderDesc {
+            Version: shader_desc_ffi.Version,
+            Creator: ffi_char_ptr_to_cstring(shader_desc_ffi.Creator),
+            Flags: shader_desc_ffi.Flags,
+            ConstantBuffers: shader_desc_ffi.ConstantBuffers,
+            BoundResources: shader_desc_ffi.BoundResources,
+            InputParameters: shader_desc_ffi.InputParameters,
+            OutputParameters: shader_desc_ffi.OutputParameters,
+            InstructionCount: shader_desc_ffi.InstructionCount,
+            TempRegisterCount: shader_desc_ffi.TempRegisterCount,
+            TempArrayCount: shader_desc_ffi.TempArrayCount,
+            DefCount: shader_desc_ffi.DefCount,
+            DclCount: shader_desc_ffi.DclCount,
+            TextureNormalInstructions: shader_desc_ffi.TextureNormalInstructions,
+            TextureLoadInstructions: shader_desc_ffi.TextureLoadInstructions,
+            TextureCompInstructions: shader_desc_ffi.TextureCompInstructions,
+            TextureBiasInstructions: shader_desc_ffi.TextureBiasInstructions,
+            TextureGradientInstructions: shader_desc_ffi.TextureGradientInstructions,
+            FloatInstructionCount: shader_desc_ffi.FloatInstructionCount,
+            IntInstructionCount: shader_desc_ffi.IntInstructionCount,
+            UintInstructionCount: shader_desc_ffi.UintInstructionCount,
+            StaticFlowControlCount: shader_desc_ffi.StaticFlowControlCount,
+            DynamicFlowControlCount: shader_desc_ffi.DynamicFlowControlCount,
+            MacroInstructionCount: shader_desc_ffi.MacroInstructionCount,
+            ArrayInstructionCount: shader_desc_ffi.ArrayInstructionCount,
+            CutInstructionCount: shader_desc_ffi.CutInstructionCount,
+            EmitInstructionCount: shader_desc_ffi.EmitInstructionCount,
+            GSOutputTopology: shader_desc_ffi.GSOutputTopology,
+            GSMaxOutputVertexCount: shader_desc_ffi.GSMaxOutputVertexCount,
+            InputPrimitive: shader_desc_ffi.InputPrimitive,
+            PatchConstantParameters: shader_desc_ffi.PatchConstantParameters,
+            cGSInstanceCount: shader_desc_ffi.cGSInstanceCount,
+            cControlPoints: shader_desc_ffi.cControlPoints,
+            HSOutputPrimitive: shader_desc_ffi.HSOutputPrimitive,
+            HSPartitioning: shader_desc_ffi.HSPartitioning,
+            TessellatorDomain: shader_desc_ffi.TessellatorDomain,
+            cBarrierInstructions: shader_desc_ffi.cBarrierInstructions,
+            cInterlockedInstructions: shader_desc_ffi.cInterlockedInstructions,
+            cTextureStoreInstructions: shader_desc_ffi.cTextureStoreInstructions,
+        }
+    }
+}
+
+#[rustfmt::skip]
+#[allow(non_camel_case_types, non_snake_case)]
+#[repr(C)]
+#[derive(Clone, Debug)]
+pub struct D3D12ShaderInputBindDesc
+{
+    pub Name: CString,                          // Name of the resource
+    pub Type: D3D_SHADER_INPUT_TYPE,            // Type of resource (e.g. texture, cbuffer, etc.)
+    pub BindPoint: u32,                         // Starting bind point
+    pub BindCount: u32,                         // Number of contiguous bind points (for arrays)
+    pub uFlags: u32,                            // Input binding flags
+    pub ReturnType: D3D_RESOURCE_RETURN_TYPE,   // Return type (if texture)
+    pub Dimension: D3D_SRV_DIMENSION,           // Dimension (if texture)
+    pub NumSamples: u32,                        // Number of samples (0 if not MS texture)
+    pub Space: u32,                             // Register space
+    pub uID: u32,                               // Range ID in the bytecode
+}
+
+impl D3D12ShaderInputBindDesc {
+    pub unsafe fn from_ffi(shader_input_bind_desc_ffi: &D3D12_SHADER_INPUT_BIND_DESC) -> Self {
+        D3D12ShaderInputBindDesc {
+            Name: ffi_char_ptr_to_cstring(shader_input_bind_desc_ffi.Name),
+            Type: shader_input_bind_desc_ffi.Type,
+            BindPoint: shader_input_bind_desc_ffi.BindPoint,
+            BindCount: shader_input_bind_desc_ffi.BindCount,
+            uFlags: shader_input_bind_desc_ffi.uFlags,
+            ReturnType: shader_input_bind_desc_ffi.ReturnType,
+            Dimension: shader_input_bind_desc_ffi.Dimension,
+            NumSamples: shader_input_bind_desc_ffi.NumSamples,
+            Space: shader_input_bind_desc_ffi.Space,
+            uID: shader_input_bind_desc_ffi.uID,
+        }
+    }
+}
+
+pub struct D3D12ShaderReflectionType {
+    inner: ID3D12ShaderReflectionType,
+    owner: ID3D12ShaderReflection,
+}
+
+impl D3D12ShaderReflectionType {
+    pub fn get_desc(&self) -> Result<D3D12ShaderTypeDesc> {
+        unsafe {
+            let mut shader_type_desc_ffi: D3D12_SHADER_TYPE_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self
+                .inner
+                .get_desc(&mut shader_type_desc_ffi as *mut D3D12_SHADER_TYPE_DESC);
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(D3D12ShaderTypeDesc::from_ffi(&shader_type_desc_ffi))
+        }
+    }
+
+    pub fn get_member_type_by_index(&self, index: u32) -> D3D12ShaderReflectionType {
+        unsafe {
+            let ty = self.inner.get_member_type_by_index(index);
+            D3D12ShaderReflectionType {
+                inner: ty,
+                owner: self.owner.clone(),
+            }
+        }
+    }
+
+    pub fn get_member_type_by_name<'a>(
+        &self,
+        name: impl Into<&'a CStr>,
+    ) -> D3D12ShaderReflectionType {
+        unsafe {
+            let ty = self.inner.get_member_type_by_name(name.into().as_ptr());
+            D3D12ShaderReflectionType {
+                inner: ty,
+                owner: self.owner.clone(),
+            }
+        }
+    }
+    pub fn get_member_type_name(&self, index: u32) -> CString {
+        unsafe {
+            let type_name = self.inner.get_member_type_name(index);
+            CString::from(CStr::from_ptr(type_name))
+        }
+    }
+
+    pub fn is_equal(&self, other: &D3D12ShaderReflectionType) -> Result<bool> {
+        unsafe {
+            let result = self.inner.is_equal(other.inner);
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(result.0 != 0)
+        }
+    }
+
+    pub fn get_sub_type(&self) -> D3D12ShaderReflectionType {
+        unsafe {
+            let ty = self.inner.get_sub_type();
+            D3D12ShaderReflectionType {
+                inner: ty,
+                owner: self.owner.clone(),
+            }
+        }
+    }
+
+    pub fn get_base_class(&self) -> D3D12ShaderReflectionType {
+        unsafe {
+            let ty = self.inner.get_base_class();
+            D3D12ShaderReflectionType {
+                inner: ty,
+                owner: self.owner.clone(),
+            }
+        }
+    }
+
+    pub fn get_num_interfaces(&self) -> u32 {
+        unsafe { self.inner.get_num_interfaces() }
+    }
+
+    pub fn get_interface_by_index(&self, index: u32) -> D3D12ShaderReflectionType {
+        unsafe {
+            let ty = self.inner.get_interface_by_index(index);
+            D3D12ShaderReflectionType {
+                inner: ty,
+                owner: self.owner.clone(),
+            }
+        }
+    }
+
+    pub fn is_of_type(&self, other: &D3D12ShaderReflectionType) -> Result<bool> {
+        unsafe {
+            let result = self.inner.is_of_type(other.inner);
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(result.0 != 0)
+        }
+    }
+
+    pub fn implements_interface(&self, other: &D3D12ShaderReflectionType) -> Result<bool> {
+        unsafe {
+            let result = self.inner.implements_interface(other.inner);
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(result.0 != 0)
+        }
+    }
+}
+
+pub struct D3D12ShaderReflectionVariable {
+    inner: ID3D12ShaderReflectionVariable,
+    owner: ID3D12ShaderReflection,
+}
+
+impl D3D12ShaderReflectionVariable {
+    pub fn get_desc(&self) -> Result<D3D12ShaderVariableDesc> {
+        unsafe {
+            let mut shader_variable_desc_ffi: D3D12_SHADER_VARIABLE_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self
+                .inner
+                .get_desc(&mut shader_variable_desc_ffi as *mut D3D12_SHADER_VARIABLE_DESC);
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(D3D12ShaderVariableDesc::from_ffi(&shader_variable_desc_ffi))
+        }
+    }
+
+    pub fn get_type(&self) -> D3D12ShaderReflectionType {
+        unsafe {
+            D3D12ShaderReflectionType {
+                inner: self.inner.get_type(),
+                owner: self.owner.clone(),
+            }
+        }
+    }
+
+    pub fn get_buffer(&self) -> D3D12ShaderReflectionConstantBuffer {
+        unsafe {
+            D3D12ShaderReflectionConstantBuffer {
+                inner: self.inner.get_buffer(),
+                owner: self.owner.clone(),
+            }
+        }
+    }
+
+    pub fn get_interface_slot(&self, array_index: u32) -> u32 {
+        unsafe { self.inner.get_interface_slot(array_index) }
+    }
+}
+
+pub struct D3D12ShaderReflectionConstantBuffer {
+    inner: ID3D12ShaderReflectionConstantBuffer,
+    owner: ID3D12ShaderReflection,
+}
+
+impl D3D12ShaderReflectionConstantBuffer {
+    pub fn get_desc(&self) -> Result<D3D12ShaderBufferDesc> {
+        unsafe {
+            let mut shader_buffer_desc_ffi: D3D12_SHADER_BUFFER_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self
+                .inner
+                .get_desc(&mut shader_buffer_desc_ffi as *mut D3D12_SHADER_BUFFER_DESC);
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(D3D12ShaderBufferDesc::from_ffi(&shader_buffer_desc_ffi))
+        }
+    }
+
+    pub fn get_variable_by_index(&self, index: u32) -> Result<D3D12ShaderReflectionVariable> {
+        unsafe {
+            let variable_ffi = self.inner.get_variable_by_index(index);
+
+            Ok(D3D12ShaderReflectionVariable {
+                inner: variable_ffi,
+                owner: self.owner.clone(),
+            })
+        }
+    }
+
+    pub fn get_variable_by_name<'a>(
+        &self,
+        name: impl Into<&'a CStr>,
+    ) -> Result<D3D12ShaderReflectionVariable> {
+        unsafe {
+            let variable_ffi = self.inner.get_variable_by_name(name.into().as_ptr());
+
+            Ok(D3D12ShaderReflectionVariable {
+                inner: variable_ffi,
+                owner: self.owner.clone(),
+            })
+        }
+    }
+}
+
 pub struct Reflection {
     inner: ID3D12ShaderReflection,
 }
 impl Reflection {
     fn new(inner: ID3D12ShaderReflection) -> Self {
         Self { inner }
+    }
+
+    pub fn get_desc(&self) -> Result<D3D12ShaderDesc> {
+        unsafe {
+            let mut shader_desc_ffi: D3D12_SHADER_DESC = MaybeUninit::zeroed().assume_init();
+            let result = self
+                .inner
+                .get_desc(&mut shader_desc_ffi as *mut D3D12_SHADER_DESC);
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(D3D12ShaderDesc::from_ffi(&shader_desc_ffi))
+        }
+    }
+
+    pub fn get_constant_buffer_by_index(&self, index: u32) -> D3D12ShaderReflectionConstantBuffer {
+        unsafe {
+            let constant_buffer = self.inner.get_constant_buffer_by_index(index);
+            D3D12ShaderReflectionConstantBuffer {
+                inner: constant_buffer,
+                owner: self.inner.clone(),
+            }
+        }
+    }
+
+    pub fn get_constant_buffer_by_name<'a>(
+        &self,
+        name: impl Into<&'a CStr>,
+    ) -> D3D12ShaderReflectionConstantBuffer {
+        unsafe {
+            let constant_buffer = self.inner.get_constant_buffer_by_name(name.into().as_ptr());
+            D3D12ShaderReflectionConstantBuffer {
+                inner: constant_buffer,
+                owner: self.inner.clone(),
+            }
+        }
+    }
+
+    pub fn get_resource_binding_desc(
+        &self,
+        resource_index: u32,
+    ) -> Result<D3D12ShaderInputBindDesc> {
+        unsafe {
+            let mut shader_input_bind_desc_ffi: D3D12_SHADER_INPUT_BIND_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self.inner.get_resource_binding_desc(
+                resource_index,
+                &mut shader_input_bind_desc_ffi as *mut D3D12_SHADER_INPUT_BIND_DESC,
+            );
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(D3D12ShaderInputBindDesc::from_ffi(
+                &shader_input_bind_desc_ffi,
+            ))
+        }
+    }
+
+    pub fn get_input_parameter_desc(
+        &self,
+        parameter_index: u32,
+    ) -> Result<D3D12SignatureParameterDesc> {
+        unsafe {
+            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self.inner.get_input_parameter_desc(
+                parameter_index,
+                &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC,
+            );
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(D3D12SignatureParameterDesc::from_ffi(
+                &signature_parameter_desc_ffi,
+            ))
+        }
+    }
+
+    pub fn get_output_parameter_desc(
+        &self,
+        parameter_index: u32,
+    ) -> Result<D3D12SignatureParameterDesc> {
+        unsafe {
+            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self.inner.get_output_parameter_desc(
+                parameter_index,
+                &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC,
+            );
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(D3D12SignatureParameterDesc::from_ffi(
+                &signature_parameter_desc_ffi,
+            ))
+        }
+    }
+
+    pub fn get_patch_constant_parameter_desc(
+        &self,
+        parameter_index: u32,
+    ) -> Result<D3D12SignatureParameterDesc> {
+        unsafe {
+            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self.inner.get_patch_constant_parameter_desc(
+                parameter_index,
+                &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC,
+            );
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(D3D12SignatureParameterDesc::from_ffi(
+                &signature_parameter_desc_ffi,
+            ))
+        }
+    }
+
+    pub fn get_variable_by_name<'a>(
+        &self,
+        name: impl Into<&'a CStr>,
+    ) -> D3D12ShaderReflectionVariable {
+        unsafe {
+            let variable = self.inner.get_variable_by_name(name.into().as_ptr());
+            D3D12ShaderReflectionVariable {
+                inner: variable,
+                owner: self.inner.clone(),
+            }
+        }
+    }
+
+    pub fn get_resource_binding_desc_by_name<'a>(
+        &self,
+        name: impl Into<&'a CStr>,
+    ) -> Result<D3D12SignatureParameterDesc> {
+        unsafe {
+            let mut signature_parameter_desc_ffi: D3D12_SIGNATURE_PARAMETER_DESC =
+                MaybeUninit::zeroed().assume_init();
+            let result = self.inner.get_resource_binding_desc_by_name(
+                name.into().as_ptr(),
+                &mut signature_parameter_desc_ffi as *mut D3D12_SIGNATURE_PARAMETER_DESC,
+            );
+
+            if result.is_err() {
+                return Err(HassleError::Win32Error(result));
+            }
+
+            Ok(D3D12SignatureParameterDesc::from_ffi(
+                &signature_parameter_desc_ffi,
+            ))
+        }
+    }
+    pub(crate) fn get_mov_instruction_count(&self) -> u32 {
+        unsafe { self.inner.get_mov_instruction_count() }
+    }
+    pub(crate) fn get_movc_instruction_count(&self) -> u32 {
+        unsafe { self.inner.get_movc_instruction_count() }
+    }
+    pub(crate) fn get_conversion_instruction_count(&self) -> u32 {
+        unsafe { self.inner.get_conversion_instruction_count() }
+    }
+    pub(crate) fn get_bitwise_instruction_count(&self) -> u32 {
+        unsafe { self.inner.get_bitwise_instruction_count() }
+    }
+    pub(crate) fn get_gs_input_primitive(&self) -> D3D_PRIMITIVE {
+        unsafe { self.inner.get_gs_input_primitive() }
+    }
+    pub(crate) fn is_sample_frequency_shader(&self) -> bool {
+        unsafe { self.inner.is_sample_frequency_shader() }
+    }
+    pub(crate) fn get_num_interface_slots(&self) -> u32 {
+        unsafe { self.inner.get_num_interface_slots() }
     }
 
     pub fn thread_group_size(&self) -> [u32; 3] {
@@ -603,6 +1258,10 @@ impl Reflection {
                 .get_thread_group_size(&mut size_x, &mut size_y, &mut size_z)
         };
         [size_x, size_y, size_z]
+    }
+
+    pub(crate) fn get_requires_flags(&self) -> u64 {
+        unsafe { self.inner.get_requires_flags() }
     }
 }
 
