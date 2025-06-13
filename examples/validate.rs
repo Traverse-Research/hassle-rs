@@ -26,14 +26,32 @@ fn get_digest(buffer: &[u8]) -> [u32; 4] {
 fn main() {
     let source = include_str!("copy.hlsl");
 
-    let mut dxil = compile_hlsl("copy.hlsl", source, "copyCs", "cs_6_0", &[], &[]).unwrap();
+    let mut dxil = match compile_hlsl("copy.hlsl", source, "copyCs", "cs_6_0", &[], &[]) {
+        Ok(OperationOutput { messages, blob }) => {
+            if let Some(m) = messages {
+                eprintln!("Compiled to DXIL with warnings:\n{m}");
+            }
+            blob
+        }
+        // Could very well happen that one needs to recompile or download a dxcompiler.dll
+        Err(e) => panic!("Failed to compile to DXIL: {:?}", e),
+    };
 
     zero_digest(&mut dxil);
 
     let without_digest = get_digest(&dxil);
     println!("Before validation: {:?}", without_digest);
 
-    let validated_dxil = validate_dxil(&dxil).unwrap();
+    let validated_dxil = match validate_dxil(&dxil) {
+        Ok(OperationOutput { messages, blob }) => {
+            if let Some(m) = messages {
+                eprintln!("Validated DXIL with warnings:\n{m}");
+            }
+            blob
+        }
+        // Could very well happen that one needs to recompile or download a dxcompiler.dll
+        Err(e) => panic!("Failed to validate DXIL: {:?}", e),
+    };
 
     let with_digest = get_digest(&validated_dxil);
 

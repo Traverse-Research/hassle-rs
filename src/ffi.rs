@@ -5,6 +5,12 @@ use crate::os::{HRESULT, LPCWSTR, LPWSTR};
 use com::{interfaces, interfaces::IUnknown, IID};
 use std::ffi::c_void;
 
+// https://learn.microsoft.com/en-us/windows/win32/intl/code-page-identifiers
+/// System ANSI codepage
+pub const CP_ACP: u32 = 0;
+/// Unicode (UTF-8)
+pub const CP_UTF8: u32 = 65001;
+
 pub type DxcCreateInstanceProc<T> =
     extern "system" fn(rclsid: &IID, riid: &IID, ppv: *mut Option<T>) -> HRESULT;
 
@@ -90,7 +96,7 @@ interfaces! {
 
     #[uuid("cedb484a-d4e9-445a-b991-ca21ca157dc2")]
     pub(crate) unsafe interface IDxcOperationResult: IUnknown {
-        pub(crate) fn get_status(&self, status: *mut u32) -> HRESULT;
+        pub(crate) fn get_status(&self, status: *mut i32) -> HRESULT;
         pub(crate) fn get_result(&self, result: *mut Option<IDxcBlob>) -> HRESULT;
         pub(crate) fn get_error_buffer(&self, errors: *mut Option<IDxcBlobEncoding>) -> HRESULT;
     }

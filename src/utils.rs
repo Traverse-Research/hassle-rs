@@ -51,14 +51,13 @@ impl DxcIncludeHandler for DefaultIncludeHandler {
     }
 }
 
+/// Low-level library errors and high-level compilation errors.
 #[derive(Error, Debug)]
 pub enum HassleError {
+    #[error("Dxc error {0:x}: {0}")]
+    OperationError(HRESULT, String),
     #[error("Win32 error: {0:x}")]
     Win32Error(HRESULT),
-    #[error("{0}")]
-    CompileError(String),
-    #[error("Validation error: {0}")]
-    ValidationError(String),
     #[error("Failed to load library {filename:?}: {inner:?}")]
     LoadLibraryError {
         filename: PathBuf,
@@ -97,6 +96,47 @@ impl HRESULT {
     }
 }
 
+/// Wraps a successful output with optional compiler warnings/messages from [`DxcOperationResult`].
+/// Create with [`Self::from_operation_result()`].
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct OperationOutput {
+    /// Messages ("error buffer") from DXC, typically contains warnings emitted while compiling or
+    /// validating shaders.
+    pub messages: Option<String>,
+    /// The resulting blob (typically a compiled or validated shader from [`compile_hlsl()`] or
+    /// [`validate_dxil()`]).
+    pub blob: Vec<u8>,
+}
+
+impl OperationOutput {
+    /// Helper to process [`DxcOperationResult`].
+    pub fn from_operation_result(result: DxcOperationResult) -> Result<Self> {
+        // Result blobs are always available, they might just be empty (length == 0) if there's no
+        // relevant data in them.
+        let error = result.get_error_buffer()?;
+        let error = error.as_str().expect("UTF-8 blob");
+
+        let output = result.get_result()?;
+
+        let status = result.get_status()?;
+
+        if status.is_err() {
+            assert!(output.as_ref().is_empty());
+            Err(HassleError::OperationError(status, error.to_owned()))
+        } else {
+            assert!(!output.as_ref().is_empty());
+            Ok(OperationOutput {
+                messages: if error.is_empty() {
+                    None
+                } else {
+                    Some(error.to_owned())
+                },
+                blob: output.to_vec(),
+            })
+        }
+    }
+}
+
 /// Helper function to directly compile a HLSL shader to an intermediate language,
 /// this function expects `dxcompiler.dll` to be available in the current
 /// executable environment.
@@ -111,7 +151,7 @@ pub fn compile_hlsl(
     target_profile: &str,
     args: &[&str],
     defines: &[(&str, Option<&str>)],
-) -> Result<Vec<u8>> {
+) -> Result<OperationOutput> {
     let dxc = Dxc::new(None)?;
 
     let compiler = dxc.create_compiler()?;
@@ -127,21 +167,9 @@ pub fn compile_hlsl(
         args,
         Some(&mut DefaultIncludeHandler {}),
         defines,
-    );
+    )?;
 
-    match result {
-        Err(result) => {
-            let error_blob = result.0.get_error_buffer()?;
-            Err(HassleError::CompileError(
-                library.get_blob_as_string(&error_blob.into())?,
-            ))
-        }
-        Ok(result) => {
-            let result_blob = result.get_result()?;
-
-            Ok(result_blob.to_vec())
-        }
-    }
+    OperationOutput::from_operation_result(result)
 }
 
 /// Helper function to validate a DXIL binary independent from the compilation process,
@@ -149,7 +177,7 @@ pub fn compile_hlsl(
 /// execution environment.
 ///
 /// `dxil.dll` is only available on Windows.
-pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
+pub fn validate_dxil(data: &[u8]) -> Result<OperationOutput> {
     let dxc = Dxc::new(None)?;
     let dxil = Dxil::new(None)?;
 
@@ -158,15 +186,9 @@ pub fn validate_dxil(data: &[u8]) -> Result<Vec<u8>, HassleError> {
 
     let blob_encoding = library.create_blob_with_encoding(data)?;
 
-    match validator.validate(blob_encoding.into()) {
-        Ok(blob) => Ok(blob.to_vec()),
-        Err(result) => {
-            let error_blob = result.0.get_error_buffer()?;
-            Err(HassleError::ValidationError(
-                library.get_blob_as_string(&error_blob.into())?,
-            ))
-        }
-    }
+    let result = validator.validate(&blob_encoding)?;
+
+    OperationOutput::from_operation_result(result)
 }
 
 pub use crate::fake_sign::fake_sign_dxil_in_place;
