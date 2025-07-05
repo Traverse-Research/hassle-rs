@@ -1,6 +1,6 @@
 use crate::os::{BSTR, HRESULT, LPCSTR, LPSTR};
 use bitflags::bitflags;
-use com::{interfaces, interfaces::IUnknown, AbiTransferable, IID};
+use com::{AbiTransferable, IID, interfaces, interfaces::IUnknown};
 
 /// Manual implementation of:
 /// ```ignore

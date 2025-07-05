@@ -1,7 +1,7 @@
 use com::Interface;
 
 use crate::intellisense::ffi::*;
-use crate::os::{CoTaskMemFree, BSTR, LPSTR};
+use crate::os::{BSTR, CoTaskMemFree, LPSTR};
 use crate::utils::Result;
 use crate::wrapper::Dxc;
 use std::ffi::CString;

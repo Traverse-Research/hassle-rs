@@ -6,9 +6,9 @@
 
 use crate::ffi::*;
 use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
-use crate::utils::{from_wide, to_wide, HassleError, Result};
-use com::{class, interfaces::IUnknown, production::Class, production::ClassAllocation, Interface};
-use libloading::{library_filename, Library, Symbol};
+use crate::utils::{HassleError, Result, from_wide, to_wide};
+use com::{Interface, class, interfaces::IUnknown, production::Class, production::ClassAllocation};
+use libloading::{Library, Symbol, library_filename};
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::fmt;
@@ -302,8 +302,8 @@ impl DxcIncludeHandlerWrapper {
     ) -> LocalClassAllocation<DxcIncludeHandlerWrapper> {
         #[allow(clippy::missing_transmute_annotations)]
         LocalClassAllocation::new(Self::allocate(
-            std::mem::transmute(library),
-            RefCell::new(std::mem::transmute(include_handler)),
+            unsafe { std::mem::transmute(library) },
+            RefCell::new(unsafe { std::mem::transmute(include_handler) }),
             RefCell::new(vec![]),
         ))
     }
@@ -332,7 +332,7 @@ impl DxcCompiler {
             }
         }
 
-        for (ref name, ref value) in wide_defines {
+        for (name, value) in wide_defines {
             dxc_defines.push(DxcDefine {
                 name: name.as_ptr(),
                 value: value.as_ptr(),

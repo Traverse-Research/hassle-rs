@@ -13,7 +13,7 @@ fn main() {
             blob
         }
         // Could very well happen that one needs to recompile or download a dxcompiler.dll
-        Err(e) => panic!("Failed to compile to SPIR-V: {:?}", e),
+        Err(e) => panic!("Failed to compile to SPIR-V: {e:?}"),
     };
     let module = load_bytes(spirv).unwrap();
     println!("{}", module.disassemble());

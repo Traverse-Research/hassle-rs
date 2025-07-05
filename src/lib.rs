@@ -48,6 +48,6 @@ pub mod intellisense;
 
 pub use crate::ffi::*;
 pub use crate::utils::{
-    compile_hlsl, fake_sign_dxil_in_place, validate_dxil, HassleError, OperationOutput, Result,
+    HassleError, OperationOutput, Result, compile_hlsl, fake_sign_dxil_in_place, validate_dxil,
 };
 pub use crate::wrapper::*;

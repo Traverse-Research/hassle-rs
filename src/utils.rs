@@ -1,7 +1,7 @@
 use std::ffi::CStr;
 use std::path::PathBuf;
 
-use crate::os::{SysFreeString, SysStringLen, BSTR, HRESULT, LPCSTR, LPCWSTR, WCHAR};
+use crate::os::{BSTR, HRESULT, LPCSTR, LPCWSTR, SysFreeString, SysStringLen, WCHAR};
 use crate::wrapper::*;
 use thiserror::Error;
 
