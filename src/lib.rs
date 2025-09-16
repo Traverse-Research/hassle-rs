@@ -3,7 +3,6 @@
 #![allow(
     clippy::transmute_ptr_to_ptr, // Introduced by com-rs
     clippy::too_many_arguments, // We're wrapping an API outside of our control
-    clippy::uninlined_format_args, // Unfavourable format; implies unneeded MSRV bump
 )]
 
 //! # Hassle
