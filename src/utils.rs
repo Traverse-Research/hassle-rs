@@ -54,7 +54,7 @@ impl DxcIncludeHandler for DefaultIncludeHandler {
 /// Low-level library errors and high-level compilation errors.
 #[derive(Error, Debug)]
 pub enum HassleError {
-    #[error("Dxc error {0:x}: {0}")]
+    #[error("Dxc error {0}: {1}")]
     OperationError(HRESULT, String),
     #[error("Win32 error: {0:x}")]
     Win32Error(HRESULT),
