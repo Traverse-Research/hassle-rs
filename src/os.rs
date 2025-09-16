@@ -39,7 +39,7 @@ mod os_defs {
     pub unsafe fn CoTaskMemFree(p: *mut libc::c_void) {
         // https://github.com/microsoft/DirectXShaderCompiler/blob/56e22b30c5e43632f56a1f97865f37108ec35463/include/dxc/Support/WinAdapter.h#L46
         if !p.is_null() {
-            libc::free(p)
+            unsafe { libc::free(p) }
         }
     }
 
@@ -49,7 +49,7 @@ mod os_defs {
     pub unsafe fn SysFreeString(p: BSTR) {
         // https://github.com/microsoft/DirectXShaderCompiler/blob/56e22b30c5e43632f56a1f97865f37108ec35463/lib/DxcSupport/WinAdapter.cpp#L50-L53
         if !p.is_null() {
-            libc::free(len_ptr(p).cast::<_>())
+            unsafe { libc::free(len_ptr(p).cast::<_>()) }
         }
     }
 
@@ -64,7 +64,7 @@ mod os_defs {
         if p.is_null() {
             0
         } else {
-            *len_ptr(p)
+            unsafe { *len_ptr(p) }
         }
     }
 
@@ -76,7 +76,8 @@ mod os_defs {
     ///
     /// https://docs.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr#remarks
     pub unsafe fn SysStringLen(p: BSTR) -> UINT {
-        SysStringByteLen(p) / std::mem::size_of::<OLECHAR>() as UINT
+        let len = unsafe { SysStringByteLen(p) };
+        len / std::mem::size_of::<OLECHAR>() as UINT
     }
 }
 

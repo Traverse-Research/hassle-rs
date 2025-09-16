@@ -2,7 +2,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::os::{HRESULT, LPCWSTR, LPWSTR};
-use com::{interfaces, interfaces::IUnknown, IID};
+use com::{IID, interfaces, interfaces::IUnknown};
 use std::ffi::c_void;
 
 // https://learn.microsoft.com/en-us/windows/win32/intl/code-page-identifiers

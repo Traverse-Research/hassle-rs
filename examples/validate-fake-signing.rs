@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 #[repr(C)]
 pub struct MinimalHeader {
     four_cc: u32,
@@ -12,7 +10,7 @@ fn get_digest(buffer: &[u8]) -> [u32; 4] {
     header_ref.hash_digest
 }
 
-use hassle_rs::{compile_hlsl, fake_sign_dxil_in_place, validate_dxil, OperationOutput};
+use hassle_rs::{OperationOutput, compile_hlsl, fake_sign_dxil_in_place, validate_dxil};
 
 fn main() {
     let sources = [
@@ -78,6 +76,8 @@ fn main() {
             println!("Success");
         }
     } else {
-        println!("Warning: Signatures not validated against `dxil.dll` - this is only possible on Windows");
+        println!(
+            "Warning: Signatures not validated against `dxil.dll` - this is only possible on Windows"
+        );
     }
 }

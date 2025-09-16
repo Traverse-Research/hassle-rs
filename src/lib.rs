@@ -3,7 +3,6 @@
 #![allow(
     clippy::transmute_ptr_to_ptr, // Introduced by com-rs
     clippy::too_many_arguments, // We're wrapping an API outside of our control
-    clippy::uninlined_format_args, // Unfavourable format; implies unneeded MSRV bump
 )]
 
 //! # Hassle
@@ -48,6 +47,6 @@ pub mod intellisense;
 
 pub use crate::ffi::*;
 pub use crate::utils::{
-    compile_hlsl, fake_sign_dxil_in_place, validate_dxil, HassleError, OperationOutput, Result,
+    HassleError, OperationOutput, Result, compile_hlsl, fake_sign_dxil_in_place, validate_dxil,
 };
 pub use crate::wrapper::*;
