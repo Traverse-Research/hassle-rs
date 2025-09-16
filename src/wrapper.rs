@@ -578,7 +578,9 @@ impl Dxc {
         Ok(Self { dxc_lib })
     }
 
-    pub(crate) fn get_dxc_create_instance<T>(&self) -> Result<Symbol<DxcCreateInstanceProc<T>>> {
+    pub(crate) fn get_dxc_create_instance<T>(
+        &self,
+    ) -> Result<Symbol<'_, DxcCreateInstanceProc<T>>> {
         Ok(unsafe { self.dxc_lib.get(b"DxcCreateInstance\0")? })
     }
 
@@ -725,7 +727,7 @@ impl Dxil {
         Ok(Self { dxil_lib })
     }
 
-    fn get_dxc_create_instance<T>(&self) -> Result<Symbol<DxcCreateInstanceProc<T>>> {
+    fn get_dxc_create_instance<T>(&self) -> Result<Symbol<'_, DxcCreateInstanceProc<T>>> {
         Ok(unsafe { self.dxil_lib.get(b"DxcCreateInstance\0")? })
     }
 
