@@ -121,9 +121,21 @@ impl OperationOutput {
         let status = result.get_status()?;
 
         if status.is_err() {
-            assert!(output.as_ref().is_empty());
+            assert!(
+                output.as_ref().is_empty(),
+                "Compilation unsuccessful but output has {} bytes, status is {}: {}",
+                output.as_ref().len(),
+                status,
+                error
+            );
             Err(HassleError::OperationError(status, error.to_owned()))
         } else {
+            assert!(
+                !output.as_ref().is_empty(),
+                "Compilation successful but output is empty, status is {}: {}",
+                status,
+                error
+            );
             assert!(!output.as_ref().is_empty());
             Ok(OperationOutput {
                 messages: if error.is_empty() {
