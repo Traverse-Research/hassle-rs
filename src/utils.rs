@@ -136,7 +136,6 @@ impl OperationOutput {
                 status,
                 error
             );
-            assert!(!output.as_ref().is_empty());
             Ok(OperationOutput {
                 messages: if error.is_empty() {
                     None
