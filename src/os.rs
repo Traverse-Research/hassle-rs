@@ -106,16 +106,6 @@ impl std::fmt::Debug for HRESULT {
 
 impl std::fmt::Display for HRESULT {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:#x}", self)
-    }
-}
-
-impl std::fmt::LowerHex for HRESULT {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let prefix = if f.alternate() { "0x" } else { "" };
-        let bare_hex = format!("{:x}", self.0 as u32);
-        // https://stackoverflow.com/a/44712309
-        f.pad_integral(false, prefix, &bare_hex)
-        // <i32 as std::fmt::LowerHex>::fmt(&self.0, f)
+        write!(f, "{:#x}", self.0)
     }
 }

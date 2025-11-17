@@ -56,7 +56,7 @@ impl DxcIncludeHandler for DefaultIncludeHandler {
 pub enum HassleError {
     #[error("Dxc error {0}: {1}")]
     OperationError(HRESULT, String),
-    #[error("Win32 error: {0:x}")]
+    #[error("Win32 error: {0}")]
     Win32Error(HRESULT),
     #[error("Failed to load library {filename:?}: {inner:?}")]
     LoadLibraryError {
