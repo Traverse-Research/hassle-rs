@@ -142,7 +142,7 @@ impl OperationOutput {
                 } else {
                     Some(error.to_owned())
                 },
-                blob: output.to_vec(),
+                blob: output.as_slice().to_vec(),
             })
         }
     }
