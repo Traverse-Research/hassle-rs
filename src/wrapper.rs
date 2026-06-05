@@ -44,10 +44,12 @@ impl DxcBlob {
             &[]
         } else {
             unsafe {
-                std::slice::from_raw_parts(
-                    self.inner.get_buffer_pointer().cast(),
-                    bytes / size_of::<T>(),
-                )
+                let len = if size_of::<T>() == 0 {
+                    0
+                } else {
+                    bytes / size_of::<T>()
+                };
+                std::slice::from_raw_parts(self.inner.get_buffer_pointer().cast(), len)
             }
         }
     }
@@ -58,10 +60,12 @@ impl DxcBlob {
             &mut []
         } else {
             unsafe {
-                std::slice::from_raw_parts_mut(
-                    self.inner.get_buffer_pointer().cast(),
-                    bytes / size_of::<T>(),
-                )
+                let len = if size_of::<T>() == 0 {
+                    0
+                } else {
+                    bytes / size_of::<T>()
+                };
+                std::slice::from_raw_parts_mut(self.inner.get_buffer_pointer().cast(), len)
             }
         }
     }
