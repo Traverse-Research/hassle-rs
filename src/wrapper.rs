@@ -491,6 +491,85 @@ impl DxcCompiler {
     }
 }
 
+/// Links pre-compiled HLSL library blobs (produced by compiling with a
+/// `lib_6_x` profile) into a final shader binary with a chosen entry point
+/// and target profile.
+///
+/// Typical use:
+///
+/// 1. Compile each shader source to a library blob via [`DxcCompiler::compile`]
+///    using a `lib_6_x` target profile.
+/// 2. Register every library blob with [`Self::register_library`] under a
+///    unique name.
+/// 3. Call [`Self::link`] with the names of the libraries to combine, the
+///    entry-point function name, and a non-library target profile such as
+///    `cs_6_8`.
+pub struct DxcLinker {
+    inner: IDxcLinker,
+}
+
+impl DxcLinker {
+    fn new(inner: IDxcLinker) -> Self {
+        Self { inner }
+    }
+
+    /// Registers a library blob with this linker under `lib_name`.
+    ///
+    /// The same name is then referenced in the `lib_names` argument of
+    /// [`Self::link`]. The linker holds an internal reference to the blob; the
+    /// caller does not need to keep `blob` alive past this call.
+    pub fn register_library(&self, lib_name: &str, blob: &DxcBlob) -> Result<()> {
+        let wide_name = to_wide(lib_name);
+        unsafe {
+            self.inner
+                .register_library(wide_name.as_ptr(), blob.inner.clone())
+        }
+        .result()
+    }
+
+    /// Links previously-registered libraries into a final shader binary.
+    ///
+    /// `entry_point` is the name of the function (exported by one of the
+    /// registered libraries) that will become the entry point of the linked
+    /// shader. `target_profile` is a non-library profile such as `cs_6_8`.
+    /// `lib_names` is the list of library names previously passed to
+    /// [`Self::register_library`] that should be included in the link.
+    /// `args` is forwarded to DXC like the args of [`DxcCompiler::compile`].
+    pub fn link(
+        &self,
+        entry_point: &str,
+        target_profile: &str,
+        lib_names: &[&str],
+        args: &[&str],
+    ) -> Result<DxcOperationResult, HassleError> {
+        let wide_entry = to_wide(entry_point);
+        let wide_profile = to_wide(target_profile);
+
+        let wide_lib_names: Vec<Vec<WCHAR>> = lib_names.iter().map(|n| to_wide(n)).collect();
+        let lib_name_ptrs: Vec<LPCWSTR> = wide_lib_names.iter().map(|n| n.as_ptr()).collect();
+
+        let wide_args: Vec<Vec<WCHAR>> = args.iter().map(|a| to_wide(a)).collect();
+        let arg_ptrs: Vec<LPCWSTR> = wide_args.iter().map(|a| a.as_ptr()).collect();
+
+        let mut result = None;
+        unsafe {
+            self.inner.link(
+                wide_entry.as_ptr(),
+                wide_profile.as_ptr(),
+                lib_name_ptrs.as_ptr(),
+                lib_name_ptrs.len() as u32,
+                arg_ptrs.as_ptr(),
+                arg_ptrs.len() as u32,
+                &mut result,
+            )
+        }
+        .result()?;
+
+        let result = result.expect("Non-null IDxcOperationResult");
+        Ok(DxcOperationResult::new(result))
+    }
+}
+
 #[derive(Clone)]
 pub struct DxcLibrary {
     inner: IDxcLibrary,
@@ -586,6 +665,13 @@ impl Dxc {
         self.get_dxc_create_instance()?(&CLSID_DxcLibrary, &IDxcLibrary::IID, &mut library)
             .result()?;
         Ok(DxcLibrary::new(library.unwrap()))
+    }
+
+    pub fn create_linker(&self) -> Result<DxcLinker> {
+        let mut linker = None;
+        self.get_dxc_create_instance()?(&CLSID_DxcLinker, &IDxcLinker::IID, &mut linker)
+            .result()?;
+        Ok(DxcLinker::new(linker.unwrap()))
     }
 
     pub fn create_reflector(&self) -> Result<DxcReflector> {
