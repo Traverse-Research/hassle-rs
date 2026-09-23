@@ -7,10 +7,13 @@
 use crate::ffi::*;
 use crate::os::{HRESULT, LPCWSTR, LPWSTR, WCHAR};
 use crate::utils::{from_wide, to_wide, HassleError, Result};
-use com::{class, interfaces::IUnknown, production::Class, production::ClassAllocation, Interface};
+use com::{
+    class, interfaces::IUnknown, production::Class, production::ClassAllocation, Interface, IID,
+};
 use libloading::{library_filename, Library, Symbol};
 use std::cell::RefCell;
 use std::convert::TryFrom;
+use std::ffi::c_void;
 use std::fmt;
 use std::ops::Deref;
 use std::path::PathBuf;
@@ -578,6 +581,66 @@ impl Dxc {
         Ok(DxcCompiler::new(
             compiler.unwrap(),
             self.create_library().unwrap(),
+        ))
+    }
+
+    pub(crate) fn get_dxc_create_instance2(&self) -> Result<Symbol<'_, DxcCreateInstanceProc2>> {
+        Ok(unsafe { self.dxc_lib.get(b"DxcCreateInstance2\0")? })
+    }
+
+    /// Creates `clsid` through `DxcCreateInstance2`, so that the object and everything it
+    /// allocates goes through `malloc` instead of the process-wide default allocator.
+    ///
+    /// # Safety
+    ///
+    /// See [`Self::create_compiler_with_malloc()`].
+    unsafe fn create_instance_with_malloc<T: Interface>(
+        &self,
+        malloc: *const c_void,
+        clsid: &IID,
+    ) -> Result<T> {
+        // `Option<T>` is a nullable pointer for every COM interface, which is what the
+        // `ppv` out-parameter expects - the same assumption `DxcCreateInstanceProc` makes.
+        debug_assert_eq!(
+            std::mem::size_of::<Option<T>>(),
+            std::mem::size_of::<*mut c_void>()
+        );
+        let mut instance = None::<T>;
+        self.get_dxc_create_instance2()?(
+            malloc,
+            clsid,
+            &T::IID,
+            &mut instance as *mut Option<T> as *mut *mut c_void,
+        )
+        .result()?;
+        Ok(instance.unwrap())
+    }
+
+    /// Like [`Self::create_compiler()`], but every allocation the compiler and the objects it
+    /// creates make goes through `malloc` rather than the process-wide default allocator.
+    ///
+    /// DXC allocates from a single process heap, whose lock serialises compilations running
+    /// concurrently in one process; handing it a per-thread allocator removes that bottleneck.
+    ///
+    /// # Safety
+    ///
+    /// `malloc` must point to a valid COM object implementing `IMalloc`, and that object must
+    /// stay alive and usable until the returned compiler, the library it owns, and every blob
+    /// they produced have been dropped.
+    pub unsafe fn create_compiler_with_malloc(&self, malloc: *const c_void) -> Result<DxcCompiler> {
+        let compiler = self.create_instance_with_malloc(malloc, &CLSID_DxcCompiler)?;
+        let library = self.create_library_with_malloc(malloc)?;
+        Ok(DxcCompiler::new(compiler, library))
+    }
+
+    /// Like [`Self::create_library()`], but allocating through `malloc`.
+    ///
+    /// # Safety
+    ///
+    /// See [`Self::create_compiler_with_malloc()`].
+    pub unsafe fn create_library_with_malloc(&self, malloc: *const c_void) -> Result<DxcLibrary> {
+        Ok(DxcLibrary::new(
+            self.create_instance_with_malloc(malloc, &CLSID_DxcLibrary)?,
         ))
     }
 
