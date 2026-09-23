@@ -21,7 +21,7 @@ pub type DxcCreateInstanceProc2 = extern "system" fn(
     ppv: *mut *mut c_void,
 ) -> HRESULT;
 
-pub const DFCC_DXIL: u32 = u32::from_le_bytes([b'D', b'X', b'I', b'L']);
+pub const DFCC_DXIL: u32 = u32::from_le_bytes(*b"DXIL");
 
 interfaces! {
     #[uuid("8ba5fb08-5195-40e2-ac58-0d989c3a0102")]
