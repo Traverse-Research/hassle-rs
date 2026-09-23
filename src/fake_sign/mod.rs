@@ -11,7 +11,7 @@ struct FileHeader {
 }
 
 const DXIL_HEADER_CONTAINER_VERSION_OFFSET: usize = 20;
-const DXBC_FOURCC: u32 = u32::from_le_bytes([b'D', b'X', b'B', b'C']);
+const DXBC_FOURCC: u32 = u32::from_le_bytes(*b"DXBC");
 
 fn read_fourcc(dxil: &[u8]) -> u32 {
     let header: *const FileHeader = dxil.as_ptr().cast();
