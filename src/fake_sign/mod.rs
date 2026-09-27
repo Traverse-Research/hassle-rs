@@ -39,6 +39,10 @@ fn write_hash_value(dxil: &mut [u8], state: [u32; 4]) {
 ///
 /// Ported from <https://github.com/baldurk/renderdoc/blob/v1.x/renderdoc/driver/shaders/dxbc/dxbc_container.cpp#L832>
 pub fn fake_sign_dxil_in_place(dxil: &mut [u8]) -> bool {
+    if dxil.len() < std::mem::size_of::<FileHeader>() {
+        return false;
+    }
+
     if read_fourcc(dxil) != DXBC_FOURCC {
         return false;
     }
