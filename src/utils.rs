@@ -66,6 +66,8 @@ pub enum HassleError {
     },
     #[error("LibLoading error: {0:?}")]
     LibLoadingError(#[from] libloading::Error),
+    #[error("dxc_malloc() was already called with another allocator")]
+    AllocatorMismatch,
 }
 
 pub type Result<T, E = HassleError> = std::result::Result<T, E>;

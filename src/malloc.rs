@@ -21,7 +21,12 @@
 //!
 //! Windows only: the task allocator and its spy are COM's.
 
-use std::{ffi::c_void, ptr::null_mut, sync::OnceLock};
+use std::{
+    any::{Any, TypeId},
+    ffi::c_void,
+    ptr::null_mut,
+    sync::OnceLock,
+};
 
 use com::{interfaces, interfaces::IUnknown, Interface};
 
@@ -34,7 +39,7 @@ use crate::{os::HRESULT, utils::HassleError, Result};
 /// [`Self::owns()`] must be exact: `true` for every live block returned by [`Self::alloc()`] or
 /// [`Self::realloc()`], `false` for every other pointer, including blocks of the COM task
 /// allocator. The routing relies on it to never hand a block to the wrong allocator.
-pub unsafe trait DxcAllocator: Send + Sync + 'static {
+pub unsafe trait DxcAllocator: Any + Send + Sync {
     /// A block of at least `size` bytes, aligned for any type (16 bytes on x86-64), or null.
     fn alloc(&self, size: usize) -> *mut c_void;
     /// Resize `p` to `size` bytes, moving it if needed.
@@ -272,10 +277,10 @@ unsafe impl<I> Sync for Shared<I> {}
 ///
 /// The first call registers the task-allocator spy, which COM allows once per process and which
 /// is never revoked (blocks can reach the task allocator until the process exits). Every later
-/// call must pass the same allocator. Fails if another spy already owns the process, in which
-/// case DXC has to keep its default allocator.
+/// call must pass the same allocator, or gets [`HassleError::AllocatorMismatch`]. Fails if another
+/// spy already owns the process, in which case DXC has to keep its default allocator.
 pub fn dxc_malloc(allocator: &'static dyn DxcAllocator) -> Result<&'static IMalloc> {
-    static INSTALLED: OnceLock<(usize, std::result::Result<Shared<IMalloc>, HRESULT>)> =
+    static INSTALLED: OnceLock<(Identity, std::result::Result<Shared<IMalloc>, HRESULT>)> =
         OnceLock::new();
     let (owner, malloc) = INSTALLED.get_or_init(|| {
         task_malloc();
@@ -293,21 +298,23 @@ pub fn dxc_malloc(allocator: &'static dyn DxcAllocator) -> Result<&'static IMall
         } else {
             Err(hr)
         };
-        (thin(allocator), malloc)
+        (identity(allocator), malloc)
     });
-    assert_eq!(
-        *owner,
-        thin(allocator),
-        "dxc_malloc() was already called with another allocator"
-    );
     match malloc {
-        Ok(malloc) => Ok(&malloc.0),
         Err(hr) => Err(HassleError::Win32Error(*hr)),
+        Ok(_) if *owner != identity(allocator) => Err(HassleError::AllocatorMismatch),
+        Ok(malloc) => Ok(&malloc.0),
     }
 }
 
-fn thin(allocator: &'static dyn DxcAllocator) -> usize {
-    (allocator as *const dyn DxcAllocator).cast::<()>() as usize
+/// The address alone does not tell zero-sized allocators apart.
+type Identity = (usize, TypeId);
+
+fn identity(allocator: &'static dyn DxcAllocator) -> Identity {
+    (
+        (allocator as *const dyn DxcAllocator).cast::<()>() as usize,
+        (*allocator).type_id(),
+    )
 }
 
 #[cfg(test)]
@@ -375,6 +382,7 @@ mod tests {
     }
 
     static TRACKED: Tracked = Tracked(Mutex::new(None));
+    static OTHER: Tracked = Tracked(Mutex::new(None));
 
     #[test]
     fn mismatched_frees_are_routed_to_the_owner() {
@@ -400,5 +408,46 @@ mod tests {
             assert_eq!(r.read(), 7);
             assert!(malloc.realloc(r.cast(), 0).is_null());
         }
+    }
+
+    #[test]
+    fn another_allocator_is_an_error() {
+        dxc_malloc(&TRACKED).expect("spy registers");
+        assert!(matches!(
+            dxc_malloc(&OTHER),
+            Err(HassleError::AllocatorMismatch)
+        ));
+    }
+
+    struct Zst<const N: usize>;
+
+    unsafe impl<const N: usize> DxcAllocator for Zst<N> {
+        fn alloc(&self, _size: usize) -> *mut c_void {
+            unreachable!()
+        }
+
+        unsafe fn realloc(&self, _p: *mut c_void, _size: usize) -> *mut c_void {
+            unreachable!()
+        }
+
+        unsafe fn free(&self, _p: *mut c_void) {
+            unreachable!()
+        }
+
+        unsafe fn size(&self, _p: *const c_void) -> usize {
+            unreachable!()
+        }
+
+        fn owns(&self, _p: *const c_void) -> bool {
+            false
+        }
+    }
+
+    #[test]
+    fn zero_sized_allocators_are_told_apart() {
+        static A: Zst<0> = Zst;
+        static B: Zst<1> = Zst;
+        assert_eq!(identity(&A), identity(&A));
+        assert_ne!(identity(&A), identity(&B));
     }
 }
