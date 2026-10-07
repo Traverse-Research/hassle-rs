@@ -633,6 +633,31 @@ impl Dxc {
         Ok(DxcCompiler::new(compiler, library))
     }
 
+    /// Like [`Self::create_compiler()`], but DXC allocates from `allocator` instead of the
+    /// process heap, with blocks routed back to their owner wherever DXC mixes the two up (see
+    /// [`crate::malloc`]).
+    #[cfg(windows)]
+    pub fn create_compiler_with_allocator(
+        &self,
+        allocator: &'static dyn crate::DxcAllocator,
+    ) -> Result<DxcCompiler> {
+        let malloc = crate::dxc_malloc(allocator)?;
+        // SAFETY: `dxc_malloc()` objects live until the process exits.
+        unsafe { self.create_compiler_with_malloc(malloc.as_raw().as_ptr().cast()) }
+    }
+
+    /// Like [`Self::create_library()`], but allocating from `allocator`; see
+    /// [`Self::create_compiler_with_allocator()`].
+    #[cfg(windows)]
+    pub fn create_library_with_allocator(
+        &self,
+        allocator: &'static dyn crate::DxcAllocator,
+    ) -> Result<DxcLibrary> {
+        let malloc = crate::dxc_malloc(allocator)?;
+        // SAFETY: `dxc_malloc()` objects live until the process exits.
+        unsafe { self.create_library_with_malloc(malloc.as_raw().as_ptr().cast()) }
+    }
+
     /// Like [`Self::create_library()`], but allocating through `malloc`.
     ///
     /// # Safety
