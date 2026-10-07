@@ -40,7 +40,8 @@ use crate::{os::HRESULT, utils::HassleError, Result};
 /// [`Self::realloc()`], `false` for every other pointer, including blocks of the COM task
 /// allocator. The routing relies on it to never hand a block to the wrong allocator.
 pub unsafe trait DxcAllocator: Any + Send + Sync {
-    /// A block of at least `size` bytes, aligned for any type (16 bytes on x86-64), or null.
+    /// A block of at least `size` bytes, aligned for any type (16 bytes on x86-64), or null on
+    /// failure. `size` may be 0, which must still return a unique non-null block.
     fn alloc(&self, size: usize) -> *mut c_void;
     /// Resize `p` to `size` bytes, moving it if needed.
     ///
