@@ -40,6 +40,8 @@
 
 pub mod fake_sign;
 pub mod ffi;
+#[cfg(windows)]
+pub mod malloc;
 pub mod os;
 pub mod utils;
 pub mod wrapper;
@@ -47,6 +49,8 @@ pub mod wrapper;
 pub mod intellisense;
 
 pub use crate::ffi::*;
+#[cfg(windows)]
+pub use crate::malloc::{dxc_malloc, DxcAllocator};
 pub use crate::utils::{
     compile_hlsl, fake_sign_dxil_in_place, validate_dxil, HassleError, OperationOutput, Result,
 };
